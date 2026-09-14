@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Track a shipment &amp; view invoices | PAK Cargo</title>
+<meta name="description" content="Track your PAK Cargo shipment from the UK to Pakistan and view or print your invoice. Enter your AWB, tracking number or booking reference." />
+<meta name="theme-color" content="#01a159" />
+<link rel="icon" href="logo.png" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="portal-body">
+
+<header class="site-header">
+  <div class="wrap-narrow bar" style="display:flex;align-items:center;gap:20px;padding:10px 20px">
+    <a class="brand" href="index.html">
+      <span class="mark"><img src="logo.png" alt="PAK Cargo logo" /></span>
+      <span>
+        <span class="name" style="display:block">PAK CARGO</span>
+        <span class="sub">Customer portal</span>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html#services">Services</a>
+      <a href="index.html#rates">Rates</a>
+      <a class="btn btn-green btn-sm" href="index.html#contact">Get a quote</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap-narrow" style="padding:44px 20px 72px">
+  <h1 style="font-size:clamp(28px,4vw,40px);font-weight:800">Track a shipment</h1>
+  <p class="lede">Enter your AWB / tracking number or booking reference. Demo references: <strong>PC-4471</strong> (air), <strong>BK-20931</strong> (sea).</p>
+
+  <div class="tabs" data-noprint>
+    <button class="tab" id="tab-track" aria-selected="true">Shipment status</button>
+    <button class="tab" id="tab-invoice" aria-selected="false">Invoices</button>
+  </div>
+
+  <section class="panel" id="panel-track">
+    <form class="row-inline" id="track-form" data-noprint>
+      <input class="input" id="track-input" placeholder="AWB / tracking number or booking reference" aria-label="Tracking or booking reference" style="min-height:48px" />
+      <button class="btn btn-green" type="submit">Track</button>
+    </form>
+    <div id="track-output"></div>
+  </section>
+
+  <section class="panel hidden" id="panel-invoice">
+    <h2 style="font-size:20px;font-weight:700">Look up an invoice</h2>
+    <p style="font-size:14.5px;color:var(--soft);margin-top:6px">Demo invoices: <strong>INV-10428</strong> (paid), <strong>INV-10431</strong> (unpaid).</p>
+    <form class="row-inline" id="invoice-form" style="margin-top:18px" data-noprint>
+      <input class="input" id="invoice-input" placeholder="Invoice number" aria-label="Invoice number" style="min-height:48px" />
+      <button class="btn btn-navy" type="submit">Find invoice</button>
+    </form>
+    <div id="invoice-output"></div>
+  </section>
+
+  <p class="fine" style="margin-top:22px" data-noprint>Can't find your reference? <a href="https://wa.me/440000000000">Message us on WhatsApp</a> and we will look it up. Staff: <a href="admin.html">open the admin panel</a>.</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap-narrow bar" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:34px 20px;font-size:14px">
+    <a href="index.html" style="color:#fff;font-family:var(--font-head);font-weight:700">PAK CARGO</a>
+    <span style="color:var(--faint)">© 2026 PAK Cargo Ltd · Air &amp; sea freight, UK to Pakistan</span>
+  </div>
+</footer>
+
+<script src="data.js"></script>
+<script>
+  const trackInput = document.getElementById("track-input");
+  const trackOut = document.getElementById("track-output");
+  const invInput = document.getElementById("invoice-input");
+  const invOut = document.getElementById("invoice-output");
+  const tabTrack = document.getElementById("tab-track");
+  const tabInvoice = document.getElementById("tab-invoice");
+  const panelTrack = document.getElementById("panel-track");
+  const panelInvoice = document.getElementById("panel-invoice");
+
+  function showTab(which) {
+    const isTrack = which === "track";
+    tabTrack.setAttribute("aria-selected", String(isTrack));
+    tabInvoice.setAttribute("aria-selected", String(!isTrack));
+    panelTrack.classList.toggle("hidden", !isTrack);
+    panelInvoice.classList.toggle("hidden", isTrack);
+  }
+  tabTrack.addEventListener("click", () => showTab("track"));
+  tabInvoice.addEventListener("click", () => showTab("invoice"));
+
+  function renderShipment(key) {
+    const s = SHIPMENTS[String(key || "").trim().toUpperCase()];
+    if (!s) {
+      trackOut.innerHTML =
+        '<p class="alert alert-error">No shipment found for “' + escapeHtml(key || "") + '”. Check the reference and try again.</p>';
+      return;
+    }
+    const done = s.stages.filter((x) => x.done).length;
+    const pct = Math.round((done / s.stages.length) * 100);
+    trackOut.innerHTML = `
+      <div class="result-grid">
+        <div>
+          <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+            <span style="font-family:var(--font-head);font-weight:700;font-size:24px;color:var(--navy)">${escapeHtml(s.ref)}</span>
+            <span class="badge">${escapeHtml(s.status)}</span>
+          </div>
+          <p style="font-size:15px;color:var(--muted);margin-top:12px">${escapeHtml(s.summary)}</p>
+          <div class="progress"><span style="width:${pct}%"></span></div>
+          <div style="font-size:13px;color:var(--faint);margin-top:8px">${done} of ${s.stages.length} milestones complete</div>
+          <dl class="meta">
+            <dt>Service</dt><dd>${escapeHtml(s.service)}</dd>
+            <dt>Route</dt><dd>${escapeHtml(s.route)}</dd>
+            <dt>Pieces / weight</dt><dd>${escapeHtml(s.weight)}</dd>
+            <dt>Est. delivery</dt><dd>${escapeHtml(s.eta)}</dd>
+            <dt>Invoice</dt><dd>${escapeHtml(s.invoice)}</dd>
+          </dl>
+          <button class="btn btn-ghost" style="margin-top:22px" data-noprint onclick="openInvoice('${s.invoice}')">View this invoice</button>
+        </div>
+        <div>${timelineHtml(s.stages)}</div>
+      </div>`;
+  }
+
+  function renderInvoice(key) {
+    const inv = INVOICE_DETAIL[String(key || "").trim().toUpperCase()];
+    invOut.innerHTML = inv
+      ? invoiceHtml(inv)
+      : '<p class="alert alert-error">No invoice found for “' + escapeHtml(key || "") + '”.</p>';
+  }
+
+  function openInvoice(number) {
+    invInput.value = number;
+    renderInvoice(number);
+    showTab("invoice");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  document.getElementById("track-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    renderShipment(trackInput.value);
+  });
+  document.getElementById("invoice-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    renderInvoice(invInput.value);
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const refParam = params.get("ref");
+  const invParam = params.get("invoice");
+  trackInput.value = refParam || "PC-4471";
+  invInput.value = invParam || "INV-10431";
+  renderShipment(trackInput.value);
+  renderInvoice(invInput.value);
+  if (invParam) showTab("invoice");
+</script>
+</body>
+</html>

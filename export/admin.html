@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Admin panel | PAK Cargo</title>
+<link rel="icon" href="logo.png" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="admin">
+  <aside class="admin-side">
+    <a class="brand" href="index.html">
+      <span class="mark" style="width:42px;height:42px;background:#fff;border-radius:6px"><img src="logo.png" alt="PAK Cargo" /></span>
+      <span>
+        <span style="display:block;font-family:var(--font-head);font-weight:800;font-size:16px;color:#fff">PAK CARGO</span>
+        <span class="sub" style="color:var(--faint)">Admin</span>
+      </span>
+    </a>
+    <nav class="nav">
+      <button data-view="dash" aria-current="page">Dashboard</button>
+      <button data-view="ship">Shipments</button>
+      <button data-view="inv">Invoices</button>
+      <button data-view="new">New invoice</button>
+    </nav>
+    <div class="foot">
+      <a href="portal.html">Customer portal →</a>
+      <a href="index.html">Public website →</a>
+      <div class="who">Signed in as operations@pakcargo</div>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <input class="input" id="search" placeholder="Search reference, customer or city…" aria-label="Search" />
+      <button class="btn btn-green btn-sm" data-view="new">+ New invoice</button>
+    </div>
+
+    <!-- Dashboard -->
+    <section class="admin-view" id="view-dash">
+      <h1>Dashboard</h1>
+      <p class="sub">Week of 14 September 2026</p>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Active shipments</div><div class="v" id="kpi-active">—</div><div class="n good" id="kpi-split">—</div></div>
+        <div class="kpi"><div class="k">Awaiting collection</div><div class="v" id="kpi-collect">—</div><div class="n">Booked, not yet picked up</div></div>
+        <div class="kpi"><div class="k">Unpaid invoices</div><div class="v" id="kpi-unpaid">—</div><div class="n bad" id="kpi-outstanding">—</div></div>
+        <div class="kpi"><div class="k">Invoiced this month</div><div class="v" id="kpi-month">—</div><div class="n" id="kpi-count">—</div></div>
+      </div>
+      <div class="pane">
+        <div class="pane-head">
+          <h2>Shipments needing attention</h2>
+          <button class="btn btn-ghost btn-sm" data-view="ship">All shipments</button>
+        </div>
+        <div class="scroll">
+          <table style="min-width:640px">
+            <thead><tr><th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Flag</th></tr></thead>
+            <tbody id="attention"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shipments -->
+    <section class="admin-view hidden" id="view-ship">
+      <h1>Shipments</h1>
+      <p class="sub" id="ship-count">—</p>
+      <div class="chips" id="filters"></div>
+      <div class="pane">
+        <div class="scroll">
+          <table style="min-width:820px">
+            <thead><tr><th>Reference</th><th>Customer</th><th>Service</th><th>Route</th><th>Weight</th><th>Status</th><th>Invoice</th></tr></thead>
+            <tbody id="shipments"></tbody>
+          </table>
+        </div>
+        <p class="empty hidden" id="ship-empty">No shipments match that search or filter.</p>
+      </div>
+    </section>
+
+    <!-- Invoices -->
+    <section class="admin-view hidden" id="view-inv">
+      <h1>Invoices</h1>
+      <p class="sub" id="inv-sub">—</p>
+      <div class="pane">
+        <div class="scroll">
+          <table style="min-width:760px">
+            <thead><tr><th>Invoice</th><th>Customer</th><th>Shipment</th><th>Issued</th><th class="num-right">Total</th><th>Status</th><th></th></tr></thead>
+            <tbody id="invoices"></tbody>
+          </table>
+        </div>
+        <p class="empty hidden" id="inv-empty">No invoices match that search.</p>
+      </div>
+    </section>
+
+    <!-- New invoice -->
+    <section class="admin-view hidden" id="view-new" style="max-width:880px">
+      <h1>New invoice</h1>
+      <p class="sub">Lines total live. Issuing saves the invoice and makes it visible in the customer portal.</p>
+      <div class="pane" style="padding:24px">
+        <div class="grid-fields">
+          <label class="field">Customer<input class="input" id="f-customer" placeholder="Full name" /></label>
+          <label class="field">Shipment reference<input class="input" id="f-ref" placeholder="PC-0000" /></label>
+          <label class="field">Service
+            <select class="select" id="f-service">
+              <option>Air cargo</option>
+              <option>Sea freight (LCL)</option>
+              <option>Sea freight (FCL)</option>
+            </select>
+          </label>
+          <label class="field">Due date<input class="input" id="f-due" type="date" /></label>
+        </div>
+        <div class="line-rows" id="line-rows"></div>
+        <div class="line-foot">
+          <button class="btn btn-ghost btn-sm" id="add-line">+ Add line</button>
+          <div style="display:flex;align-items:baseline;gap:18px">
+            <span style="font-size:15px;color:var(--soft)">Invoice total</span>
+            <span class="total" id="draft-total">£0.00</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
+          <button class="btn btn-green" id="issue">Issue invoice</button>
+          <button class="btn btn-ghost" onclick="window.print()">Preview print</button>
+        </div>
+        <p class="alert alert-ok hidden" id="issued"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const state = {
+    view: "dash",
+    search: "",
+    filter: "All",
+    shipments: [
+      { ref: "PC-4471", customer: "S. Iqbal", service: "Air cargo", route: "Heathrow → Lahore", weight: "24.4 kg", status: "In transit", invoice: "INV-10431", flag: "Invoice unpaid" },
+      { ref: "BK-20931", customer: "A. Mahmood", service: "Sea freight (LCL)", route: "Felixstowe → Karachi", weight: "3.2 m³", status: "At sea", invoice: "INV-10428", flag: "" },
+      { ref: "PC-4472", customer: "N. Hussain", service: "Air cargo", route: "Heathrow → Islamabad", weight: "11.0 kg", status: "At warehouse", invoice: "INV-10432", flag: "Awaiting export docs" },
+      { ref: "PC-4473", customer: "R. Bibi", service: "Air cargo", route: "Manchester → Faisalabad", weight: "8.6 kg", status: "Booked", invoice: "INV-10433", flag: "Collection not booked" },
+      { ref: "BK-20932", customer: "Zeeshan Traders", service: "Sea freight (FCL)", route: "Southampton → Karachi", weight: "20ft", status: "Customs clearance", invoice: "INV-10429", flag: "Duty query at port" },
+      { ref: "PC-4468", customer: "M. Saleem", service: "Air cargo", route: "Heathrow → Sialkot", weight: "31.2 kg", status: "Delivered", invoice: "INV-10425", flag: "" }
+    ],
+    invoices: [
+      { number: "INV-10433", customer: "R. Bibi", ref: "PC-4473", issued: "13 Sep 2026", total: 71.12, status: "Draft" },
+      { number: "INV-10432", customer: "N. Hussain", ref: "PC-4472", issued: "12 Sep 2026", total: 129.2, status: "Unpaid" },
+      { number: "INV-10431", customer: "S. Iqbal", ref: "PC-4471", issued: "11 Sep 2026", total: 185.48, status: "Unpaid" },
+      { number: "INV-10429", customer: "Zeeshan Traders", ref: "BK-20932", issued: "02 Sep 2026", total: 2480.0, status: "Unpaid" },
+      { number: "INV-10428", customer: "A. Mahmood", ref: "BK-20931", issued: "22 Aug 2026", total: 740.0, status: "Paid" },
+      { number: "INV-10425", customer: "M. Saleem", ref: "PC-4468", issued: "18 Aug 2026", total: 214.04, status: "Paid" }
+    ],
+    lines: [
+      { id: 1, desc: "Air freight — 24 kg @ £4.20/kg", qty: "24", unit: "4.20" },
+      { id: 2, desc: "UK collection", qty: "1", unit: "35.00" }
+    ],
+    nextId: 3
+  };
+
+  const FILTERS = ["All", "Booked", "At warehouse", "In transit", "At sea", "Customs clearance", "Delivered"];
+  const invClass = (s) => (s === "Paid" ? "badge" : s === "Draft" ? "badge badge-grey" : "badge badge-red");
+  const matches = (text) => {
+    const q = state.search.trim().toLowerCase();
+    return !q || text.toLowerCase().indexOf(q) !== -1;
+  };
+
+  function setView(view) {
+    state.view = view;
+    ["dash", "ship", "inv", "new"].forEach((v) => {
+      document.getElementById("view-" + v).classList.toggle("hidden", v !== view);
+    });
+    document.querySelectorAll(".admin-side .nav button").forEach((b) => {
+      if (b.dataset.view === view) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+  }
+  document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+
+  function renderKpis() {
+    const active = state.shipments.filter((s) => s.status !== "Delivered");
+    const unpaid = state.invoices.filter((i) => i.status === "Unpaid");
+    const monthly = state.invoices.filter((i) => i.issued.indexOf("Sep 2026") !== -1);
+    document.getElementById("kpi-active").textContent = active.length;
+    document.getElementById("kpi-split").textContent =
+      active.filter((s) => s.service === "Air cargo").length + " air · " + active.filter((s) => s.service !== "Air cargo").length + " sea";
+    document.getElementById("kpi-collect").textContent = state.shipments.filter((s) => s.status === "Booked").length;
+    document.getElementById("kpi-unpaid").textContent = unpaid.length;
+    document.getElementById("kpi-outstanding").textContent = "£" + money(unpaid.reduce((a, b) => a + b.total, 0)) + " outstanding";
+    document.getElementById("kpi-month").textContent = "£" + money(monthly.reduce((a, b) => a + b.total, 0));
+    document.getElementById("kpi-count").textContent = "Across " + monthly.length + " invoices";
+    document.getElementById("inv-sub").textContent =
+      "£" + money(unpaid.reduce((a, b) => a + b.total, 0)) + " outstanding across " + unpaid.length + " unpaid invoices.";
+
+    document.getElementById("attention").innerHTML = state.shipments
+      .filter((s) => s.flag)
+      .map(
+        (s) => `<tr>
+          <td class="key">${escapeHtml(s.ref)}</td>
+          <td>${escapeHtml(s.customer)}</td>
+          <td>${escapeHtml(s.route)}</td>
+          <td><span class="${STATUS_CLASS[s.status] === "badge" ? "badge" : "badge " + STATUS_CLASS[s.status]}">${escapeHtml(s.status)}</span></td>
+          <td style="color:var(--red)">${escapeHtml(s.flag)}</td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  function renderFilters() {
+    document.getElementById("filters").innerHTML = FILTERS.map(
+      (f) => `<button class="chip" aria-pressed="${f === state.filter}" data-filter="${escapeHtml(f)}">${escapeHtml(f)}</button>`
+    ).join("");
+    document.querySelectorAll("[data-filter]").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.filter = b.dataset.filter;
+        renderFilters();
+        renderShipments();
+      })
+    );
+  }
+
+  function renderShipments() {
+    const rows = state.shipments
+      .filter((s) => state.filter === "All" || s.status === state.filter)
+      .filter((s) => matches(s.ref + " " + s.customer + " " + s.route + " " + s.service));
+    document.getElementById("ship-count").textContent = rows.length + " records. Change a status and the customer portal updates.";
+    document.getElementById("ship-empty").classList.toggle("hidden", rows.length > 0);
+    document.getElementById("shipments").innerHTML = rows
+      .map(
+        (s) => `<tr>
+          <td class="key">${escapeHtml(s.ref)}</td>
+          <td>${escapeHtml(s.customer)}</td>
+          <td>${escapeHtml(s.service)}</td>
+          <td>${escapeHtml(s.route)}</td>
+          <td>${escapeHtml(s.weight)}</td>
+          <td><select class="status-select" data-ref="${escapeHtml(s.ref)}">${STATUSES.map(
+            (o) => `<option${o === s.status ? " selected" : ""}>${o}</option>`
+          ).join("")}</select></td>
+          <td><a href="portal.html?invoice=${encodeURIComponent(s.invoice)}">${escapeHtml(s.invoice)}</a></td>
+        </tr>`
+      )
+      .join("");
+    document.querySelectorAll(".status-select").forEach((sel) =>
+      sel.addEventListener("change", () => {
+        const hit = state.shipments.find((s) => s.ref === sel.dataset.ref);
+        if (hit) hit.status = sel.value;
+        renderKpis();
+        renderShipments();
+      })
+    );
+  }
+
+  function renderInvoices() {
+    const rows = state.invoices.filter((i) => matches(i.number + " " + i.customer + " " + i.ref));
+    document.getElementById("inv-empty").classList.toggle("hidden", rows.length > 0);
+    document.getElementById("invoices").innerHTML = rows
+      .map(
+        (i) => `<tr>
+          <td class="key"><a href="portal.html?invoice=${encodeURIComponent(i.number)}">${escapeHtml(i.number)}</a></td>
+          <td>${escapeHtml(i.customer)}</td>
+          <td>${escapeHtml(i.ref)}</td>
+          <td>${escapeHtml(i.issued)}</td>
+          <td class="num-right" style="font-weight:600">£${money(i.total)}</td>
+          <td><span class="${invClass(i.status)}">${escapeHtml(i.status)}</span></td>
+          <td>${i.status !== "Paid" ? `<button class="btn btn-ghost btn-sm" data-paid="${escapeHtml(i.number)}">Mark paid</button>` : ""}</td>
+        </tr>`
+      )
+      .join("");
+    document.querySelectorAll("[data-paid]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const hit = state.invoices.find((i) => i.number === b.dataset.paid);
+        if (hit) hit.status = "Paid";
+        renderKpis();
+        renderInvoices();
+      })
+    );
+  }
+
+  function draftTotal() {
+    return state.lines.reduce((sum, l) => sum + (parseFloat(l.qty) || 0) * (parseFloat(l.unit) || 0), 0);
+  }
+
+  function renderLines() {
+    document.getElementById("line-rows").innerHTML = state.lines
+      .map(
+        (l) => `<div class="line-row" data-id="${l.id}">
+          <label class="field field-mini desc">Description
+            <input class="input" data-f="desc" value="${escapeHtml(l.desc)}" placeholder="Air freight 24 kg" />
+          </label>
+          <label class="field field-mini">Qty
+            <input class="input" data-f="qty" inputmode="decimal" value="${escapeHtml(l.qty)}" />
+          </label>
+          <label class="field field-mini">Unit £
+            <input class="input" data-f="unit" inputmode="decimal" value="${escapeHtml(l.unit)}" />
+          </label>
+          <div class="amount">
+            <span class="v">£${money((parseFloat(l.qty) || 0) * (parseFloat(l.unit) || 0))}</span>
+            <button data-remove="${l.id}" aria-label="Remove line">×</button>
+          </div>
+        </div>`
+      )
+      .join("");
+    document.getElementById("draft-total").textContent = "£" + money(draftTotal());
+
+    document.querySelectorAll(".line-row input").forEach((input) =>
+      input.addEventListener("input", () => {
+        const id = Number(input.closest(".line-row").dataset.id);
+        const hit = state.lines.find((l) => l.id === id);
+        if (!hit) return;
+        hit[input.dataset.f] = input.value;
+        const row = input.closest(".line-row");
+        row.querySelector(".amount .v").textContent = "£" + money((parseFloat(hit.qty) || 0) * (parseFloat(hit.unit) || 0));
+        document.getElementById("draft-total").textContent = "£" + money(draftTotal());
+      })
+    );
+    document.querySelectorAll("[data-remove]").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.lines = state.lines.filter((l) => l.id !== Number(b.dataset.remove));
+        renderLines();
+      })
+    );
+  }
+
+  document.getElementById("add-line").addEventListener("click", () => {
+    state.lines.push({ id: state.nextId++, desc: "", qty: "1", unit: "0.00" });
+    renderLines();
+  });
+
+  document.getElementById("issue").addEventListener("click", () => {
+    const total = draftTotal();
+    const number = "INV-" + (10434 + state.invoices.filter((i) => i.number.indexOf("INV-104") === 0).length - 5);
+    const customer = document.getElementById("f-customer").value || "Unnamed customer";
+    state.invoices.unshift({
+      number,
+      customer,
+      ref: document.getElementById("f-ref").value || "—",
+      issued: "14 Sep 2026",
+      total,
+      status: "Unpaid"
+    });
+    const note = document.getElementById("issued");
+    note.textContent = number + " issued for " + customer + " — £" + money(total) + ". It now appears in the invoice list and the customer portal.";
+    note.classList.remove("hidden");
+    renderKpis();
+    renderInvoices();
+  });
+
+  document.getElementById("search").addEventListener("input", (e) => {
+    state.search = e.target.value;
+    renderShipments();
+    renderInvoices();
+  });
+
+  renderKpis();
+  renderFilters();
+  renderShipments();
+  renderInvoices();
+  renderLines();
+</script>
+</body>
+</html>
