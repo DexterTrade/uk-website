@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { SHIPMENTS, INVOICE_DETAIL } from "@/lib/data";
 import { BUSINESS } from "@/lib/seo";
+import { trackShipment, lookupInvoice } from "./actions";
+
+function formatLongDate(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 function Timeline({ stages }) {
   return (
@@ -16,7 +25,7 @@ function Timeline({ stages }) {
           </div>
           <div className="body">
             <div className="lbl">{s.label}</div>
-            <div className="when">{s.when}</div>
+            <div className="when">{s.when_label}</div>
           </div>
         </div>
       ))}
@@ -24,74 +33,84 @@ function Timeline({ stages }) {
   );
 }
 
-function ShipmentResult({ shipmentKey, onViewInvoice }) {
-  const s = SHIPMENTS[String(shipmentKey || "").trim().toUpperCase()];
-  if (!s) {
+function ShipmentResult({ loading, shipmentKey, data, onViewInvoice }) {
+  if (loading) {
+    return <p className="fine" style={{ marginTop: 16 }}>Looking up shipment…</p>;
+  }
+  if (!data) {
     return (
       <p className="alert alert-error">
         No shipment found for &ldquo;{shipmentKey || ""}&rdquo;. Check the reference and try again.
       </p>
     );
   }
-  const done = s.stages.filter((x) => x.done).length;
-  const pct = Math.round((done / s.stages.length) * 100);
+  const stages = data.stages || [];
+  const done = stages.filter((x) => x.done).length;
+  const pct = stages.length ? Math.round((done / stages.length) * 100) : 0;
+
   return (
     <div className="result-grid">
       <div>
         <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
           <span style={{ fontFamily: "var(--font-head)", fontWeight: 700, fontSize: 24, color: "var(--navy)" }}>
-            {s.ref}
+            {data.reference}
           </span>
-          <span className="badge">{s.status}</span>
+          <span className="badge">{data.status}</span>
         </div>
-        <p style={{ fontSize: 15, color: "var(--muted)", marginTop: 12 }}>{s.summary}</p>
+        <p style={{ fontSize: 15, color: "var(--muted)", marginTop: 12 }}>{data.summary}</p>
         <div className="progress"><span style={{ width: `${pct}%` }} /></div>
         <div style={{ fontSize: 13, color: "var(--faint)", marginTop: 8 }}>
-          {done} of {s.stages.length} milestones complete
+          {done} of {stages.length} milestones complete
         </div>
         <dl className="meta">
-          <dt>Service</dt><dd>{s.service}</dd>
-          <dt>Route</dt><dd>{s.route}</dd>
-          <dt>Pieces / weight</dt><dd>{s.weight}</dd>
-          <dt>Est. delivery</dt><dd>{s.eta}</dd>
-          <dt>Invoice</dt><dd>{s.invoice}</dd>
+          <dt>Service</dt><dd>{data.service}</dd>
+          <dt>Route</dt><dd>{data.route}</dd>
+          <dt>Pieces / weight</dt><dd>{data.weight_label}</dd>
+          <dt>Est. delivery</dt><dd>{data.eta_label || "—"}</dd>
+          <dt>Invoice</dt><dd>{data.invoice_number || "—"}</dd>
         </dl>
-        <button className="btn btn-ghost" style={{ marginTop: 22 }} data-noprint onClick={() => onViewInvoice(s.invoice)}>
-          View this invoice
-        </button>
+        {data.invoice_number && (
+          <button className="btn btn-ghost" style={{ marginTop: 22 }} data-noprint onClick={() => onViewInvoice(data.invoice_number)}>
+            View this invoice
+          </button>
+        )}
       </div>
-      <Timeline stages={s.stages} />
+      <Timeline stages={stages} />
     </div>
   );
 }
 
-function InvoiceResult({ invoiceKey }) {
-  const inv = INVOICE_DETAIL[String(invoiceKey || "").trim().toUpperCase()];
-  if (!inv) {
+function InvoiceResult({ loading, invoiceKey, data }) {
+  if (loading) {
+    return <p className="fine" style={{ marginTop: 16 }}>Looking up invoice…</p>;
+  }
+  if (!data) {
     return <p className="alert alert-error">No invoice found for &ldquo;{invoiceKey || ""}&rdquo;.</p>;
   }
-  const badge = inv.status === "Paid" ? "badge" : "badge badge-red";
+  const badge = data.status === "Paid" ? "badge" : "badge badge-red";
+  const total = Number(data.total).toFixed(2);
+
   return (
     <>
       <div className="invoice">
         <div className="head">
           <div>
-            <div className="no">{inv.number}</div>
-            <div className="dates">Issued {inv.issued} &middot; due {inv.due}</div>
+            <div className="no">{data.number}</div>
+            <div className="dates">Issued {formatLongDate(data.issued_date)} &middot; due {formatLongDate(data.due_date)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <span className={badge}>{inv.status}</span>
-            <div className="total">&pound;{inv.total}</div>
+            <span className={badge}>{data.status}</span>
+            <div className="total">&pound;{total}</div>
           </div>
         </div>
         <div className="parties">
           <div>
             <div className="k">Billed to</div>
-            <div className="v">{inv.customer}<br />{inv.customerCity}</div>
+            <div className="v">{data.customer_name}<br />{data.customer_city || ""}</div>
           </div>
           <div>
             <div className="k">Shipment</div>
-            <div className="v">{inv.ref}<br />{inv.route}</div>
+            <div className="v">{data.shipment_reference || "—"}<br />{data.route || ""}</div>
           </div>
         </div>
         <div className="lines">
@@ -105,12 +124,12 @@ function InvoiceResult({ invoiceKey }) {
               </tr>
             </thead>
             <tbody>
-              {inv.lines.map((l, i) => (
+              {(data.lines || []).map((l, i) => (
                 <tr key={i}>
-                  <td>{l.desc}</td>
+                  <td>{l.description}</td>
                   <td className="num-right">{l.qty}</td>
-                  <td className="num-right">&pound;{l.unit}</td>
-                  <td className="num-right" style={{ fontWeight: 600 }}>&pound;{l.amount}</td>
+                  <td className="num-right">&pound;{Number(l.unit_price).toFixed(2)}</td>
+                  <td className="num-right" style={{ fontWeight: 600 }}>&pound;{Number(l.amount).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -118,7 +137,7 @@ function InvoiceResult({ invoiceKey }) {
         </div>
         <div className="foot">
           <span style={{ fontSize: 15, color: "var(--soft)" }}>Total due</span>
-          <span className="t">&pound;{inv.total}</span>
+          <span className="t">&pound;{total}</span>
         </div>
       </div>
       <div data-noprint style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
@@ -131,15 +150,60 @@ function InvoiceResult({ invoiceKey }) {
 
 export default function PortalClient() {
   const params = useSearchParams();
+  const initialRef = params.get("ref") || "PC-4471";
+  const initialInvoice = params.get("invoice") || "INV-10431";
+
   const [tab, setTab] = useState(params.get("invoice") ? "invoice" : "track");
-  const [trackInput, setTrackInput] = useState(params.get("ref") || "PC-4471");
-  const [trackKey, setTrackKey] = useState(params.get("ref") || "PC-4471");
-  const [invoiceInput, setInvoiceInput] = useState(params.get("invoice") || "INV-10431");
-  const [invoiceKey, setInvoiceKey] = useState(params.get("invoice") || "INV-10431");
+
+  const [trackInput, setTrackInput] = useState(initialRef);
+  const [trackKey, setTrackKey] = useState(initialRef);
+  const [shipmentData, setShipmentData] = useState(null);
+  const [shipmentLoading, setShipmentLoading] = useState(true);
+
+  const [invoiceInput, setInvoiceInput] = useState(initialInvoice);
+  const [invoiceKey, setInvoiceKey] = useState(initialInvoice);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(true);
+
+  useEffect(() => {
+    let ignore = false;
+    trackShipment(trackKey).then((data) => {
+      if (!ignore) {
+        setShipmentData(data);
+        setShipmentLoading(false);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [trackKey]);
+
+  useEffect(() => {
+    let ignore = false;
+    lookupInvoice(invoiceKey).then((data) => {
+      if (!ignore) {
+        setInvoiceData(data);
+        setInvoiceLoading(false);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [invoiceKey]);
+
+  function runTrack(ref) {
+    setShipmentLoading(true);
+    setTrackKey(ref);
+  }
+
+  function runLookupInvoice(number) {
+    setInvoiceLoading(true);
+    setInvoiceKey(number);
+  }
 
   function openInvoice(number) {
     setInvoiceInput(number);
-    setInvoiceKey(number);
+    runLookupInvoice(number);
     setTab("invoice");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -167,7 +231,7 @@ export default function PortalClient() {
           data-noprint
           onSubmit={(e) => {
             e.preventDefault();
-            setTrackKey(trackInput);
+            runTrack(trackInput);
           }}
         >
           <input
@@ -180,7 +244,7 @@ export default function PortalClient() {
           />
           <button className="btn btn-green" type="submit">Track</button>
         </form>
-        <ShipmentResult shipmentKey={trackKey} onViewInvoice={openInvoice} />
+        <ShipmentResult loading={shipmentLoading} shipmentKey={trackKey} data={shipmentData} onViewInvoice={openInvoice} />
       </section>
 
       <section className={`panel${tab !== "invoice" ? " hidden" : ""}`}>
@@ -194,7 +258,7 @@ export default function PortalClient() {
           data-noprint
           onSubmit={(e) => {
             e.preventDefault();
-            setInvoiceKey(invoiceInput);
+            runLookupInvoice(invoiceInput);
           }}
         >
           <input
@@ -207,7 +271,7 @@ export default function PortalClient() {
           />
           <button className="btn btn-navy" type="submit">Find invoice</button>
         </form>
-        <InvoiceResult invoiceKey={invoiceKey} />
+        <InvoiceResult loading={invoiceLoading} invoiceKey={invoiceKey} data={invoiceData} />
       </section>
 
       <p className="fine" style={{ marginTop: 22 }} data-noprint>

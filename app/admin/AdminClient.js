@@ -1,15 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  money,
-  STATUS_CLASS,
-  STATUSES,
-  FILTERS,
-  INITIAL_SHIPMENTS,
-  INITIAL_INVOICES,
-} from "@/lib/data";
+import { money, STATUS_CLASS, STATUSES, FILTERS } from "@/lib/data";
+import { issueInvoice, markInvoicePaid, signOutAction, updateShipmentStatus } from "./actions";
 
 const NAV = [
   { key: "dash", label: "Dashboard" },
@@ -18,23 +13,25 @@ const NAV = [
   { key: "new", label: "New invoice" },
 ];
 
+const EMPTY_LINE = () => ({ desc: "", qty: "1", unit: "0.00" });
+
 const invClass = (s) => (s === "Paid" ? "badge" : s === "Draft" ? "badge badge-grey" : "badge badge-red");
 const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
-export default function AdminClient() {
+export default function AdminClient({ shipments, invoices, staffEmail }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   const [view, setView] = useState("dash");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
-  const [invoices, setInvoices] = useState(INITIAL_INVOICES);
-  const [lines, setLines] = useState([
-    { id: 1, desc: "Air freight — 24 kg @ £4.20/kg", qty: "24", unit: "4.20" },
-    { id: 2, desc: "UK collection", qty: "1", unit: "35.00" },
-  ]);
-  const [nextLineId, setNextLineId] = useState(3);
+
+  const [lines, setLines] = useState([{ id: 1, ...EMPTY_LINE() }]);
+  const [nextLineId, setNextLineId] = useState(2);
   const [form, setForm] = useState({ customer: "", ref: "", service: "Air cargo", due: "" });
   const [issuedNote, setIssuedNote] = useState("");
+  const [formError, setFormError] = useState("");
 
   const active = useMemo(() => shipments.filter((s) => s.status !== "Delivered"), [shipments]);
   const unpaid = useMemo(() => invoices.filter((i) => i.status === "Unpaid"), [invoices]);
@@ -58,12 +55,18 @@ export default function AdminClient() {
     [lines]
   );
 
-  function updateShipmentStatus(ref, status) {
-    setShipments((prev) => prev.map((s) => (s.ref === ref ? { ...s, status } : s)));
+  function handleStatusChange(shipmentId, status) {
+    startTransition(async () => {
+      await updateShipmentStatus(shipmentId, status);
+      router.refresh();
+    });
   }
 
-  function markPaid(number) {
-    setInvoices((prev) => prev.map((i) => (i.number === number ? { ...i, status: "Paid" } : i)));
+  function handleMarkPaid(invoiceId) {
+    startTransition(async () => {
+      await markInvoicePaid(invoiceId);
+      router.refresh();
+    });
   }
 
   function updateLine(id, field, value) {
@@ -75,20 +78,32 @@ export default function AdminClient() {
   }
 
   function addLine() {
-    setLines((prev) => [...prev, { id: nextLineId, desc: "", qty: "1", unit: "0.00" }]);
+    setLines((prev) => [...prev, { id: nextLineId, ...EMPTY_LINE() }]);
     setNextLineId((n) => n + 1);
   }
 
-  function issueInvoice() {
-    const total = draftTotal;
-    const priorCount = invoices.filter((i) => i.number.indexOf("INV-104") === 0).length;
-    const number = `INV-${10434 + priorCount - 5}`;
-    const customer = form.customer || "Unnamed customer";
-    setInvoices((prev) => [
-      { number, customer, ref: form.ref || "—", issued: "14 Sep 2026", total, status: "Unpaid" },
-      ...prev,
-    ]);
-    setIssuedNote(`${number} issued for ${customer} — £${money(total)}. It now appears in the invoice list and the customer portal.`);
+  function handleIssue() {
+    setFormError("");
+    startTransition(async () => {
+      const result = await issueInvoice({
+        customer: form.customer,
+        reference: form.ref,
+        service: form.service,
+        dueDate: form.due || null,
+        lines,
+      });
+      if (result?.error) {
+        setFormError(result.error);
+        return;
+      }
+      setIssuedNote(
+        `${result.invoice.number} issued for ${result.invoice.customer_name} — £${money(result.invoice.total)}. It now appears in the invoice list and the customer portal.`
+      );
+      setLines([{ id: 1, ...EMPTY_LINE() }]);
+      setNextLineId(2);
+      setForm({ customer: "", ref: "", service: "Air cargo", due: "" });
+      router.refresh();
+    });
   }
 
   return (
@@ -119,7 +134,12 @@ export default function AdminClient() {
         <div className="foot">
           <Link href="/portal">Customer portal &rarr;</Link>
           <Link href="/">Public website &rarr;</Link>
-          <div className="who">Signed in as operations@pakcargo</div>
+          <div className="who">Signed in as {staffEmail || "…"}</div>
+          <form action={signOutAction}>
+            <button type="submit" className="btn btn-ghost btn-sm" style={{ width: "100%", marginTop: 4 }}>
+              Sign out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -176,7 +196,7 @@ export default function AdminClient() {
                   </thead>
                   <tbody>
                     {attention.map((s) => (
-                      <tr key={s.ref}>
+                      <tr key={s.id}>
                         <td className="key">{s.ref}</td>
                         <td>{s.customer}</td>
                         <td>{s.route}</td>
@@ -213,7 +233,7 @@ export default function AdminClient() {
                   </thead>
                   <tbody>
                     {shipmentRows.map((s) => (
-                      <tr key={s.ref}>
+                      <tr key={s.id}>
                         <td className="key">{s.ref}</td>
                         <td>{s.customer}</td>
                         <td>{s.service}</td>
@@ -223,14 +243,21 @@ export default function AdminClient() {
                           <select
                             className="status-select"
                             value={s.status}
-                            onChange={(e) => updateShipmentStatus(s.ref, e.target.value)}
+                            disabled={isPending}
+                            onChange={(e) => handleStatusChange(s.id, e.target.value)}
                           >
                             {STATUSES.map((o) => (
                               <option key={o} value={o}>{o}</option>
                             ))}
                           </select>
                         </td>
-                        <td><Link href={`/portal?invoice=${encodeURIComponent(s.invoice)}`}>{s.invoice}</Link></td>
+                        <td>
+                          {s.invoice !== "—" ? (
+                            <Link href={`/portal?invoice=${encodeURIComponent(s.invoice)}`}>{s.invoice}</Link>
+                          ) : (
+                            s.invoice
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -258,7 +285,7 @@ export default function AdminClient() {
                   </thead>
                   <tbody>
                     {invoiceRows.map((i) => (
-                      <tr key={i.number}>
+                      <tr key={i.id}>
                         <td className="key"><Link href={`/portal?invoice=${encodeURIComponent(i.number)}`}>{i.number}</Link></td>
                         <td>{i.customer}</td>
                         <td>{i.ref}</td>
@@ -267,7 +294,9 @@ export default function AdminClient() {
                         <td><span className={invClass(i.status)}>{i.status}</span></td>
                         <td>
                           {i.status !== "Paid" && (
-                            <button className="btn btn-ghost btn-sm" onClick={() => markPaid(i.number)}>Mark paid</button>
+                            <button className="btn btn-ghost btn-sm" disabled={isPending} onClick={() => handleMarkPaid(i.id)}>
+                              Mark paid
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -373,9 +402,12 @@ export default function AdminClient() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
-                <button className="btn btn-green" onClick={issueInvoice}>Issue invoice</button>
+                <button className="btn btn-green" disabled={isPending} onClick={handleIssue}>
+                  {isPending ? "Issuing…" : "Issue invoice"}
+                </button>
                 <button className="btn btn-ghost" onClick={() => window.print()}>Preview print</button>
               </div>
+              {formError && <p className="alert alert-error">{formError}</p>}
               {issuedNote && <p className="alert alert-ok">{issuedNote}</p>}
             </div>
           </section>
