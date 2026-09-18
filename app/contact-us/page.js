@@ -38,7 +38,7 @@ export default function ContactUsPage() {
                 ))}
                 <div>WhatsApp <a href={BUSINESS.whatsapp}>{BUSINESS.whatsappDisplay}</a></div>
                 <div>Email <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a></div>
-                <div>Mon&ndash;Sat, 10am&ndash;7pm</div>
+                <div>Mon&ndash;Sat, 9am&ndash;6pm</div>
               </div>
             </div>
             <EnquiryForm />
