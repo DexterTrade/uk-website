@@ -3,33 +3,30 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const NAV_ITEMS = {
-  home: [
-    { href: "/#services", label: "Services" },
-    { href: "/#how", label: "How it works" },
-    { href: "/#rates", label: "Rates" },
-    { href: "/portal", label: "Track & invoices" },
-    { href: "/#faq", label: "FAQ" },
-  ],
-  portal: [
-    { href: "/#services", label: "Services" },
-    { href: "/#rates", label: "Rates" },
-  ],
+const NAV_ITEMS = [
+  { href: "/air-cargo", label: "Air Cargo" },
+  { href: "/sea-cargo", label: "Sea Cargo" },
+  { href: "/excess-baggage", label: "Excess Baggage" },
+  { href: "/pak-to-uk", label: "Pak to UK" },
+  { href: "/tracking", label: "Track" },
+  { href: "/faq", label: "FAQ" },
+];
+
+const SUBTITLES = {
+  home: "UK ⇄ Pakistan freight",
+  tracking: "Track a shipment",
 };
 
 export default function SiteHeader({ variant = "home" }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
-  const items = NAV_ITEMS[variant] || NAV_ITEMS.home;
-  const isPortal = variant === "portal";
-  const subtitle = isPortal ? "Customer portal" : "UK → Pakistan freight";
-  const brandHref = isPortal ? "/" : "/#top";
+  const subtitle = SUBTITLES[variant] || SUBTITLES.home;
 
   return (
     <header className="site-header">
-      <div className={`${isPortal ? "wrap-narrow" : "wrap"} bar`}>
-        <Link className="brand" href={brandHref} onClick={close}>
+      <div className="wrap bar">
+        <Link className="brand" href="/" onClick={close}>
           <span className="mark">
             <img src="/assets/logo-mark.svg" alt="PAK Cargo logo" />
           </span>
@@ -53,12 +50,12 @@ export default function SiteHeader({ variant = "home" }) {
         </button>
 
         <nav className={`site-nav${open ? " open" : ""}`} id="site-nav">
-          {items.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <Link key={item.href} href={item.href} onClick={close}>
               {item.label}
             </Link>
           ))}
-          <Link className="btn btn-green btn-sm" href="/#contact" onClick={close}>Get a quote</Link>
+          <Link className="btn btn-green btn-sm" href="/contact-us" onClick={close}>Get a quote</Link>
         </nav>
       </div>
     </header>

@@ -13,15 +13,16 @@ export default function SiteFooter() {
           </span>
         </div>
         <nav>
-          <Link href="/#services">Services</Link>
-          <Link href="/#rates">Rates</Link>
-          <Link href="/portal">Track</Link>
-          <Link href="/admin">Admin</Link>
-          <Link href="/#faq">FAQ</Link>
-          <Link href="/#contact">Contact</Link>
+          <Link href="/air-cargo">Air Cargo</Link>
+          <Link href="/sea-cargo">Sea Cargo</Link>
+          <Link href="/excess-baggage">Excess Baggage</Link>
+          <Link href="/pak-to-uk">Pak to UK</Link>
+          <Link href="/tracking">Track</Link>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/contact-us">Contact</Link>
         </nav>
         <div style={{ fontSize: 13.5, color: "var(--faint)" }}>
-          &copy; {new Date().getFullYear()} PAK Cargo Ltd &middot; Air &amp; sea freight, UK to Pakistan
+          &copy; {new Date().getFullYear()} PAK Cargo Ltd &middot; Air &amp; sea freight, UK &harr; Pakistan
         </div>
       </div>
     </footer>

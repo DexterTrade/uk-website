@@ -97,7 +97,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
         return;
       }
       setIssuedNote(
-        `${result.invoice.number} issued for ${result.invoice.customer_name} — £${money(result.invoice.total)}. It now appears in the invoice list and the customer portal.`
+        `${result.invoice.number} issued for ${result.invoice.customer_name} — £${money(result.invoice.total)}. It now appears in the invoice list.`
       );
       setLines([{ id: 1, ...EMPTY_LINE() }]);
       setNextLineId(2);
@@ -132,7 +132,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
           ))}
         </nav>
         <div className="foot">
-          <Link href="/portal">Customer portal &rarr;</Link>
+          <Link href="/tracking">Customer tracking &rarr;</Link>
           <Link href="/">Public website &rarr;</Link>
           <div className="who">Signed in as {staffEmail || "…"}</div>
           <form action={signOutAction}>
@@ -214,7 +214,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
         {view === "ship" && (
           <section className="admin-view">
             <h1>Shipments</h1>
-            <p className="sub">{shipmentRows.length} records. Change a status and the customer portal updates.</p>
+            <p className="sub">{shipmentRows.length} records. Change a status and customer tracking updates.</p>
             <div className="chips">
               {FILTERS.map((f) => (
                 <button key={f} className="chip" aria-pressed={f === filter} onClick={() => setFilter(f)}>
@@ -251,13 +251,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
                             ))}
                           </select>
                         </td>
-                        <td>
-                          {s.invoice !== "—" ? (
-                            <Link href={`/portal?invoice=${encodeURIComponent(s.invoice)}`}>{s.invoice}</Link>
-                          ) : (
-                            s.invoice
-                          )}
-                        </td>
+                        <td>{s.invoice}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -286,7 +280,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
                   <tbody>
                     {invoiceRows.map((i) => (
                       <tr key={i.id}>
-                        <td className="key"><Link href={`/portal?invoice=${encodeURIComponent(i.number)}`}>{i.number}</Link></td>
+                        <td className="key">{i.number}</td>
                         <td>{i.customer}</td>
                         <td>{i.ref}</td>
                         <td>{i.issued}</td>
@@ -312,7 +306,7 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
         {view === "new" && (
           <section className="admin-view" style={{ maxWidth: 880 }}>
             <h1>New invoice</h1>
-            <p className="sub">Lines total live. Issuing saves the invoice and makes it visible in the customer portal.</p>
+            <p className="sub">Lines total live. Issuing saves the invoice for internal records &mdash; customers only ever see tracking, never invoices.</p>
             <div className="pane" style={{ padding: 24 }}>
               <div className="grid-fields">
                 <label className="field">

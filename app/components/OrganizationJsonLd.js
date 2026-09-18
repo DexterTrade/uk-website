@@ -11,7 +11,7 @@ export default function OrganizationJsonLd() {
     image: `${SITE_URL}/opengraph-image.png`,
     logo: `${SITE_URL}/icon.svg`,
     description:
-      "Air and sea freight forwarding from the United Kingdom to Pakistan, with UK door collection, customs clearance and optional goods insurance.",
+      "Air and sea freight forwarding between the United Kingdom and Pakistan, plus excess baggage shipping, with UK door collection, customs clearance and optional goods insurance.",
     telephone: BUSINESS.phones[0].href,
     email: BUSINESS.email,
     priceRange: "££",
@@ -51,6 +51,8 @@ export default function OrganizationJsonLd() {
     makesOffer: [
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Air cargo, UK to Pakistan" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Sea freight, UK to Pakistan" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Excess baggage shipping" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Air & sea freight, Pakistan to UK" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Customs clearance" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Goods insurance" } },
     ],

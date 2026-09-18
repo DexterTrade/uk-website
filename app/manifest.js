@@ -2,9 +2,9 @@ import { SITE_NAME } from "@/lib/seo";
 
 export default function manifest() {
   return {
-    name: `${SITE_NAME} — Air & Sea Freight, UK to Pakistan`,
+    name: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
     short_name: SITE_NAME,
-    description: "Track shipments and view invoices for air and sea freight from the UK to Pakistan.",
+    description: "Track shipments for air and sea freight, excess baggage, and Pakistan to UK cargo.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

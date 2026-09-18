@@ -1,17 +1,45 @@
 import Link from "next/link";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
-import EnquiryForm from "./components/EnquiryForm";
+import BottomCta from "./components/BottomCta";
 import FaqJsonLd from "./components/FaqJsonLd";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import { FAQS } from "@/lib/faq";
-import { BUSINESS } from "@/lib/seo";
 
 export const metadata = {
   alternates: {
     canonical: "/",
   },
 };
+
+const SERVICES = [
+  {
+    num: "01",
+    href: "/air-cargo",
+    title: "Air cargo, UK → Pakistan",
+    body: "Weekly consolidated departures to Karachi, Lahore and Islamabad. Best for anything time-critical.",
+  },
+  {
+    num: "02",
+    alt: true,
+    href: "/sea-cargo",
+    title: "Sea freight & containers",
+    body: "Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own.",
+  },
+  {
+    num: "03",
+    href: "/excess-baggage",
+    title: "Excess baggage",
+    body: "Flying with more than your airline allowance? Send the extra boxes and bags separately.",
+  },
+  {
+    num: "04",
+    alt: true,
+    href: "/pak-to-uk",
+    title: "Pakistan → UK",
+    body: "The same air and sea service, running the other way, with UK customs clearance and delivery.",
+  },
+];
 
 export default function Home() {
   return (
@@ -24,15 +52,15 @@ export default function Home() {
           <div className="wrap hero-grid">
             <div>
               <span className="eyebrow">Air &amp; sea freight &middot; Nationwide UK collection</span>
-              <h1>Freight from the UK to Pakistan, handled end to end.</h1>
+              <h1>Freight between the UK and Pakistan, handled end to end.</h1>
               <p className="intro">
-                Air cargo for urgent consignments, sea freight for volume, and the customs clearance and
-                insurance that go with both. One reference number follows your goods from collection in
-                the UK to delivery in Pakistan.
+                Air cargo for urgent consignments, sea freight for volume, excess baggage for travellers, and a
+                reverse route from Pakistan to the UK. One reference number follows your goods from collection
+                to delivery.
               </p>
               <div className="cta-row">
-                <Link className="btn btn-navy" href="#contact">Request a quote</Link>
-                <Link className="btn btn-ghost" href="/portal">Track a shipment</Link>
+                <Link className="btn btn-navy" href="/contact-us">Request a quote</Link>
+                <Link className="btn btn-ghost" href="/tracking">Track a shipment</Link>
               </div>
               <div className="stats">
                 <div>
@@ -55,7 +83,7 @@ export default function Home() {
                 Enter your AWB / tracking number or booking reference. Demo: PC-4471 or BK-20931.
               </p>
               <form
-                action="/portal"
+                action="/tracking"
                 method="get"
                 style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}
               >
@@ -70,7 +98,7 @@ export default function Home() {
                 <button className="btn btn-green" type="submit">Track shipment</button>
               </form>
               <p className="fine" style={{ marginTop: 14 }}>
-                Opens the customer portal, where you can also view and print invoices.
+                Opens the shipment tracker &mdash; no account needed.
               </p>
             </div>
           </div>
@@ -78,40 +106,16 @@ export default function Home() {
 
         <section className="section wrap" id="services">
           <h2 className="h-sec">Services</h2>
-          <p className="lede">Four things, done properly, on the one corridor we know best.</p>
+          <p className="lede">Four ways to move goods between the UK and Pakistan.</p>
           <div className="cards">
-            <article className="svc">
-              <div className="num">01</div>
-              <h3>Air cargo, UK &rarr; Pakistan</h3>
-              <p>
-                Weekly consolidated departures to Karachi, Lahore and Islamabad, with onward delivery to
-                most cities. Best for parcels, documents, samples and anything time-critical.
-              </p>
-            </article>
-            <article className="svc">
-              <div className="num alt">02</div>
-              <h3>Sea freight &amp; containers</h3>
-              <p>
-                Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your
-                own. The economical route for furniture, machinery and household consignments.
-              </p>
-            </article>
-            <article className="svc">
-              <div className="num">03</div>
-              <h3>Customs clearance</h3>
-              <p>
-                Export paperwork in the UK and clearance at the Pakistani port or airport, handled by our
-                own agents. We tell you the duties before the goods travel, not after.
-              </p>
-            </article>
-            <article className="svc">
-              <div className="num alt">04</div>
-              <h3>Goods insurance</h3>
-              <p>
-                Optional all-risk cover at a percentage of declared value, arranged at the point of
-                booking and shown as a line on your invoice.
-              </p>
-            </article>
+            {SERVICES.map((s) => (
+              <Link key={s.href} href={s.href} className="svc" style={{ display: "block", color: "inherit" }}>
+                <div className={`num${s.alt ? " alt" : ""}`}>{s.num}</div>
+                <h3 style={{ color: "var(--ink)" }}>{s.title}</h3>
+                <p>{s.body}</p>
+                <p style={{ marginTop: 14, fontSize: 14, fontWeight: 600, color: "var(--green)" }}>Learn more &rarr;</p>
+              </Link>
+            ))}
           </div>
         </section>
 
@@ -132,12 +136,12 @@ export default function Home() {
               <div className="step">
                 <span className="k">STEP 3</span>
                 <h3>Clearance &amp; transit</h3>
-                <p>We file the export paperwork, book the space, and clear the consignment on arrival in Pakistan.</p>
+                <p>We file the export paperwork, book the space, and clear the consignment on arrival.</p>
               </div>
               <div className="step">
                 <span className="k">STEP 4</span>
-                <h3>Delivered &amp; invoiced</h3>
-                <p>Door delivery to the consignee, with the signed proof and the final invoice available in your portal.</p>
+                <h3>Delivered</h3>
+                <p>Door delivery to the consignee, with signed proof of delivery logged against your reference.</p>
               </div>
             </div>
           </div>
@@ -147,7 +151,8 @@ export default function Home() {
           <h2 className="h-sec">Rates</h2>
           <p className="lede">
             Indicative per-kilo rates for door-to-door air cargo, and per-cubic-metre rates for
-            shared-container sea freight. Replace these figures with your live tariff.
+            shared-container sea freight. See the <Link href="/excess-baggage">excess baggage</Link> and{" "}
+            <Link href="/pak-to-uk">Pakistan to UK</Link> pages for those routes.
           </p>
           <div className="table-wrap">
             <table>
@@ -199,65 +204,26 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="band-dark" id="portal">
-          <div className="wrap portal-cta">
-            <div>
-              <span className="eyebrow eyebrow-light">Customer portal</span>
-              <h2 className="h-sec" style={{ marginTop: 18 }}>Tracking and invoices, on their own page.</h2>
-              <p className="lede" style={{ maxWidth: "48ch" }}>
-                One reference, two answers: where the goods are, and what is owed. Milestones from
-                collection to door delivery, and a printable invoice against every shipment.
-              </p>
-            </div>
-            <div className="links">
-              <Link className="btn btn-green" href="/portal">Open the portal</Link>
-              <Link className="quiet" href="/portal?ref=PC-4471">See a live example: PC-4471</Link>
-              <Link className="quiet" href="/admin" style={{ color: "var(--faint)" }}>Staff admin panel</Link>
-            </div>
-          </div>
-        </section>
+        <BottomCta
+          title="Track your shipment any time."
+          body="Enter your reference number to see live milestones, from UK collection through to door delivery."
+          primary={{ label: "Open tracking", href: "/tracking" }}
+          secondary={{ label: "See a live example: PC-4471", href: "/tracking?ref=PC-4471" }}
+        />
 
         <section className="section wrap" id="faq">
           <h2 className="h-sec">Frequently asked</h2>
           <div className="faq">
-            {FAQS.map((f) => (
+            {FAQS.slice(0, 3).map((f) => (
               <details key={f.q}>
                 <summary>{f.q}<span className="plus">+</span></summary>
                 <p>{f.a}</p>
               </details>
             ))}
           </div>
-        </section>
-
-        <section className="band-soft" id="contact">
-          <div
-            className="section wrap"
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48 }}
-          >
-            <div>
-              <h2 className="h-sec">Get a quote</h2>
-              <p className="lede" style={{ maxWidth: "46ch" }}>
-                Tell us what you are sending and where it is going. We reply the same working day with a
-                fixed price.
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 32 }}>
-                <a className="btn btn-green" style={{ width: "fit-content" }} href={BUSINESS.whatsapp}>
-                  Message us on WhatsApp
-                </a>
-                <div style={{ fontSize: 15, lineHeight: 1.9, color: "var(--muted)" }}>
-                  <div><strong style={{ color: "var(--ink)" }}>{BUSINESS.legalName}</strong></div>
-                  <div>{BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}</div>
-                  {BUSINESS.phones.map((p) => (
-                    <div key={p.city}>{p.city} <a href={`tel:${p.href}`}>{p.display}</a></div>
-                  ))}
-                  <div>WhatsApp <a href={BUSINESS.whatsapp}>{BUSINESS.whatsappDisplay}</a></div>
-                  <div>Email <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a></div>
-                  <div>Mon&ndash;Sat, 9am&ndash;6pm</div>
-                </div>
-              </div>
-            </div>
-            <EnquiryForm />
-          </div>
+          <p style={{ marginTop: 20 }}>
+            <Link href="/faq" style={{ fontWeight: 600 }}>See all FAQs &rarr;</Link>
+          </p>
         </section>
       </main>
 

@@ -18,16 +18,18 @@ const plexSans = IBM_Plex_Sans({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Air & Sea Freight from the UK to Pakistan`,
+    default: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "PAK Cargo ships air and sea freight from the UK to Pakistan. Door-to-door collection, customs clearance and full insurance. Track your shipment and view invoices online.",
+    "PAK Cargo ships air and sea freight, excess baggage, and Pakistan to UK freight. Door-to-door collection, customs clearance and full insurance. Track your shipment online.",
   keywords: [
     "cargo to Pakistan",
     "UK to Pakistan shipping",
     "air cargo Pakistan",
     "sea freight Karachi",
+    "excess baggage to Pakistan",
+    "Pakistan to UK cargo",
     "cargo tracking",
     "customs clearance",
     "freight forwarder UK Pakistan",
@@ -41,18 +43,18 @@ export const metadata = {
   formatDetection: { telephone: true, email: true, address: true },
   openGraph: {
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Air & Sea Freight, UK to Pakistan`,
+    title: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
     description:
-      "Air and sea freight from the UK to Pakistan with customs clearance, insurance and online tracking.",
+      "Air and sea freight, excess baggage and Pakistan-to-UK cargo, with customs clearance, insurance and online tracking.",
     type: "website",
     url: "/",
     locale: "en_GB",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Air & Sea Freight, UK to Pakistan`,
+    title: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
     description:
-      "Air and sea freight from the UK to Pakistan with customs clearance, insurance and online tracking.",
+      "Air and sea freight, excess baggage and Pakistan-to-UK cargo, with customs clearance, insurance and online tracking.",
   },
   robots: {
     index: true,
