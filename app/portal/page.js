@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import SiteHeader from "../components/SiteHeader";
+import WhatsAppFloat from "../components/WhatsAppFloat";
 import PortalClient from "./PortalClient";
 
 export const metadata = {
@@ -36,6 +37,7 @@ export default function PortalPage() {
           <span style={{ color: "var(--faint)" }}>&copy; {new Date().getFullYear()} PAK Cargo Ltd &middot; Air &amp; sea freight, UK to Pakistan</span>
         </div>
       </footer>
+      <WhatsAppFloat />
     </div>
   );
 }

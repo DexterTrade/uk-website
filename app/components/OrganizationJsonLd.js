@@ -12,7 +12,7 @@ export default function OrganizationJsonLd() {
     logo: `${SITE_URL}/icon.svg`,
     description:
       "Air and sea freight forwarding from the United Kingdom to Pakistan, with UK door collection, customs clearance and optional goods insurance.",
-    telephone: BUSINESS.telephoneHref,
+    telephone: BUSINESS.phones[0].href,
     email: BUSINESS.email,
     priceRange: "££",
     address: {
@@ -22,6 +22,22 @@ export default function OrganizationJsonLd() {
       postalCode: BUSINESS.postalCode,
       addressCountry: BUSINESS.addressCountry,
     },
+    contactPoint: [
+      ...BUSINESS.phones.map((p) => ({
+        "@type": "ContactPoint",
+        telephone: p.href,
+        contactType: "customer service",
+        areaServed: p.city,
+        availableLanguage: ["en"],
+      })),
+      {
+        "@type": "ContactPoint",
+        telephone: BUSINESS.whatsapp.replace("https://wa.me/", "+"),
+        contactType: "customer service",
+        url: BUSINESS.whatsapp,
+        availableLanguage: ["en"],
+      },
+    ],
     areaServed: [
       { "@type": "Country", name: "United Kingdom" },
       { "@type": "Country", name: "Pakistan" },

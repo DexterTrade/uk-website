@@ -3,6 +3,7 @@ import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import EnquiryForm from "./components/EnquiryForm";
 import FaqJsonLd from "./components/FaqJsonLd";
+import WhatsAppFloat from "./components/WhatsAppFloat";
 import { FAQS } from "@/lib/faq";
 import { BUSINESS } from "@/lib/seo";
 
@@ -246,13 +247,13 @@ export default function Home() {
                 <div style={{ fontSize: 15, lineHeight: 1.9, color: "var(--muted)" }}>
                   <div><strong style={{ color: "var(--ink)" }}>{BUSINESS.legalName}</strong></div>
                   <div>{BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}</div>
-                  <div>Telephone <a href={`tel:${BUSINESS.telephoneHref}`}>{BUSINESS.telephone}</a></div>
+                  {BUSINESS.phones.map((p) => (
+                    <div key={p.city}>{p.city} <a href={`tel:${p.href}`}>{p.display}</a></div>
+                  ))}
+                  <div>WhatsApp <a href={BUSINESS.whatsapp}>{BUSINESS.whatsappDisplay}</a></div>
                   <div>Email <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a></div>
                   <div>Mon&ndash;Sat, 9am&ndash;6pm</div>
                 </div>
-                <p className="fine" style={{ maxWidth: "40ch" }}>
-                  Placeholder details &mdash; swap in your real address, numbers and hours.
-                </p>
               </div>
             </div>
             <EnquiryForm />
@@ -261,6 +262,7 @@ export default function Home() {
       </main>
 
       <SiteFooter />
+      <WhatsAppFloat />
     </>
   );
 }
