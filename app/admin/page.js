@@ -18,7 +18,7 @@ function formatDate(dateStr) {
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  const [{ data: userData }, { data: shipmentsRaw }, { data: invoicesRaw }] = await Promise.all([
+  const [{ data: userData }, { data: shipmentsRaw }, { data: invoicesRaw }, { data: ratesRaw }] = await Promise.all([
     supabase.auth.getUser(),
     supabase
       .from("shipments")
@@ -28,6 +28,7 @@ export default async function AdminPage() {
       .from("invoices")
       .select("id, number, customer_name, shipment_reference, issued_date, total, status, shipments(reference)")
       .order("issued_date", { ascending: false }),
+    supabase.from("rates").select("mode, headline_rate, rate_note, pickup_charge").order("mode"),
   ]);
 
   const shipments = (shipmentsRaw || []).map((s) => ({
@@ -52,5 +53,12 @@ export default async function AdminPage() {
     status: i.status,
   }));
 
-  return <AdminClient shipments={shipments} invoices={invoices} staffEmail={userData?.user?.email} />;
+  const rates = (ratesRaw || []).map((r) => ({
+    mode: r.mode,
+    headline_rate: r.headline_rate,
+    rate_note: r.rate_note || "",
+    pickup_charge: Number(r.pickup_charge),
+  }));
+
+  return <AdminClient shipments={shipments} invoices={invoices} rates={rates} staffEmail={userData?.user?.email} />;
 }

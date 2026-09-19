@@ -4,9 +4,9 @@ import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 
 export const metadata = {
-  title: "Sea Cargo, UK to Pakistan",
+  title: "Sea Cargo, UK to Pakistan & Kashmir",
   description:
-    "Shared-container (LCL) and full-container (FCL) sea freight from the UK to Karachi. Door-to-door collection, customs clearance and 30-40 day transit.",
+    "Direct cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 30-40 day transit.",
   alternates: { canonical: "/sea-cargo" },
 };
 
@@ -16,9 +16,9 @@ export default function SeaCargoPage() {
       <SiteHeader variant="service" />
       <main>
         <PageHero
-          eyebrow="Sea freight · UK to Pakistan"
-          title="The economical route for volume and household goods."
-          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. Best for furniture, machinery, business stock and household consignments."
+          eyebrow="Cargo by sea · UK to Pakistan &amp; Kashmir"
+          title="Direct cargo by sea — the economical route for volume and household goods."
+          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable cargo service for furniture, machinery, business stock and household consignments, with onward delivery into Kashmir."
           stats={[
             { n: "30–40 days", l: "Port to door" },
             { n: "LCL or FCL", l: "Shared or full container" },

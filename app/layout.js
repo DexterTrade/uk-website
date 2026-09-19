@@ -18,13 +18,25 @@ const plexSans = IBM_Plex_Sans({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
+    default: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "PAK Cargo ships air and sea freight, excess baggage, and Pakistan to UK freight. Door-to-door collection, customs clearance and full insurance. Track your shipment online.",
+    "A trusted cargo service connecting the UK to Pakistan and Kashmir. Direct cargo by sea and by air, door to door collection, customs clearance and full insurance. Track your shipment online.",
   keywords: [
     "cargo to Pakistan",
+    "cargo to Kashmir",
+    "UK to Kashmir",
+    "direct cargo",
+    "door to door cargo",
+    "cargo hub",
+    "cargo by sea",
+    "cargo by air",
+    "connect UK to Pakistan",
+    "speedy cargo service",
+    "trusted cargo service",
+    "express cargo service",
+    "reliable cargo service",
     "UK to Pakistan shipping",
     "air cargo Pakistan",
     "sea freight Karachi",
@@ -43,18 +55,18 @@ export const metadata = {
   formatDetection: { telephone: true, email: true, address: true },
   openGraph: {
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
+    title: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
     description:
-      "Air and sea freight, excess baggage and Pakistan-to-UK cargo, with customs clearance, insurance and online tracking.",
+      "Direct cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
     type: "website",
     url: "/",
     locale: "en_GB",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Air & Sea Freight, UK ⇄ Pakistan`,
+    title: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
     description:
-      "Air and sea freight, excess baggage and Pakistan-to-UK cargo, with customs clearance, insurance and online tracking.",
+      "Direct cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
   },
   robots: {
     index: true,

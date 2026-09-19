@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 
 const NAV_ITEMS = [
-  { href: "/air-cargo", label: "Air Cargo" },
   { href: "/sea-cargo", label: "Sea Cargo" },
+  { href: "/air-cargo", label: "Air Cargo" },
   { href: "/excess-baggage", label: "Excess Baggage" },
   { href: "/pak-to-uk", label: "Pak to UK" },
   { href: "/tracking", label: "Track" },
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 ];
 
 const SUBTITLES = {
-  home: "UK ⇄ Pakistan freight",
+  home: "UK ⇄ Pakistan Cargo",
   tracking: "Track a shipment",
 };
 

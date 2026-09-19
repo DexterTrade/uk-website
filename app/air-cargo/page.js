@@ -4,9 +4,9 @@ import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 
 export const metadata = {
-  title: "Air Cargo, UK to Pakistan",
+  title: "Air Cargo, UK to Pakistan & Kashmir",
   description:
-    "Weekly consolidated air cargo departures from the UK to Karachi, Lahore and Islamabad. Door-to-door collection, customs clearance and 5-7 day delivery.",
+    "Fast cargo by air from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door collection, customs clearance and 5-7 day delivery.",
   alternates: { canonical: "/air-cargo" },
 };
 
@@ -16,9 +16,9 @@ export default function AirCargoPage() {
       <SiteHeader variant="service" />
       <main>
         <PageHero
-          eyebrow="Air cargo · UK to Pakistan"
-          title="The fast route, door to door in 5-7 days."
-          intro="Weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan. Best for parcels, documents, samples and anything time-critical."
+          eyebrow="Cargo by air · UK to Pakistan &amp; Kashmir"
+          title="Fast, express cargo by air — door to door in 5-7 days."
+          intro="Weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."
           stats={[
             { n: "5–7 days", l: "Collection to door delivery" },
             { n: "Weekly", l: "Consolidated departures" },

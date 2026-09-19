@@ -42,6 +42,25 @@ export async function markInvoicePaid(invoiceId) {
   return { ok: true };
 }
 
+export async function updateRate(mode, { headline_rate, rate_note, pickup_charge }) {
+  if (mode !== "air" && mode !== "sea") {
+    return { error: "Unknown rate mode." };
+  }
+  const supabase = await requireStaff();
+  const { error } = await supabase
+    .from("rates")
+    .update({
+      headline_rate: String(headline_rate || "").trim(),
+      rate_note: String(rate_note || "").trim() || null,
+      pickup_charge: Number.parseFloat(pickup_charge) || 0,
+    })
+    .eq("mode", mode);
+  if (error) return { error: error.message };
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function issueInvoice({ customer, reference, service, dueDate, lines }) {
   const supabase = await requireStaff();
 

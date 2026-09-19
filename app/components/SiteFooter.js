@@ -12,7 +12,7 @@ export default function SiteFooter() {
             </span>
             <span>
               <span className="name">PAK CARGO</span>
-              <span className="tag">UK &harr; Pakistan freight</span>
+              <span className="tag">UK &harr; Pakistan Cargo</span>
             </span>
           </Link>
           <p className="footer-tagline">
@@ -25,8 +25,8 @@ export default function SiteFooter() {
         <div className="footer-col">
           <h3>Services</h3>
           <nav>
-            <Link href="/air-cargo">Air Cargo</Link>
             <Link href="/sea-cargo">Sea Cargo</Link>
+            <Link href="/air-cargo">Air Cargo</Link>
             <Link href="/excess-baggage">Excess Baggage</Link>
             <Link href="/pak-to-uk">Pakistan to UK</Link>
           </nav>

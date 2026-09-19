@@ -4,13 +4,14 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, STATUS_CLASS, STATUSES, FILTERS } from "@/lib/data";
-import { issueInvoice, markInvoicePaid, signOutAction, updateShipmentStatus } from "./actions";
+import { issueInvoice, markInvoicePaid, signOutAction, updateRate, updateShipmentStatus } from "./actions";
 
 const NAV = [
   { key: "dash", label: "Dashboard" },
   { key: "ship", label: "Shipments" },
   { key: "inv", label: "Invoices" },
   { key: "new", label: "New invoice" },
+  { key: "rates", label: "Rates" },
 ];
 
 const EMPTY_LINE = () => ({ desc: "", qty: "1", unit: "0.00" });
@@ -19,7 +20,7 @@ const invClass = (s) => (s === "Paid" ? "badge" : s === "Draft" ? "badge badge-g
 const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
-export default function AdminClient({ shipments, invoices, staffEmail }) {
+export default function AdminClient({ shipments, invoices, rates, staffEmail }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -32,6 +33,16 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
   const [form, setForm] = useState({ customer: "", ref: "", service: "Air cargo", due: "" });
   const [issuedNote, setIssuedNote] = useState("");
   const [formError, setFormError] = useState("");
+
+  const [rateForm, setRateForm] = useState(() =>
+    Object.fromEntries(
+      rates.map((r) => [
+        r.mode,
+        { headline_rate: r.headline_rate, rate_note: r.rate_note, pickup_charge: String(r.pickup_charge) },
+      ])
+    )
+  );
+  const [rateSaved, setRateSaved] = useState({});
 
   const active = useMemo(() => shipments.filter((s) => s.status !== "Delivered"), [shipments]);
   const unpaid = useMemo(() => invoices.filter((i) => i.status === "Unpaid"), [invoices]);
@@ -103,6 +114,21 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
       setNextLineId(2);
       setForm({ customer: "", ref: "", service: "Air cargo", due: "" });
       router.refresh();
+    });
+  }
+
+  function updateRateField(mode, field, value) {
+    setRateForm((prev) => ({ ...prev, [mode]: { ...prev[mode], [field]: value } }));
+    setRateSaved((prev) => ({ ...prev, [mode]: false }));
+  }
+
+  function handleSaveRate(mode) {
+    startTransition(async () => {
+      const result = await updateRate(mode, rateForm[mode]);
+      if (!result?.error) {
+        setRateSaved((prev) => ({ ...prev, [mode]: true }));
+        router.refresh();
+      }
     });
   }
 
@@ -404,6 +430,55 @@ export default function AdminClient({ shipments, invoices, staffEmail }) {
               {formError && <p className="alert alert-error">{formError}</p>}
               {issuedNote && <p className="alert alert-ok">{issuedNote}</p>}
             </div>
+          </section>
+        )}
+
+        {view === "rates" && (
+          <section className="admin-view" style={{ maxWidth: 720 }}>
+            <h1>Rates</h1>
+            <p className="sub">These are the headline rates and pickup charges shown on the homepage pricing cards.</p>
+            {["sea", "air"].map((mode) => (
+              <div className="pane" key={mode} style={{ padding: 24, marginTop: 22 }}>
+                <h2 style={{ fontSize: 17, fontWeight: 700, textTransform: "capitalize", marginBottom: 16 }}>
+                  {mode} cargo
+                </h2>
+                <div className="grid-fields">
+                  <label className="field">
+                    Headline rate
+                    <input
+                      className="input"
+                      placeholder="From £195/m³"
+                      value={rateForm[mode]?.headline_rate || ""}
+                      onChange={(e) => updateRateField(mode, "headline_rate", e.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    Pickup charge (&pound;)
+                    <input
+                      className="input"
+                      inputMode="decimal"
+                      value={rateForm[mode]?.pickup_charge || ""}
+                      onChange={(e) => updateRateField(mode, "pickup_charge", e.target.value)}
+                    />
+                  </label>
+                </div>
+                <label className="field" style={{ marginTop: 16 }}>
+                  Note
+                  <input
+                    className="input"
+                    placeholder="Shared container (LCL) · 30–40 day delivery"
+                    value={rateForm[mode]?.rate_note || ""}
+                    onChange={(e) => updateRateField(mode, "rate_note", e.target.value)}
+                  />
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
+                  <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
+                    Save
+                  </button>
+                  {rateSaved[mode] && <span style={{ fontSize: 13.5, color: "var(--green-ink)" }}>Saved &mdash; live on the homepage now.</span>}
+                </div>
+              </div>
+            ))}
           </section>
         )}
       </main>

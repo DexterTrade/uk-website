@@ -4,7 +4,10 @@ import SiteFooter from "./components/SiteFooter";
 import BottomCta from "./components/BottomCta";
 import FaqJsonLd from "./components/FaqJsonLd";
 import WhatsAppFloat from "./components/WhatsAppFloat";
+import { PlaneIcon, ShipIcon } from "./components/icons";
 import { FAQS } from "@/lib/faq";
+import { BUSINESS } from "@/lib/seo";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   alternates: {
@@ -15,16 +18,16 @@ export const metadata = {
 const SERVICES = [
   {
     num: "01",
-    href: "/air-cargo",
-    title: "Air cargo, UK → Pakistan",
-    body: "Weekly consolidated departures to Karachi, Lahore and Islamabad. Best for anything time-critical.",
+    href: "/sea-cargo",
+    title: "Sea cargo & containers",
+    body: "Economical cargo by sea — shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own.",
   },
   {
     num: "02",
     alt: true,
-    href: "/sea-cargo",
-    title: "Sea freight & containers",
-    body: "Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own.",
+    href: "/air-cargo",
+    title: "Air cargo, UK → Pakistan",
+    body: "Fast cargo by air — weekly consolidated departures to Karachi, Lahore and Islamabad. Best for anything time-critical.",
   },
   {
     num: "03",
@@ -37,11 +40,22 @@ const SERVICES = [
     alt: true,
     href: "/pak-to-uk",
     title: "Pakistan → UK",
-    body: "The same air and sea service, running the other way, with UK customs clearance and delivery.",
+    body: "The same direct cargo service, running the other way, with UK customs clearance and delivery.",
   },
 ];
 
-export default function Home() {
+const RATE_DEFAULTS = {
+  sea: { headline_rate: "From £195/m³", rate_note: "Shared container (LCL) · 30–40 day delivery", pickup_charge: 35 },
+  air: { headline_rate: "From £3.10/kg", rate_note: "Tiered by weight · 5–7 day delivery", pickup_charge: 35 },
+};
+
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: ratesRaw } = await supabase.from("rates").select("mode, headline_rate, rate_note, pickup_charge");
+  const rateByMode = Object.fromEntries((ratesRaw || []).map((r) => [r.mode, r]));
+  const seaRate = rateByMode.sea || RATE_DEFAULTS.sea;
+  const airRate = rateByMode.air || RATE_DEFAULTS.air;
+
   return (
     <>
       <FaqJsonLd />
@@ -51,12 +65,12 @@ export default function Home() {
         <section className="hero">
           <div className="wrap hero-grid">
             <div>
-              <span className="eyebrow">Air &amp; sea freight &middot; Nationwide UK collection</span>
-              <h1>Freight between the UK and Pakistan, handled end to end.</h1>
+              <span className="eyebrow">Direct cargo &middot; By sea &amp; by air &middot; Nationwide UK collection</span>
+              <h1>DOOR TO DOOR CARGO TO PAKISTAN &amp; KASHMIR.</h1>
               <p className="intro">
-                Air cargo for urgent consignments, sea freight for volume, excess baggage for travellers, and a
-                reverse route from Pakistan to the UK. One reference number follows your goods from collection
-                to delivery.
+                A trusted cargo service connecting the UK to Pakistan and Kashmir. Fast cargo by air for urgent
+                consignments, economical cargo by sea for volume, and a dedicated London cargo hub handling
+                direct, door to door collection on every booking.
               </p>
               <div className="cta-row">
                 <Link className="btn btn-navy" href="/contact-us">Request a quote</Link>
@@ -78,71 +92,25 @@ export default function Home() {
               </div>
             </div>
             <div className="card card-shadow">
-              <h2 style={{ fontSize: 19, fontWeight: 700 }}>Where is my shipment?</h2>
+              <h2 style={{ fontSize: 19, fontWeight: 700 }}>Speak to us now</h2>
               <p style={{ fontSize: 14.5, color: "var(--soft)", marginTop: 6 }}>
-                Enter your AWB / tracking number or booking reference. Demo: PC-4471 or BK-20931.
+                Call your nearest branch, or message us on WhatsApp for the fastest reply.
               </p>
-              <form
-                action="/tracking"
-                method="get"
-                style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}
-              >
-                <input
-                  className="input"
-                  name="ref"
-                  defaultValue="PC-4471"
-                  placeholder="e.g. PC-4471 or BK-20931"
-                  aria-label="Tracking or booking reference"
-                  style={{ minHeight: 48 }}
-                />
-                <button className="btn btn-green" type="submit">Track shipment</button>
-              </form>
-              <p className="fine" style={{ marginTop: 14 }}>
-                Opens the shipment tracker &mdash; no account needed.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="section wrap" id="services">
-          <h2 className="h-sec">Services</h2>
-          <p className="lede">Four ways to move goods between the UK and Pakistan.</p>
-          <div className="cards">
-            {SERVICES.map((s) => (
-              <Link key={s.href} href={s.href} className="svc" style={{ display: "block", color: "inherit" }}>
-                <div className={`num${s.alt ? " alt" : ""}`}>{s.num}</div>
-                <h3 style={{ color: "var(--ink)" }}>{s.title}</h3>
-                <p>{s.body}</p>
-                <p style={{ marginTop: 14, fontSize: 14, fontWeight: 600, color: "var(--green)" }}>Learn more &rarr;</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="band-soft" id="how">
-          <div className="section wrap">
-            <h2 className="h-sec">How it works</h2>
-            <div className="cards">
-              <div className="step">
-                <span className="k">STEP 1</span>
-                <h3>Get a quote</h3>
-                <p>Send us weight, dimensions and the destination city. We quote a fixed all-in price, air or sea.</p>
+              <div className="hero-contact-list">
+                {BUSINESS.phones.map((p) => (
+                  <a key={p.city} href={`tel:${p.href}`}>
+                    <span>{p.display}</span>
+                    <span className="city">{p.city}</span>
+                  </a>
+                ))}
+                <a href={`mailto:${BUSINESS.email}`}>
+                  <span>{BUSINESS.email}</span>
+                  <span className="city">Email</span>
+                </a>
               </div>
-              <div className="step">
-                <span className="k">STEP 2</span>
-                <h3>We collect</h3>
-                <p>Collection anywhere in the UK, or drop off at our warehouse. Goods are weighed, labelled and logged against your reference.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 3</span>
-                <h3>Clearance &amp; transit</h3>
-                <p>We file the export paperwork, book the space, and clear the consignment on arrival.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 4</span>
-                <h3>Delivered</h3>
-                <p>Door delivery to the consignee, with signed proof of delivery logged against your reference.</p>
-              </div>
+              <a className="btn btn-green" style={{ marginTop: 16, width: "100%" }} href={BUSINESS.whatsapp}>
+                Message us on WhatsApp
+              </a>
             </div>
           </div>
         </section>
@@ -150,58 +118,75 @@ export default function Home() {
         <section className="section wrap" id="rates">
           <h2 className="h-sec">Rates</h2>
           <p className="lede">
-            Indicative per-kilo rates for door-to-door air cargo, and per-cubic-metre rates for
-            shared-container sea freight. See the <Link href="/excess-baggage">excess baggage</Link> and{" "}
-            <Link href="/pak-to-uk">Pakistan to UK</Link> pages for those routes.
+            Simple, direct cargo pricing by sea or by air, plus one small UK pickup charge. Ask for a full
+            quote and we confirm the exact price the same working day.
           </p>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Weight / volume</th>
-                  <th>Rate</th>
-                  <th>Transit</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="key">Air cargo</td>
-                  <td>1&ndash;29 kg</td>
-                  <td className="rate">&pound;4.20 / kg</td>
-                  <td>5&ndash;7 days</td>
-                </tr>
-                <tr>
-                  <td className="key">Air cargo</td>
-                  <td>30&ndash;99 kg</td>
-                  <td className="rate">&pound;3.60 / kg</td>
-                  <td>5&ndash;7 days</td>
-                </tr>
-                <tr>
-                  <td className="key">Air cargo</td>
-                  <td>100 kg +</td>
-                  <td className="rate">&pound;3.10 / kg</td>
-                  <td>5&ndash;7 days</td>
-                </tr>
-                <tr>
-                  <td className="key">Sea freight (LCL)</td>
-                  <td>Per m&sup3;, min 1 m&sup3;</td>
-                  <td className="rate">&pound;195 / m&sup3;</td>
-                  <td>30&ndash;40 days</td>
-                </tr>
-                <tr>
-                  <td className="key">Sea freight (FCL)</td>
-                  <td>20ft / 40ft container</td>
-                  <td className="rate">On request</td>
-                  <td>30&ndash;40 days</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="rate-grid">
+            <div className="rate-card">
+              <div className="rate-icon"><ShipIcon /></div>
+              <h3>Sea Cargo</h3>
+              <div className="rate-value">{seaRate.headline_rate}</div>
+              <p className="rate-note">{seaRate.rate_note}</p>
+              <div className="rate-pickup">+ &pound;{Number(seaRate.pickup_charge).toFixed(0)} UK pickup</div>
+              <Link className="btn btn-navy btn-sm" href="/sea-cargo">See sea cargo rates &rarr;</Link>
+            </div>
+            <div className="rate-card navy">
+              <div className="rate-icon"><PlaneIcon /></div>
+              <h3>Air Cargo</h3>
+              <div className="rate-value">{airRate.headline_rate}</div>
+              <p className="rate-note">{airRate.rate_note}</p>
+              <div className="rate-pickup">+ &pound;{Number(airRate.pickup_charge).toFixed(0)} UK pickup</div>
+              <Link className="btn btn-navy btn-sm" href="/air-cargo">See air cargo rates &rarr;</Link>
+            </div>
           </div>
           <p className="fine" style={{ marginTop: 14 }}>
-            Rates exclude destination duties and optional insurance. Volumetric weight applies to light,
-            bulky air consignments at 1 kg per 6,000 cm&sup3;.
+            Rates exclude destination duties and optional insurance. See the{" "}
+            <Link href="/excess-baggage">excess baggage</Link> and <Link href="/pak-to-uk">Pakistan to UK</Link>{" "}
+            pages for those routes.
           </p>
+        </section>
+
+        <section className="band-soft" id="services">
+          <div className="section wrap">
+            <h2 className="h-sec">Services</h2>
+            <p className="lede">A speedy, reliable cargo service across four ways to move goods between the UK, Pakistan and Kashmir.</p>
+            <div className="cards">
+              {SERVICES.map((s) => (
+                <Link key={s.href} href={s.href} className="svc" style={{ display: "block", color: "inherit" }}>
+                  <div className={`num${s.alt ? " alt" : ""}`}>{s.num}</div>
+                  <h3 style={{ color: "var(--ink)" }}>{s.title}</h3>
+                  <p>{s.body}</p>
+                  <p style={{ marginTop: 14, fontSize: 14, fontWeight: 600, color: "var(--green)" }}>Learn more &rarr;</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section wrap" id="how">
+          <h2 className="h-sec">How it works</h2>
+          <div className="cards">
+            <div className="step">
+              <span className="k">STEP 1</span>
+              <h3>Get a quote</h3>
+              <p>Send us weight, dimensions and the destination city. We quote a fixed all-in price, air or sea, the same working day.</p>
+            </div>
+            <div className="step">
+              <span className="k">STEP 2</span>
+              <h3>We collect</h3>
+              <p>Direct collection anywhere in the UK, or drop off at our cargo hub. Goods are weighed, labelled and logged against your reference.</p>
+            </div>
+            <div className="step">
+              <span className="k">STEP 3</span>
+              <h3>Clearance &amp; transit</h3>
+              <p>We file the export paperwork, book the space, and clear the consignment on arrival.</p>
+            </div>
+            <div className="step">
+              <span className="k">STEP 4</span>
+              <h3>Delivered</h3>
+              <p>Door delivery to the consignee, with signed proof of delivery logged against your reference.</p>
+            </div>
+          </div>
         </section>
 
         <BottomCta
