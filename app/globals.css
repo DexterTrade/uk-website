@@ -152,8 +152,8 @@ table { border-collapse: collapse; width: 100%; }
 .rate-card { border: 1px solid var(--line); border-radius: 14px; padding: 34px 30px; background: #fff; text-align: center; box-shadow: 0 14px 34px -22px rgba(22, 35, 60, 0.25); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .rate-card:hover { border-color: var(--green); box-shadow: 0 18px 40px -28px rgba(22, 35, 60, 0.35); }
 .rate-card.navy:hover { border-color: var(--navy); }
-.rate-icon { width: 64px; height: 64px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--green-soft); color: var(--green); }
-.rate-card.navy .rate-icon { background: var(--navy-soft); color: var(--navy); }
+.rate-illustration { width: 100%; aspect-ratio: 220 / 130; max-width: 260px; margin: 0 auto 20px; border-radius: 10px; background: var(--green-soft); overflow: hidden; }
+.rate-card.navy .rate-illustration { background: var(--navy-soft); }
 .rate-card h3 { font-size: 21px; font-weight: 700; }
 .rate-value { font-family: var(--font-head); font-size: 38px; font-weight: 800; color: var(--green); margin: 12px 0 4px; }
 .rate-card.navy .rate-value { color: var(--navy); }
