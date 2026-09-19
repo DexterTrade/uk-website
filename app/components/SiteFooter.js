@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BUSINESS } from "@/lib/seo";
-import { PhoneIcon, WhatsAppIcon } from "./contact-icons";
 
 export default function SiteFooter() {
   return (
@@ -54,20 +53,15 @@ export default function SiteFooter() {
             {BUSINESS.phones.map((p) => (
               <li key={p.city}>
                 <span className="city">{p.city}</span>
-                <a href={`tel:${p.href}`}>
-                  <PhoneIcon className="footer-icon" />
-                  {p.display}
-                </a>
+                <a href={`tel:${p.href}`}>{p.display}</a>
               </li>
             ))}
           </ul>
           <div className="footer-extra">
-            <a href={BUSINESS.whatsapp}>
-              <WhatsAppIcon className="footer-icon" />
-              {BUSINESS.whatsappDisplay}
-            </a>
+            <a href={BUSINESS.whatsapp}>WhatsApp &middot; {BUSINESS.whatsappDisplay}</a>
             <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </div>
+          <p className="footer-hours">Mon&ndash;Sat, 9am&ndash;6pm</p>
         </div>
       </div>
 
