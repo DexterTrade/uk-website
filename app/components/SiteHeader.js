@@ -67,45 +67,54 @@ export default function SiteHeader({ variant = "home" }) {
           />
         </button>
 
+        {/* dims the page below the dropdown panel; tap outside to close */}
         <div
-          className={`fixed inset-0 z-40 bg-[rgba(22,35,60,0.45)] backdrop-blur-[2px] transition-opacity duration-200 ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
+          className={`fixed inset-0 z-30 bg-[rgba(22,35,60,0.45)] backdrop-blur-[2px] transition-opacity duration-200 ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
           onClick={close}
           aria-hidden="true"
         />
 
+        {/* mobile/tablet: a full-width panel that opens vertically below the
+            header (CSS grid-rows reveal, no text distortion mid-animation),
+            instead of a side-sliding drawer. Desktop keeps the plain
+            horizontal link row via `contents` on the wrapper divs below. */}
         <nav
-          className={`ml-auto flex flex-wrap items-center justify-end gap-[18px] max-[1120px]:fixed max-[1120px]:inset-y-0 max-[1120px]:right-0 max-[1120px]:z-[45] max-[1120px]:ml-0 max-[1120px]:flex max-[1120px]:w-[min(88vw,360px)] max-[1120px]:flex-col max-[1120px]:items-stretch max-[1120px]:justify-start max-[1120px]:gap-0 max-[1120px]:overflow-y-auto max-[1120px]:rounded-[22px_0_0_22px] max-[1120px]:bg-white max-[1120px]:pt-[84px] max-[1120px]:px-7 max-[1120px]:pb-[calc(28px_+_env(safe-area-inset-bottom,0px))] max-[1120px]:shadow-[-22px_0_50px_-22px_rgba(22,35,60,0.5)] max-[1120px]:transition-transform max-[1120px]:duration-[320ms] max-[1120px]:ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "" : "max-[1120px]:translate-x-full"}`}
+          className={`ml-auto flex flex-wrap items-center justify-end gap-[18px] max-[1120px]:absolute max-[1120px]:inset-x-0 max-[1120px]:top-full max-[1120px]:z-40 max-[1120px]:grid max-[1120px]:bg-white max-[1120px]:shadow-[0_20px_44px_-24px_rgba(22,35,60,0.35)] max-[1120px]:transition-[grid-template-rows] max-[1120px]:duration-300 max-[1120px]:ease-out ${open ? "max-[1120px]:grid-rows-[1fr]" : "max-[1120px]:grid-rows-[0fr]"}`}
           id="site-nav"
         >
-          <div className="hidden max-[1120px]:mb-[10px] max-[1120px]:flex max-[1120px]:items-center max-[1120px]:pb-5">
-            <span className="font-head text-[11.5px] font-bold tracking-[0.22em] text-faint uppercase">Menu</span>
-          </div>
-          <div className="contents max-[1120px]:flex max-[1120px]:flex-1 max-[1120px]:flex-col">
-            {NAV_ITEMS.map(({ href, label }, i) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={close}
-                className="group text-sm font-medium text-ink hover:text-green active:text-green max-[1120px]:flex max-[1120px]:items-baseline max-[1120px]:gap-4 max-[1120px]:px-0.5 max-[1120px]:py-[15px] max-[1120px]:font-head max-[1120px]:text-xl max-[1120px]:font-bold max-[1120px]:tracking-[-0.01em] max-[1120px]:transition-[color,gap] max-[1120px]:duration-[180ms] max-[1120px]:hover:gap-5 max-[1120px]:active:gap-5"
-              >
-                <span className="hidden text-xs font-semibold tracking-[0.03em] text-faint group-hover:text-green max-[1120px]:inline">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                {label}
-              </Link>
-            ))}
-          </div>
-          <div className="hidden max-[1120px]:mt-[14px] max-[1120px]:flex max-[1120px]:flex-col max-[1120px]:gap-3 max-[1120px]:border-t max-[1120px]:border-line-light max-[1120px]:pt-[18px]">
-            <a className="btn btn-green btn-sm w-full" href={BUSINESS.whatsapp} onClick={close}>
-              Quick Response on WhatsApp
-            </a>
-            <a
-              className="flex items-center justify-center gap-2 p-1 text-[14.5px] font-semibold text-ink"
-              href={`tel:${BUSINESS.phones[0].href}`}
-              onClick={close}
-            >
-              <PhoneIcon className="flex-none text-green" /> {BUSINESS.phones[0].display}
-            </a>
+          <div className="contents max-[1120px]:block max-[1120px]:overflow-hidden">
+            <div className="contents max-[1120px]:mx-auto max-[1120px]:flex max-[1120px]:w-full max-[1120px]:max-w-md max-[1120px]:flex-col max-[1120px]:px-6 max-[1120px]:pt-5 max-[1120px]:pb-[calc(28px_+_env(safe-area-inset-bottom,0px))]">
+              <div className="hidden max-[1120px]:mb-3 max-[1120px]:flex max-[1120px]:items-center max-[1120px]:border-b max-[1120px]:border-line-light max-[1120px]:pb-4">
+                <span className="font-head text-[11.5px] font-bold tracking-[0.22em] text-faint uppercase">Menu</span>
+              </div>
+              <div className="contents max-[1120px]:flex max-[1120px]:flex-col">
+                {NAV_ITEMS.map(({ href, label }, i) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={close}
+                    className="group text-sm font-medium text-ink hover:text-green active:text-green max-[1120px]:flex max-[1120px]:items-baseline max-[1120px]:gap-4 max-[1120px]:px-0.5 max-[1120px]:py-[15px] max-[1120px]:font-head max-[1120px]:text-xl max-[1120px]:font-bold max-[1120px]:tracking-[-0.01em] max-[1120px]:transition-[color,gap] max-[1120px]:duration-[180ms] max-[1120px]:hover:gap-5 max-[1120px]:active:gap-5"
+                  >
+                    <span className="hidden text-xs font-semibold tracking-[0.03em] text-faint group-hover:text-green max-[1120px]:inline">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {label}
+                  </Link>
+                ))}
+              </div>
+              <div className="hidden max-[1120px]:mt-4 max-[1120px]:flex max-[1120px]:flex-col max-[1120px]:gap-3 max-[1120px]:border-t max-[1120px]:border-line-light max-[1120px]:pt-4">
+                <a className="btn btn-green btn-sm w-full" href={BUSINESS.whatsapp} onClick={close}>
+                  Quick Response on WhatsApp
+                </a>
+                <a
+                  className="flex items-center justify-center gap-2 p-1 text-[14.5px] font-semibold text-ink"
+                  href={`tel:${BUSINESS.phones[0].href}`}
+                  onClick={close}
+                >
+                  <PhoneIcon className="flex-none text-green" /> {BUSINESS.phones[0].display}
+                </a>
+              </div>
+            </div>
           </div>
         </nav>
       </div>

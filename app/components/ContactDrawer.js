@@ -47,10 +47,13 @@ export default function ContactDrawer() {
 
   return (
     <>
-      <div className="relative">
+      {/* mobile-only: a small tab on the left edge instead of a full-width
+          row in the hero card, so it reads as a persistent trigger rather
+          than a page section */}
+      <div className="fixed top-1/2 left-0 z-40 hidden -translate-y-1/2 max-[640px]:block">
         <div
-          className={`contact-hint absolute right-0 bottom-[calc(100%+10px)] left-0 z-30 rounded-[10px] bg-ink px-[14px] py-[11px] text-[13px] leading-[1.4] font-semibold text-white shadow-[0_14px_30px_-14px_rgba(22,35,60,0.55)] transition duration-[250ms] ${
-            hint ? "pointer-events-auto translate-y-0 cursor-pointer opacity-100" : "pointer-events-none translate-y-[6px] opacity-0"
+          className={`absolute top-1/2 left-full ml-2 w-[210px] -translate-y-1/2 rounded-[10px] bg-ink px-[14px] py-[11px] text-[13px] leading-[1.4] font-semibold text-white shadow-[0_14px_30px_-14px_rgba(22,35,60,0.55)] transition duration-[250ms] ${
+            hint ? "pointer-events-auto translate-x-0 cursor-pointer opacity-100" : "pointer-events-none -translate-x-1 opacity-0"
           }`}
           role="status"
           onClick={() => {
@@ -62,19 +65,15 @@ export default function ContactDrawer() {
         </div>
         <button
           type="button"
-          className="contact-drawer-trigger"
+          className="flex flex-col items-center gap-1 rounded-r-xl bg-green px-[7px] py-4 text-white shadow-[4px_0_16px_-6px_rgba(22,35,60,0.35)] transition hover:bg-green-dark"
           onClick={() => {
             setHint(false);
             setOpen(true);
           }}
           aria-haspopup="dialog"
+          aria-label="Phone numbers, WhatsApp and email"
         >
-          <span className="row-icon"><PhoneIcon /></span>
-          <span className="row-text">
-            <span>Call or WhatsApp us</span>
-            <span className="city">Phone, WhatsApp &amp; email</span>
-          </span>
-          <span className="ml-auto flex-none text-xl leading-none text-faint" aria-hidden="true">&rsaquo;</span>
+          <span aria-hidden="true" className="text-lg leading-none">&rsaquo;</span>
         </button>
       </div>
 

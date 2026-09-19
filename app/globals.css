@@ -191,12 +191,8 @@
   .contact-inline-rows {
     @apply max-[640px]:hidden;
   }
-  .hero-contact-list a,
-  button.contact-drawer-trigger {
+  .hero-contact-list a {
     @apply flex items-center gap-3 rounded-md border-[1.5px] border-line px-[14px] py-[11px] text-[15px] font-semibold text-ink hover:border-green hover:text-green max-[640px]:px-3 max-[640px]:py-[9px] max-[640px]:text-sm;
-  }
-  button.contact-drawer-trigger {
-    @apply hidden w-full text-left max-[640px]:flex;
   }
   .row-icon {
     @apply flex h-8 w-8 flex-none items-center justify-center rounded-full bg-green-soft text-green max-[640px]:h-7 max-[640px]:w-7;
@@ -622,17 +618,6 @@
 }
 
 @layer utilities {
-  /* speech-bubble pointer on the recurring contact hint -- a CSS triangle
-     pseudo-element has no Tailwind utility equivalent */
-  .contact-hint::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 26px;
-    border: 6px solid transparent;
-    border-top-color: var(--color-ink);
-  }
-
   .grid-fields {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
