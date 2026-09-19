@@ -17,7 +17,10 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 - **Repo**: https://github.com/DexterTrade/uk-website.git
 - **Live domains**: pakcargouk.co.uk / pakcargouk.com, deployed on Vercel
 - **Backend**: Supabase (Postgres + Auth), accessed via `@supabase/ssr`
-- **No Tailwind** — hand-written CSS in `app/globals.css`
+- **Styling: Tailwind CSS v4** (CSS-first config — `@import "tailwindcss"` +
+  `@theme` in `app/globals.css`, `@tailwindcss/postcss` in
+  `postcss.config.mjs`, no `tailwind.config.js`). Migrated from hand-written
+  CSS in a single full-site conversion; see "Styling architecture" below.
 
 ## Site map
 
@@ -270,6 +273,60 @@ propagates sitewide:
   nav (`.site-nav-links { display: contents }` above 1120px) is a plain
   horizontal link row, untouched by the mobile styling.
 
+## Styling architecture
+
+The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`).
+
+- **`postcss.config.mjs`** — registers `@tailwindcss/postcss`.
+- **`app/globals.css`** — `@import "tailwindcss";` followed by:
+  - `@theme` — brand tokens as real CSS custom properties, so Tailwind
+    generates matching utilities: `--color-green`, `--color-green-dark`,
+    `--color-green-soft`, `--color-green-ink`, `--color-navy` (+ dark/soft),
+    `--color-ink`, `--color-muted`, `--color-soft`, `--color-faint`,
+    `--color-line` (+ `-light`), `--color-bg-soft`, `--color-red` (+
+    `-soft`), `--color-amber-soft`, `--color-amber-ink`, plus `--font-head`
+    / `--font-body` wired to the `next/font/google` variables from
+    `app/layout.js`. Use them as `bg-green`, `text-navy`, `border-line`,
+    `font-head`, etc. — never reintroduce raw hex values for these colors.
+  - `@layer base` — the handful of true global element resets (heading
+    font-family/margin/letter-spacing, `p` margin reset, link colors,
+    form-control font inheritance) that would be impractical to repeat as
+    utility classes on every heading/paragraph/input across ~20 files.
+  - `@layer components` — cross-cutting design-system primitives that
+    repeat across many files, written with `@apply` (e.g. `.btn`/
+    `.btn-green`/`.btn-navy`/`.btn-ghost`, `.wrap`/`.wrap-narrow`,
+    `.eyebrow`, `.card`, `.badge`, `.input`/`.select`/`.textarea`,
+    `.hero-contact-list`/`.row-icon`/`.row-text` (shared by the homepage
+    hero, Contact Us page and the contact drawer), the service-page
+    patterns (`.cards`/`.svc`/`.step`, `.band-soft`, `.table-wrap`,
+    `.rate-grid`/`.rate-card`, `.compare-card`, `.schedule-strip`,
+    `.route-strip`), the FAQ accordion, the tracking result panel
+    (`.panel`/`.result-grid`/`.timeline-row`/`.progress`), and the full
+    `/admin` panel (`.admin`/`.admin-side`/`.kpis`/`.pane`/`.chips`/
+    `.line-row`, etc.). This is the one deliberate exception to "utility
+    classes inline in markup" — reused 2+ times identically, so a named
+    `@apply` class beats retyping 10-15 utilities in every file.
+  - `@layer utilities` — the couple of constructs with no utility
+    equivalent at all: the `.contact-hint::after` CSS-triangle pointer.
+  - Everything else (page-specific one-off layout — hero grids, feature
+    sections, mini-feature sections, the nav/contact drawers' open/closed
+    transform states, etc.) is inlined as Tailwind utility classes directly
+    on the JSX elements, including arbitrary values (`text-[15.5px]`,
+    `shadow-[...]`, `max-[860px]:grid-cols-1`) where the design's exact
+    pixel values don't land on Tailwind's default scale.
+- **Custom breakpoints**: the original hand-written breakpoints (420, 480,
+  560, 640, 760, 860, 900, 1120px) are expressed with Tailwind's arbitrary
+  `max-[Npx]:` variant syntax rather than remapping the theme's breakpoint
+  scale — exact pixel parity with no risk of misreading Tailwind's
+  `max-*`-generates-from-named-breakpoints behavior.
+- Two pre-existing CSS specificity bugs were found and fixed during the
+  conversion (not deliberately reintroduced, since Tailwind's utility
+  cascade doesn't have the same descendant-selector specificity trap):
+  the footer's "Quick Response on WhatsApp" button was rendering with
+  grayish-blue text instead of white (`.site-footer a` outspecified
+  `.btn-green`'s color), and the numbered index (`01`, `02`...) in the
+  mobile nav drawer was also visible in the desktop horizontal nav row.
+
 ## Environment variables
 
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -298,3 +355,10 @@ propagates sitewide:
   `public/` root) to be picked up by `app/page.js` / `app/contact-us/page.js`.
 - Phone normalization only handles bare `+44`/`44` international prefixes,
   not `00 44...`.
+- `PageHero`'s intro paragraph renders at 18px on all screen sizes. The
+  original hand-written CSS had a mobile-only 16px override that a
+  specificity clash silently defeated (a higher-specificity unconditional
+  rule always won); preserved as-is during the Tailwind port rather than
+  guessed at, since fixing it would be a design change, not a like-for-like
+  port. Worth a deliberate look if the intro text ever feels too large on
+  small phones.

@@ -2,11 +2,13 @@ import Link from "next/link";
 
 export default function PageHero({ eyebrow, title, intro, stats, ctas }) {
   return (
-    <section className="hero">
-      <div className="wrap page-hero-inner">
+    <section className="border-b border-[#e6eaf2] bg-[linear-gradient(180deg,#f4f8f6_0%,#ffffff_100%)]">
+      <div className="wrap pt-14 pb-12 max-[640px]:pt-9 max-[640px]:pb-8">
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h1 className="page-hero-title">{title}</h1>
-        {intro && <p className="intro page-hero-intro">{intro}</p>}
+        <h1 className="mt-[18px] mb-4 max-w-[22ch] text-[clamp(30px,4.5vw,48px)] leading-[1.1] font-extrabold max-[640px]:max-w-full">
+          {title}
+        </h1>
+        {intro && <p className="max-w-[62ch] text-[18px] leading-[1.6] text-muted">{intro}</p>}
         {ctas && (
           <div className="cta-row">
             {ctas.map((c) => (

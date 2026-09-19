@@ -14,7 +14,7 @@ export const metadata = pageMeta({
 
 export default function TrackingPage() {
   return (
-    <div className="portal-body">
+    <div className="bg-bg-soft">
       <SiteHeader variant="tracking" />
       <Suspense fallback={null}>
         <TrackingClient />

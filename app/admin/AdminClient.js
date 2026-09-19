@@ -141,15 +141,15 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
   return (
     <div className="admin">
       <aside className="admin-side">
-        <Link className="brand" href="/">
-          <span className="mark" style={{ width: 42, height: 42, background: "#fff", borderRadius: 6 }}>
-            <img src="/assets/logo-mark.svg" alt="PAK Cargo" />
+        <Link className="flex items-center gap-[10px]" href="/">
+          <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-md bg-white">
+            <img className="h-full w-full object-contain" src="/assets/logo-mark.svg" alt="PAK Cargo" />
           </span>
           <span>
-            <span style={{ display: "block", fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 16, color: "#fff" }}>
+            <span className="block font-head text-base font-extrabold text-white">
               PAK CARGO
             </span>
-            <span className="sub" style={{ color: "var(--faint)" }}>Admin</span>
+            <span className="text-[10.5px] font-medium tracking-[0.14em] text-faint uppercase">Admin</span>
           </span>
         </Link>
         <nav className="nav">
@@ -168,7 +168,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
           <Link href="/">Public website &rarr;</Link>
           <div className="who">Signed in as {staffEmail || "…"}</div>
           <form action={signOutAction}>
-            <button type="submit" className="btn btn-ghost btn-sm" style={{ width: "100%", marginTop: 4 }}>
+            <button type="submit" className="btn btn-ghost btn-sm mt-1 w-full">
               Sign out
             </button>
           </form>
@@ -222,7 +222,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                 <button className="btn btn-ghost btn-sm" onClick={() => setView("ship")}>All shipments</button>
               </div>
               <div className="scroll">
-                <table style={{ minWidth: 640 }}>
+                <table className="min-w-[640px]">
                   <thead>
                     <tr><th>Reference</th><th>Customer</th><th>Route</th><th>Status</th><th>Flag</th></tr>
                   </thead>
@@ -233,7 +233,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                         <td>{s.customer}</td>
                         <td>{s.route}</td>
                         <td><span className={statusBadgeClass(s.status)}>{s.status}</span></td>
-                        <td style={{ color: "var(--red)" }}>{s.flag}</td>
+                        <td className="text-red">{s.flag}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -256,7 +256,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
             </div>
             <div className="pane">
               <div className="scroll">
-                <table style={{ minWidth: 820 }}>
+                <table className="min-w-[820px]">
                   <thead>
                     <tr>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
@@ -302,7 +302,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
             </p>
             <div className="pane">
               <div className="scroll">
-                <table style={{ minWidth: 760 }}>
+                <table className="min-w-[760px]">
                   <thead>
                     <tr>
                       <th>Invoice</th><th>Customer</th><th>Shipment</th><th>Issued</th>
@@ -316,7 +316,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                         <td>{i.customer}</td>
                         <td>{i.ref}</td>
                         <td>{i.issued}</td>
-                        <td className="num-right" style={{ fontWeight: 600 }}>£{money(i.total)}</td>
+                        <td className="num-right font-semibold">£{money(i.total)}</td>
                         <td><span className={invClass(i.status)}>{i.status}</span></td>
                         <td>
                           {i.status !== "Paid" && (
@@ -336,10 +336,10 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
         )}
 
         {view === "new" && (
-          <section className="admin-view" style={{ maxWidth: 880 }}>
+          <section className="admin-view max-w-[880px]">
             <h1>New invoice</h1>
             <p className="sub">Lines total live. Issuing saves the invoice for internal records &mdash; customers only ever see tracking, never invoices.</p>
-            <div className="pane" style={{ padding: 24 }}>
+            <div className="pane p-6">
               <div className="grid-fields">
                 <label className="field">
                   Customer
@@ -421,13 +421,13 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
               </div>
               <div className="line-foot">
                 <button className="btn btn-ghost btn-sm" onClick={addLine}>+ Add line</button>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 18 }}>
-                  <span style={{ fontSize: 15, color: "var(--soft)" }}>Invoice total</span>
+                <div className="flex items-baseline gap-[18px]">
+                  <span className="text-[15px] text-soft">Invoice total</span>
                   <span className="total">£{money(draftTotal)}</span>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
+              <div className="mt-5 flex flex-wrap gap-3">
                 <button className="btn btn-green" disabled={isPending} onClick={handleIssue}>
                   {isPending ? "Issuing…" : "Issue invoice"}
                 </button>
@@ -440,12 +440,12 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
         )}
 
         {view === "rates" && (
-          <section className="admin-view" style={{ maxWidth: 720 }}>
+          <section className="admin-view max-w-[720px]">
             <h1>Rates</h1>
             <p className="sub">These are the headline rates and pickup charges shown on the homepage pricing cards.</p>
             {["sea", "air"].map((mode) => (
-              <div className="pane" key={mode} style={{ padding: 24, marginTop: 22 }}>
-                <h2 style={{ fontSize: 17, fontWeight: 700, textTransform: "capitalize", marginBottom: 16 }}>
+              <div className="pane p-6" key={mode}>
+                <h2 className="mb-4 text-[17px] font-bold capitalize">
                   {mode} cargo
                 </h2>
                 <div className="grid-fields">
@@ -468,7 +468,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     />
                   </label>
                 </div>
-                <label className="field" style={{ marginTop: 16 }}>
+                <label className="field mt-4">
                   Note
                   <input
                     className="input"
@@ -479,7 +479,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                 </label>
                 {mode === "sea" && (
                   <>
-                    <p className="fine" style={{ marginTop: 20, marginBottom: 4 }}>
+                    <p className="fine mt-5 mb-1">
                       Next departure &mdash; shown as a countdown banner on the Sea Cargo page. Leave the date blank to hide it.
                     </p>
                     <div className="grid-fields">
@@ -504,11 +504,11 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     </div>
                   </>
                 )}
-                <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
+                <div className="mt-[18px] flex items-center gap-[14px]">
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save
                   </button>
-                  {rateSaved[mode] && <span style={{ fontSize: 13.5, color: "var(--green-ink)" }}>Saved &mdash; live on the homepage now.</span>}
+                  {rateSaved[mode] && <span className="text-[13.5px] text-green-ink">Saved &mdash; live on the homepage now.</span>}
                 </div>
               </div>
             ))}

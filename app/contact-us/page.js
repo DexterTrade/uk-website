@@ -28,11 +28,11 @@ export default function ContactUsPage() {
           ]}
         />
 
-        <section className="section wrap" style={{ paddingTop: 8 }}>
+        <section className="section wrap pt-2">
           <div className="contact-grid">
             <div className="contact-card">
               <h2>Reach us directly</h2>
-              <a className="btn btn-green" style={{ width: "100%" }} href={BUSINESS.whatsapp}>
+              <a className="btn btn-green w-full" href={BUSINESS.whatsapp}>
                 Quick Response on WhatsApp
               </a>
               <div className="hero-contact-list">

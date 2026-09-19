@@ -26,7 +26,7 @@ function Timeline({ stages }) {
 
 function ShipmentResult({ loading, searched, shipmentKey, data }) {
   if (loading) {
-    return <p className="fine" style={{ marginTop: 16 }}>Looking up shipment…</p>;
+    return <p className="fine mt-4">Looking up shipment…</p>;
   }
   if (!searched) {
     return null;
@@ -46,15 +46,15 @@ function ShipmentResult({ loading, searched, shipmentKey, data }) {
   return (
     <div className="result-grid">
       <div>
-        <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-          <span style={{ fontFamily: "var(--font-head)", fontWeight: 700, fontSize: 24, color: "var(--navy)" }}>
+        <div className="flex flex-wrap items-baseline gap-[10px]">
+          <span className="font-head text-2xl font-bold text-navy">
             {data.reference}
           </span>
           <span className="badge">{data.status}</span>
         </div>
-        <p style={{ fontSize: 15, color: "var(--muted)", marginTop: 12 }}>{data.summary}</p>
+        <p className="mt-3 text-[15px] text-muted">{data.summary}</p>
         <div className="progress"><span style={{ width: `${pct}%` }} /></div>
-        <div style={{ fontSize: 13, color: "var(--faint)", marginTop: 8 }}>
+        <div className="mt-2 text-[13px] text-faint">
           {done} of {stages.length} milestones complete
         </div>
         <dl className="meta">
@@ -107,8 +107,8 @@ export default function TrackingClient() {
   }
 
   return (
-    <main className="wrap-narrow" style={{ padding: "44px 20px 72px" }}>
-      <h1 style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 800 }}>Track a shipment</h1>
+    <main className="wrap-narrow px-5 pt-11 pb-[72px]">
+      <h1 className="text-[clamp(28px,4vw,40px)] font-extrabold">Track a shipment</h1>
       <p className="lede">
         Enter your AWB / tracking number or booking reference, plus the sender&rsquo;s phone number used
         for the booking. Demo: <strong>PC-4471</strong> with phone <strong>07700 900001</strong> (air), or{" "}
@@ -118,26 +118,23 @@ export default function TrackingClient() {
       <section className="panel">
         <form
           className="row-inline"
-          style={{ flexWrap: "wrap" }}
           onSubmit={(e) => {
             e.preventDefault();
             runTrack(trackInput.trim(), phoneInput.trim());
           }}
         >
           <input
-            className="input"
+            className="input min-h-12"
             placeholder="AWB / tracking number or booking reference"
             aria-label="Tracking or booking reference"
-            style={{ minHeight: 48 }}
             value={trackInput}
             onChange={(e) => setTrackInput(e.target.value)}
             required
           />
           <input
-            className="input"
+            className="input min-h-12"
             placeholder="Sender's phone number"
             aria-label="Sender's phone number"
-            style={{ minHeight: 48 }}
             value={phoneInput}
             onChange={(e) => setPhoneInput(e.target.value)}
             required
@@ -147,7 +144,7 @@ export default function TrackingClient() {
         <ShipmentResult loading={shipmentLoading} searched={searched} shipmentKey={trackKey} data={shipmentData} />
       </section>
 
-      <p className="fine" style={{ marginTop: 22 }}>
+      <p className="fine mt-[22px]">
         Can&rsquo;t find your shipment? <a href={BUSINESS.whatsapp}>Reach us on WhatsApp for a quick response</a> and
         we will look it up.
       </p>

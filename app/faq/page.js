@@ -17,12 +17,12 @@ export default function FaqPage() {
       <FaqJsonLd />
       <SiteHeader variant="service" />
       <main>
-        <section className="section wrap" style={{ paddingTop: 56 }}>
+        <section className="section wrap pt-14">
           <span className="eyebrow">FAQ</span>
-          <h1 style={{ fontSize: "clamp(30px,4vw,42px)", fontWeight: 800, margin: "18px 0 12px" }}>
+          <h1 className="mt-[18px] mb-3 text-[clamp(30px,4vw,42px)] font-extrabold">
             Frequently asked questions
           </h1>
-          <p className="lede" style={{ maxWidth: "56ch" }}>
+          <p className="lede max-w-[56ch]">
             Can&rsquo;t find what you need? <a href="/contact-us">Contact us</a> and we&rsquo;ll answer directly.
           </p>
           <div className="faq">

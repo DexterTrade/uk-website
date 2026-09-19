@@ -86,7 +86,7 @@ export default function MovingBackHomePage() {
           </div>
         </section>
 
-        <p className="wrap fine" style={{ marginTop: -8, marginBottom: 40 }}>
+        <p className="wrap fine -mt-2 mb-10">
           Household relocation is quoted individually based on volume and destination &mdash; tell us what you&rsquo;re
           bringing and we&rsquo;ll confirm a fixed price the same working day.
         </p>

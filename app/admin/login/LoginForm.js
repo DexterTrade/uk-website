@@ -12,11 +12,7 @@ export default function LoginForm() {
   const [state, formAction, pending] = useActionState(signIn, initialState);
 
   return (
-    <form
-      action={formAction}
-      className="card"
-      style={{ display: "flex", flexDirection: "column", gap: 14 }}
-    >
+    <form action={formAction} className="card flex flex-col gap-3.5">
       <input type="hidden" name="next" value={next} />
       <label className="field">
         Email

@@ -84,7 +84,7 @@ export default async function SeaCargoPage() {
                 </tbody>
               </table>
             </div>
-            <p className="fine" style={{ marginTop: 14 }}>
+            <p className="fine mt-[14px]">
               Rates exclude destination duties and optional insurance.
             </p>
           </div>

@@ -110,7 +110,7 @@ export default function ExcessBaggagePage() {
 
         <section className="section wrap">
           <h2 className="h-sec">Pricing</h2>
-          <p className="lede" style={{ maxWidth: "60ch" }}>
+          <p className="lede max-w-[60ch]">
             Excess baggage is priced per kilo, in line with our standard air cargo rates &mdash; see the <a href="/air-cargo">air cargo page</a> for
             the current bands. Tell us your travel date when you request a quote so we can confirm space on that week&rsquo;s departure.
           </p>

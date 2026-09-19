@@ -96,7 +96,7 @@ export default function PakToUkPage() {
           </div>
         </section>
 
-        <p className="wrap fine" style={{ marginTop: -8, marginBottom: 40 }}>
+        <p className="wrap fine -mt-2 mb-10">
           Rates for the Pakistan &rarr; UK route depend on the collection city and current space &mdash; send us the details on the contact
           page and we&rsquo;ll reply with a fixed price the same working day.
         </p>

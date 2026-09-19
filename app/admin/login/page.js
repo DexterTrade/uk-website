@@ -8,18 +8,9 @@ export const metadata = {
 
 export default function AdminLoginPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding: "40px 20px",
-        background: "var(--bg-soft)",
-      }}
-    >
-      <div style={{ maxWidth: 380, margin: "0 auto", width: "100%" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, textAlign: "center" }}>
+    <main className="flex min-h-screen flex-col justify-center bg-bg-soft px-5 py-10">
+      <div className="mx-auto w-full max-w-[380px]">
+        <h1 className="mb-6 text-center text-[26px] font-extrabold">
           PAK Cargo staff
         </h1>
         <Suspense fallback={null}>

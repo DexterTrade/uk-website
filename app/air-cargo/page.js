@@ -41,7 +41,7 @@ export default function AirCargoPage() {
                 </span>
               ))}
             </div>
-            <span className="fine" style={{ marginLeft: "auto" }}>Book any day &mdash; cargo consolidates for the next weekly departure.</span>
+            <span className="fine ml-auto">Book any day &mdash; cargo consolidates for the next weekly departure.</span>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export default function AirCargoPage() {
                 </tbody>
               </table>
             </div>
-            <p className="fine" style={{ marginTop: 14 }}>
+            <p className="fine mt-[14px]">
               Rates exclude destination duties and optional insurance. Volumetric weight applies to light, bulky
               consignments at 1 kg per 6,000 cm&sup3;.
             </p>

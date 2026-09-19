@@ -88,8 +88,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable}`}>
-      <body>
+    <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable} overflow-x-hidden`}>
+      <body className="m-0 overflow-x-hidden bg-white font-body text-ink antialiased">
         {/* Google tag (gtag.js) for Google Ads */}
         <Script
           async

@@ -47,9 +47,11 @@ export default function ContactDrawer() {
 
   return (
     <>
-      <div className="contact-drawer-trigger-wrap">
+      <div className="relative">
         <div
-          className={`contact-hint${hint ? " show" : ""}`}
+          className={`contact-hint absolute right-0 bottom-[calc(100%+10px)] left-0 z-30 rounded-[10px] bg-ink px-[14px] py-[11px] text-[13px] leading-[1.4] font-semibold text-white shadow-[0_14px_30px_-14px_rgba(22,35,60,0.55)] transition duration-[250ms] ${
+            hint ? "pointer-events-auto translate-y-0 cursor-pointer opacity-100" : "pointer-events-none translate-y-[6px] opacity-0"
+          }`}
           role="status"
           onClick={() => {
             setHint(false);
@@ -72,49 +74,77 @@ export default function ContactDrawer() {
             <span>Call or WhatsApp us</span>
             <span className="city">Phone, WhatsApp &amp; email</span>
           </span>
-          <span className="chev" aria-hidden="true">&rsaquo;</span>
+          <span className="ml-auto flex-none text-xl leading-none text-faint" aria-hidden="true">&rsaquo;</span>
         </button>
       </div>
 
       <div
-        className={`contact-drawer-overlay${open ? " open" : ""}`}
+        className={`fixed inset-0 z-[70] bg-[rgba(22,35,60,0.45)] backdrop-blur-[2px] transition-opacity duration-200 ${
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
         onClick={close}
         aria-hidden="true"
       />
       <div
-        className={`contact-drawer${open ? " open" : ""}`}
+        className={`fixed inset-y-0 left-0 z-[75] flex w-[min(84vw,320px)] flex-col rounded-[0_18px_18px_0] bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-[18px_0_44px_-20px_rgba(22,35,60,0.5)] transition-transform duration-[280ms] ease-out ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
         role="dialog"
         aria-modal="true"
         aria-label="Phone numbers, WhatsApp and email"
       >
-        <div className="contact-drawer-head">
+        <div className="flex flex-none items-center justify-between border-b border-line-light px-5 pt-[22px] pb-4 font-head text-base font-bold">
           <span>Get in touch</span>
-          <button type="button" className="contact-drawer-close" onClick={close} aria-label="Close">
+          <button
+            type="button"
+            className="h-[34px] w-[34px] flex-none cursor-pointer rounded-full border-none bg-bg-soft text-xl leading-none text-ink"
+            onClick={close}
+            aria-label="Close"
+          >
             &times;
           </button>
         </div>
-        <div className="contact-drawer-body">
+        <div className="flex flex-col gap-[10px] overflow-y-auto px-5 pt-[18px] pb-[26px]">
           {BUSINESS.phones.map((p) => (
-            <a key={p.city} href={`tel:${p.href}`} onClick={close}>
-              <span className="info-icon"><PhoneIcon /></span>
+            <a
+              key={p.city}
+              href={`tel:${p.href}`}
+              onClick={close}
+              className="flex items-center gap-[13px] rounded-xl border-[1.5px] border-line px-[14px] py-3 text-ink transition hover:border-green hover:bg-green-soft"
+            >
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-green-soft text-green">
+                <PhoneIcon className="h-[17px] w-[17px]" />
+              </span>
               <span>
-                <span className="main">{p.display}</span>
-                <span className="sub">{p.city}</span>
+                <span className="block text-[15.5px] font-bold">{p.display}</span>
+                <span className="mt-0.5 block text-xs font-medium tracking-[0.05em] text-faint uppercase">{p.city}</span>
               </span>
             </a>
           ))}
-          <a href={BUSINESS.whatsapp} onClick={close}>
-            <span className="info-icon wa"><WhatsAppIcon /></span>
+          <a
+            href={BUSINESS.whatsapp}
+            onClick={close}
+            className="flex items-center gap-[13px] rounded-xl border-[1.5px] border-line px-[14px] py-3 text-ink transition hover:border-green hover:bg-green-soft"
+          >
+            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-green text-white">
+              <WhatsAppIcon className="h-[17px] w-[17px]" />
+            </span>
             <span>
-              <span className="main">{BUSINESS.whatsappDisplay}</span>
-              <span className="sub">WhatsApp</span>
+              <span className="block text-[15.5px] font-bold">{BUSINESS.whatsappDisplay}</span>
+              <span className="mt-0.5 block text-xs font-medium tracking-[0.05em] text-faint uppercase">WhatsApp</span>
             </span>
           </a>
-          <a href={`mailto:${BUSINESS.email}`} onClick={close}>
-            <span className="info-icon"><EmailIcon /></span>
+          <a
+            href={`mailto:${BUSINESS.email}`}
+            onClick={close}
+            className="flex items-center gap-[13px] rounded-xl border-[1.5px] border-line px-[14px] py-3 text-ink transition hover:border-green hover:bg-green-soft"
+          >
+            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-green-soft text-green">
+              <EmailIcon className="h-[17px] w-[17px]" />
+            </span>
             <span>
-              <span className="main">{BUSINESS.email}</span>
-              <span className="sub">Email</span>
+              <span className="block text-[15.5px] font-bold">{BUSINESS.email}</span>
+              <span className="mt-0.5 block text-xs font-medium tracking-[0.05em] text-faint uppercase">Email</span>
             </span>
           </a>
         </div>
