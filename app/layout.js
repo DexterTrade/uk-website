@@ -1,4 +1,5 @@
 import { Archivo, IBM_Plex_Sans } from "next/font/google";
+import Script from "next/script";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import OrganizationJsonLd from "./components/OrganizationJsonLd";
 import "./globals.css";
@@ -89,6 +90,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable}`}>
       <body>
+        {/* Google tag (gtag.js) for Google Ads */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18462573024"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-18462573024');
+          `}
+        </Script>
         <OrganizationJsonLd />
         {children}
       </body>
