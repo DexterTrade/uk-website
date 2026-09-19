@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const NAV_ITEMS = [
@@ -22,6 +22,15 @@ export default function SiteHeader({ variant = "home" }) {
   const close = () => setOpen(false);
 
   const subtitle = SUBTITLES[variant] || SUBTITLES.home;
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
 
   return (
     <header className="site-header">
@@ -48,6 +57,8 @@ export default function SiteHeader({ variant = "home" }) {
           <span />
           <span />
         </button>
+
+        <div className={`nav-overlay${open ? " open" : ""}`} onClick={close} aria-hidden="true" />
 
         <nav className={`site-nav${open ? " open" : ""}`} id="site-nav">
           {NAV_ITEMS.map((item) => (
