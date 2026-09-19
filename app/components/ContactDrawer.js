@@ -96,7 +96,7 @@ export default function ContactDrawer() {
         <div className="contact-drawer-body">
           {BUSINESS.phones.map((p) => (
             <a key={p.city} href={`tel:${p.href}`} onClick={close}>
-              <PhoneIcon />
+              <span className="info-icon"><PhoneIcon /></span>
               <span>
                 <span className="main">{p.display}</span>
                 <span className="sub">{p.city}</span>
@@ -104,14 +104,14 @@ export default function ContactDrawer() {
             </a>
           ))}
           <a href={BUSINESS.whatsapp} onClick={close}>
-            <WhatsAppIcon />
+            <span className="info-icon wa"><WhatsAppIcon /></span>
             <span>
               <span className="main">{BUSINESS.whatsappDisplay}</span>
               <span className="sub">WhatsApp</span>
             </span>
           </a>
           <a href={`mailto:${BUSINESS.email}`} onClick={close}>
-            <EmailIcon />
+            <span className="info-icon"><EmailIcon /></span>
             <span>
               <span className="main">{BUSINESS.email}</span>
               <span className="sub">Email</span>

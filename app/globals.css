@@ -121,10 +121,12 @@ table { border-collapse: collapse; width: 100%; }
   }
   .site-nav-title { font-family: var(--font-head); font-weight: 800; font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
 
-  .site-nav-links { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
-  .site-nav a { display: flex; align-items: center; gap: 13px; padding: 13px 10px; border-radius: 10px; font-size: 15.5px; font-weight: 600; transition: background 0.15s ease, color 0.15s ease; }
-  .site-nav a:hover, .site-nav a:active { background: var(--bg-soft); color: var(--green); }
-  .site-nav-links a svg { flex: 0 0 auto; color: var(--green); }
+  .site-nav-links { display: flex; flex-direction: column; flex: 1 1 auto; }
+  .site-nav a { display: flex; align-items: center; gap: 13px; padding: 14px 2px; border-bottom: 1px solid var(--line-light); font-size: 15.5px; font-weight: 600; color: var(--ink); transition: color 0.15s ease; }
+  .site-nav-links a:last-child { border-bottom: none; }
+  .site-nav a:hover, .site-nav a:active { color: var(--green); }
+  .site-nav-links a svg { flex: 0 0 auto; color: var(--faint); transition: color 0.15s ease; }
+  .site-nav-links a:hover svg, .site-nav-links a:active svg { color: var(--green); }
 
   .site-nav-foot {
     display: flex;
@@ -329,13 +331,15 @@ table { border-collapse: collapse; width: 100%; }
 .contact-drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px 16px; border-bottom: 1px solid var(--line-light); font-family: var(--font-head); font-weight: 700; font-size: 16px; flex: 0 0 auto; }
 .contact-drawer-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--bg-soft); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; flex: 0 0 auto; }
 
-/* plain nav-style list, matching the mobile menu -- not boxed rows */
-.contact-drawer-body { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 24px; overflow-y: auto; }
-.contact-drawer-body a { display: flex; align-items: center; gap: 13px; padding: 13px 10px; border-radius: 10px; color: var(--ink); transition: background 0.15s ease, color 0.15s ease; }
-.contact-drawer-body a:hover, .contact-drawer-body a:active { background: var(--bg-soft); color: var(--green); }
-.contact-drawer-body a svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--green); }
-.contact-drawer-body a:hover svg, .contact-drawer-body a:active svg { color: inherit; }
-.contact-drawer-body .main { display: block; font-size: 15.5px; font-weight: 600; }
+/* info-card rows -- deliberately distinct from the plain nav list, since
+   these are lookup details to glance at, not navigation destinations */
+.contact-drawer-body { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 26px; overflow-y: auto; }
+.contact-drawer-body a { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--ink); transition: border-color 0.15s ease, background 0.15s ease; }
+.contact-drawer-body a:hover, .contact-drawer-body a:active { border-color: var(--green); background: var(--green-soft); }
+.contact-drawer-body .info-icon { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--green-soft); color: var(--green); }
+.contact-drawer-body .info-icon.wa { background: var(--green); color: #fff; }
+.contact-drawer-body .info-icon svg { width: 17px; height: 17px; }
+.contact-drawer-body .main { display: block; font-size: 15.5px; font-weight: 700; }
 .contact-drawer-body .sub { display: block; font-size: 12px; font-weight: 500; color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
 /* next dispatch banner (sea cargo) */

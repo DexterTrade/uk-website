@@ -71,7 +71,7 @@ export default function SiteHeader({ variant = "home" }) {
           <div className="site-nav-links">
             {NAV_ITEMS.map(({ href, label, Icon }) => (
               <Link key={href} href={href} onClick={close}>
-                <Icon />
+                <Icon width="18" height="18" />
                 {label}
               </Link>
             ))}
