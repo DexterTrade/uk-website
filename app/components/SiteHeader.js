@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BUSINESS } from "@/lib/seo";
 import { PhoneIcon } from "./contact-icons";
+import { ShipIcon, PlaneIcon, SuitcaseIcon, SwapIcon, HomeIcon, PinIcon, HelpIcon } from "./nav-icons";
 
 const NAV_ITEMS = [
-  { href: "/sea-cargo", label: "Sea Cargo" },
-  { href: "/air-cargo", label: "Air Cargo" },
-  { href: "/excess-baggage", label: "Excess Baggage" },
-  { href: "/pak-to-uk", label: "Pak to UK" },
-  { href: "/moving-back-home", label: "Relocation" },
-  { href: "/tracking", label: "Track" },
-  { href: "/faq", label: "FAQ" },
+  { href: "/sea-cargo", label: "Sea Cargo", Icon: ShipIcon },
+  { href: "/air-cargo", label: "Air Cargo", Icon: PlaneIcon },
+  { href: "/excess-baggage", label: "Excess Baggage", Icon: SuitcaseIcon },
+  { href: "/pak-to-uk", label: "Pak to UK", Icon: SwapIcon },
+  { href: "/moving-back-home", label: "Relocation", Icon: HomeIcon },
+  { href: "/tracking", label: "Track", Icon: PinIcon },
+  { href: "/faq", label: "FAQ", Icon: HelpIcon },
 ];
 
 const SUBTITLES = {
@@ -66,14 +67,12 @@ export default function SiteHeader({ variant = "home" }) {
         <nav className={`site-nav${open ? " open" : ""}`} id="site-nav">
           <div className="site-nav-head">
             <span className="site-nav-title">Menu</span>
-            <button type="button" className="site-nav-close" onClick={close} aria-label="Close menu">
-              &times;
-            </button>
           </div>
           <div className="site-nav-links">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} onClick={close}>
-                {item.label}
+            {NAV_ITEMS.map(({ href, label, Icon }) => (
+              <Link key={href} href={href} onClick={close}>
+                <Icon />
+                {label}
               </Link>
             ))}
           </div>
