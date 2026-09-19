@@ -93,28 +93,28 @@ export default function ContactDrawer() {
             &times;
           </button>
         </div>
-        <div className="hero-contact-list contact-drawer-body">
+        <div className="contact-drawer-body">
           {BUSINESS.phones.map((p) => (
             <a key={p.city} href={`tel:${p.href}`} onClick={close}>
-              <span className="row-icon"><PhoneIcon /></span>
-              <span className="row-text">
-                <span>{p.display}</span>
-                <span className="city">{p.city}</span>
+              <PhoneIcon />
+              <span>
+                <span className="main">{p.display}</span>
+                <span className="sub">{p.city}</span>
               </span>
             </a>
           ))}
           <a href={BUSINESS.whatsapp} onClick={close}>
-            <span className="row-icon wa"><WhatsAppIcon /></span>
-            <span className="row-text">
-              <span>{BUSINESS.whatsappDisplay}</span>
-              <span className="city">WhatsApp</span>
+            <WhatsAppIcon />
+            <span>
+              <span className="main">{BUSINESS.whatsappDisplay}</span>
+              <span className="sub">WhatsApp</span>
             </span>
           </a>
           <a href={`mailto:${BUSINESS.email}`} onClick={close}>
-            <span className="row-icon"><EmailIcon /></span>
-            <span className="row-text">
-              <span>{BUSINESS.email}</span>
-              <span className="city">Email</span>
+            <EmailIcon />
+            <span>
+              <span className="main">{BUSINESS.email}</span>
+              <span className="sub">Email</span>
             </span>
           </a>
         </div>

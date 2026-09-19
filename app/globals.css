@@ -312,23 +312,32 @@ table { border-collapse: collapse; width: 100%; }
 .contact-drawer {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   bottom: 0;
-  width: min(88vw, 360px);
+  right: auto;
+  width: min(84vw, 320px);
   background: #fff;
   z-index: 75;
   display: flex;
   flex-direction: column;
-  border-radius: 18px 0 0 18px;
-  box-shadow: -18px 0 44px -20px rgba(22, 35, 60, 0.5);
-  transform: translateX(100%);
+  border-radius: 0 18px 18px 0;
+  box-shadow: 18px 0 44px -20px rgba(22, 35, 60, 0.5);
+  transform: translateX(-100%);
   transition: transform 0.28s ease;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .contact-drawer.open { transform: translateX(0); }
-.contact-drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 22px 16px; border-bottom: 1px solid var(--line-light); font-family: var(--font-head); font-weight: 700; font-size: 16px; flex: 0 0 auto; }
+.contact-drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px 16px; border-bottom: 1px solid var(--line-light); font-family: var(--font-head); font-weight: 700; font-size: 16px; flex: 0 0 auto; }
 .contact-drawer-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--bg-soft); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; flex: 0 0 auto; }
-.contact-drawer-body { padding: 18px 22px 26px; gap: 10px; overflow-y: auto; }
+
+/* plain nav-style list, matching the mobile menu -- not boxed rows */
+.contact-drawer-body { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 24px; overflow-y: auto; }
+.contact-drawer-body a { display: flex; align-items: center; gap: 13px; padding: 13px 10px; border-radius: 10px; color: var(--ink); transition: background 0.15s ease, color 0.15s ease; }
+.contact-drawer-body a:hover, .contact-drawer-body a:active { background: var(--bg-soft); color: var(--green); }
+.contact-drawer-body a svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--green); }
+.contact-drawer-body a:hover svg, .contact-drawer-body a:active svg { color: inherit; }
+.contact-drawer-body .main { display: block; font-size: 15.5px; font-weight: 600; }
+.contact-drawer-body .sub { display: block; font-size: 12px; font-weight: 500; color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
 /* next dispatch banner (sea cargo) */
 .dispatch-banner { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; background: #fff; border: 1.5px solid var(--green); border-radius: 14px; padding: 26px 30px; margin: 40px 0 0; box-shadow: 0 14px 34px -24px rgba(1, 161, 89, 0.35); }
