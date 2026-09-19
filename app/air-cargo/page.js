@@ -2,7 +2,6 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
-import { PlaneIcon } from "../components/icons";
 
 export const metadata = {
   title: "Air Cargo, UK to Pakistan & Kashmir",
@@ -17,7 +16,6 @@ export default function AirCargoPage() {
       <SiteHeader variant="service" />
       <main>
         <PageHero
-          icon={<PlaneIcon />}
           eyebrow="Cargo by air · UK to Pakistan & Kashmir"
           title="Fast, express cargo by air — door to door in 5-7 days."
           intro="Weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."

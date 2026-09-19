@@ -143,7 +143,6 @@ table { border-collapse: collapse; width: 100%; }
 
 /* PageHero (service pages) */
 .page-hero-inner { padding: 56px 0 48px; }
-.page-hero-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .page-hero-title { font-size: clamp(30px, 4.5vw, 48px); line-height: 1.1; font-weight: 800; margin: 18px 0 16px; max-width: 22ch; }
 .page-hero-intro { font-size: 17px; line-height: 1.6; color: var(--muted); max-width: 62ch; }
 @media (max-width: 640px) {
@@ -163,8 +162,8 @@ table { border-collapse: collapse; width: 100%; }
 .rate-card { display: block; color: inherit; border: 1px solid var(--line); border-radius: 14px; padding: 34px 30px; background: #fff; text-align: center; box-shadow: 0 14px 34px -22px rgba(22, 35, 60, 0.25); transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
 .rate-card:hover { border-color: var(--green); box-shadow: 0 18px 40px -28px rgba(22, 35, 60, 0.35); transform: translateY(-2px); color: inherit; }
 .rate-card.navy:hover { border-color: var(--navy); }
-.rate-icon { width: 64px; height: 64px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--green-soft); color: var(--green); }
-.rate-card.navy .rate-icon { background: var(--navy-soft); color: var(--navy); }
+.rate-illustration { width: 100%; aspect-ratio: 220 / 130; max-width: 260px; margin: 0 auto 20px; border-radius: 10px; background: var(--green-soft); overflow: hidden; }
+.rate-card.navy .rate-illustration { background: var(--navy-soft); }
 .rate-card h3 { font-size: 21px; font-weight: 700; color: var(--ink); }
 .rate-value { font-family: var(--font-head); font-size: 38px; font-weight: 800; color: var(--green); margin: 12px 0 4px; }
 .rate-card.navy .rate-value { color: var(--navy); }

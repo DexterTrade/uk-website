@@ -1,10 +1,9 @@
 import Link from "next/link";
 
-export default function PageHero({ eyebrow, title, intro, stats, ctas, icon }) {
+export default function PageHero({ eyebrow, title, intro, stats, ctas }) {
   return (
     <section className="hero">
       <div className="wrap page-hero-inner">
-        {icon && <div className="page-hero-icon">{icon}</div>}
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h1 className="page-hero-title">{title}</h1>
         {intro && <p className="intro page-hero-intro">{intro}</p>}

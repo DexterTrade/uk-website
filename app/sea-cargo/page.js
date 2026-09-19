@@ -2,7 +2,6 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
-import { ShipIcon } from "../components/icons";
 
 export const metadata = {
   title: "Sea Cargo, UK to Pakistan & Kashmir",
@@ -17,7 +16,6 @@ export default function SeaCargoPage() {
       <SiteHeader variant="service" />
       <main>
         <PageHero
-          icon={<ShipIcon />}
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
           title="Direct cargo by sea — the economical route for volume and household goods."
           intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable cargo service for furniture, machinery, business stock and household consignments, with onward delivery into Kashmir."
