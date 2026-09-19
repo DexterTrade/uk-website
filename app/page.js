@@ -2,7 +2,6 @@ import Link from "next/link";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import WhatsAppFloat from "./components/WhatsAppFloat";
-import { PlaneIllustration, ShipIllustration } from "./components/illustrations";
 import { BUSINESS } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,24 +10,6 @@ export const metadata = {
     canonical: "/",
   },
 };
-
-const BRIEF_SERVICES = [
-  {
-    href: "/excess-baggage",
-    title: "Excess Baggage",
-    body: "Flying to Pakistan with more than your airline allowance? Send the extra weight as cargo instead — usually much cheaper than airline excess baggage fees.",
-  },
-  {
-    href: "/pak-to-uk",
-    title: "Pakistan to UK",
-    body: "Sending goods from Pakistan back to the UK? The same air and sea service, running in reverse, with UK customs clearance and door delivery.",
-  },
-  {
-    href: "/moving-back-home",
-    title: "Moving Back to Pakistan",
-    body: "Relocating home for good? We pack and deliver your whole household — furniture, appliances and all — safely to your door in Pakistan.",
-  },
-];
 
 const RATE_DEFAULTS = {
   sea: { headline_rate: "From £195/m³", rate_note: "Shared container (LCL) · 30–40 day delivery", pickup_charge: 35 },
@@ -59,14 +40,6 @@ export default async function Home() {
                 consignments, economical cargo by sea for volume, and a dedicated London cargo hub handling
                 direct, door to door collection on every booking.
               </p>
-
-              <div className="hero-urdu" dir="rtl" lang="ur">
-                <p className="urdu-h">پاکستان اور کشمیر تک دروازے سے دروازے کارگو سروس</p>
-                <p className="urdu-p">
-                  برطانیہ سے پاکستان اور کشمیر تک ایک قابلِ اعتماد کارگو سروس۔ فوری ترسیل کے لیے تیز ہوائی کارگو،
-                  زیادہ سامان کے لیے سستا سمندری کارگو، اور ہر بکنگ پر گھر سے براہِ راست وصولی۔
-                </p>
-              </div>
             </div>
             <div className="card card-shadow">
               <h2 style={{ fontSize: 19, fontWeight: 700 }}>Speak to us now</h2>
@@ -95,7 +68,7 @@ export default async function Home() {
         <section className="feature-section wrap">
           <div className="feature-grid">
             <div className="feature-image">
-              <ShipIllustration />
+              <img src="/assets/photos/sea-cargo.jpg" alt="Sea cargo — container ship" />
             </div>
             <div className="feature-info">
               <span className="eyebrow">Sea Cargo</span>
@@ -139,20 +112,57 @@ export default async function Home() {
               <Link className="btn btn-navy" href="/air-cargo">See air cargo &rarr;</Link>
             </div>
             <div className="feature-image">
-              <PlaneIllustration />
+              <img src="/assets/photos/air-cargo.jpg" alt="Air cargo — cargo plane" />
             </div>
           </div>
         </section>
 
-        <section className="section wrap" style={{ paddingTop: 8 }}>
-          <div className="brief-row">
-            {BRIEF_SERVICES.map((s) => (
-              <Link key={s.href} href={s.href} className="brief-card">
-                <h3>{s.title}</h3>
-                <p>{s.body}</p>
-                <span className="go">Learn more &rarr;</span>
-              </Link>
-            ))}
+        <section className="mini-feature wrap">
+          <div className="text">
+            <span className="eyebrow">Excess Baggage</span>
+            <h2>Flying with extra baggage? Send it as cargo instead.</h2>
+            <p>
+              Taking more than your airline allowance to Pakistan? Book the extra weight with us instead of
+              paying at the check-in desk — usually much cheaper than airline excess fees.
+            </p>
+            <Link className="btn btn-navy" href="/excess-baggage">See excess baggage &rarr;</Link>
+          </div>
+          <div className="mini-compare">
+            <div className="line bad">&#10007; Priced on the spot, at the airport</div>
+            <div className="line good">&#10003; Fixed price, booked before you fly</div>
+          </div>
+        </section>
+
+        <section className="mini-feature wrap">
+          <div className="text">
+            <span className="eyebrow">Pakistan to UK</span>
+            <h2>The same service, running in reverse.</h2>
+            <p>
+              Sending goods from Pakistan back to the UK? Air or sea freight, collected in Pakistan, cleared
+              through UK customs and delivered to your door.
+            </p>
+            <Link className="btn btn-navy" href="/pak-to-uk">See Pakistan to UK &rarr;</Link>
+          </div>
+          <div className="route-strip" style={{ margin: 0 }}>
+            <span className="route-city">Karachi</span>
+            <span className="route-city">Lahore</span>
+            <span className="route-arrow">&rarr;</span>
+            <span className="route-city route-dest">UK</span>
+          </div>
+        </section>
+
+        <section className="mini-feature wrap">
+          <div className="text">
+            <span className="eyebrow">Moving Back to Pakistan</span>
+            <h2>Relocating home for good? We&rsquo;ll bring your whole household.</h2>
+            <p>
+              Furniture, appliances and personal belongings — packed, shipped and delivered to your new
+              address in Pakistan. Quoted individually based on what you&rsquo;re bringing.
+            </p>
+            <Link className="btn btn-navy" href="/moving-back-home">See relocation service &rarr;</Link>
+          </div>
+          <div className="mini-photo">
+            <img src="/assets/photos/moving-home.jpg" alt="Moving back to Pakistan — household relocation" />
           </div>
         </section>
       </main>
