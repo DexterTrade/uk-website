@@ -127,7 +127,7 @@ export default async function Home() {
             </p>
             <div className="rate-grid">
               <Link className="rate-card" href="/sea-cargo">
-                <div className="rate-illustration"><ShipIcon /></div>
+                <div className="rate-icon"><ShipIcon /></div>
                 <h3>Sea Cargo</h3>
                 <div className="rate-value">{seaRate.headline_rate}</div>
                 <p className="rate-note">{seaRate.rate_note}</p>
@@ -135,7 +135,7 @@ export default async function Home() {
                 <span className="btn btn-navy btn-sm">See sea cargo rates &rarr;</span>
               </Link>
               <Link className="rate-card navy" href="/air-cargo">
-                <div className="rate-illustration"><PlaneIcon /></div>
+                <div className="rate-icon"><PlaneIcon /></div>
                 <h3>Air Cargo</h3>
                 <div className="rate-value">{airRate.headline_rate}</div>
                 <p className="rate-note">{airRate.rate_note}</p>
