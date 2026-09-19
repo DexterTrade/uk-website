@@ -355,10 +355,10 @@ table { border-collapse: collapse; width: 100%; }
 .footer-phones { list-style: none; margin: 0 0 18px; padding: 0; display: flex; flex-direction: column; gap: 9px; }
 .footer-phones li { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 9px; }
 .footer-phones .city { color: #8b96ad; }
-.footer-phones a { color: #fff; font-weight: 600; white-space: nowrap; }
+.footer-phones a { display: inline-flex; align-items: center; gap: 6px; color: #fff; font-weight: 600; white-space: nowrap; }
 .footer-extra { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; font-size: 14.5px; }
-.footer-extra a { font-weight: 600; }
-.footer-hours { font-size: 13px; color: #8b96ad; margin: 0; }
+.footer-extra a { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.footer-icon { width: 15px; height: 15px; flex: 0 0 auto; color: var(--green); }
 
 .footer-bottom { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 22px 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #8b96ad; }
 
