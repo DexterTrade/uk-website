@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BUSINESS } from "@/lib/seo";
-import { PhoneIcon, EmailIcon } from "./contact-icons";
+import { PhoneIcon, EmailIcon, WhatsAppIcon } from "./contact-icons";
+
+const HINT_INTERVAL_MS = 30000;
+const HINT_VISIBLE_MS = 4500;
 
 export default function ContactDrawer() {
   const [open, setOpen] = useState(false);
+  const [hint, setHint] = useState(false);
+  const openRef = useRef(open);
   const close = () => setOpen(false);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -17,21 +26,55 @@ export default function ContactDrawer() {
     };
   }, [open]);
 
+  // Small mobile-only nudge: every 30s, remind the visitor the numbers are
+  // one tap away, since the full list is now tucked behind the drawer.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 640px)").matches) return;
+
+    let hideTimer;
+    const interval = setInterval(() => {
+      if (openRef.current) return;
+      setHint(true);
+      hideTimer = setTimeout(() => setHint(false), HINT_VISIBLE_MS);
+    }, HINT_INTERVAL_MS);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
   return (
     <>
-      <button
-        type="button"
-        className="contact-drawer-trigger"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-      >
-        <span className="row-icon"><PhoneIcon /></span>
-        <span className="row-text">
-          <span>Phone numbers</span>
-          <span className="city">{BUSINESS.phones.length} UK branches</span>
-        </span>
-        <span className="chev" aria-hidden="true">&rsaquo;</span>
-      </button>
+      <div className="contact-drawer-trigger-wrap">
+        <div
+          className={`contact-hint${hint ? " show" : ""}`}
+          role="status"
+          onClick={() => {
+            setHint(false);
+            setOpen(true);
+          }}
+        >
+          Here are our numbers — tap to call or WhatsApp
+        </div>
+        <button
+          type="button"
+          className="contact-drawer-trigger"
+          onClick={() => {
+            setHint(false);
+            setOpen(true);
+          }}
+          aria-haspopup="dialog"
+        >
+          <span className="row-icon"><PhoneIcon /></span>
+          <span className="row-text">
+            <span>Call or WhatsApp us</span>
+            <span className="city">Phone, WhatsApp &amp; email</span>
+          </span>
+          <span className="chev" aria-hidden="true">&rsaquo;</span>
+        </button>
+      </div>
 
       <div
         className={`contact-drawer-overlay${open ? " open" : ""}`}
@@ -42,10 +85,10 @@ export default function ContactDrawer() {
         className={`contact-drawer${open ? " open" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Phone numbers and email"
+        aria-label="Phone numbers, WhatsApp and email"
       >
         <div className="contact-drawer-head">
-          <span>Call a branch</span>
+          <span>Get in touch</span>
           <button type="button" className="contact-drawer-close" onClick={close} aria-label="Close">
             &times;
           </button>
@@ -60,6 +103,13 @@ export default function ContactDrawer() {
               </span>
             </a>
           ))}
+          <a href={BUSINESS.whatsapp} onClick={close}>
+            <span className="row-icon wa"><WhatsAppIcon /></span>
+            <span className="row-text">
+              <span>{BUSINESS.whatsappDisplay}</span>
+              <span className="city">WhatsApp</span>
+            </span>
+          </a>
           <a href={`mailto:${BUSINESS.email}`} onClick={close}>
             <span className="row-icon"><EmailIcon /></span>
             <span className="row-text">

@@ -49,32 +49,34 @@ export default async function Home() {
                 Call your nearest branch, or reach us on WhatsApp for a quick response.
               </p>
               <div className="hero-contact-list">
-                <div className="contact-phones-inline">
-                  {BUSINESS.phones.map((p) => (
-                    <a key={p.city} href={`tel:${p.href}`}>
-                      <span className="row-icon"><PhoneIcon /></span>
-                      <span className="row-text">
-                        <span>{p.display}</span>
-                        <span className="city">{p.city}</span>
-                      </span>
-                    </a>
-                  ))}
+                <div className="contact-inline-rows">
+                  <div className="contact-phones-inline">
+                    {BUSINESS.phones.map((p) => (
+                      <a key={p.city} href={`tel:${p.href}`}>
+                        <span className="row-icon"><PhoneIcon /></span>
+                        <span className="row-text">
+                          <span>{p.display}</span>
+                          <span className="city">{p.city}</span>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                  <a href={BUSINESS.whatsapp}>
+                    <span className="row-icon wa"><WhatsAppIcon /></span>
+                    <span className="row-text">
+                      <span>{BUSINESS.whatsappDisplay}</span>
+                      <span className="city">WhatsApp</span>
+                    </span>
+                  </a>
+                  <a href={`mailto:${BUSINESS.email}`}>
+                    <span className="row-icon"><EmailIcon /></span>
+                    <span className="row-text">
+                      <span>{BUSINESS.email}</span>
+                      <span className="city">Email</span>
+                    </span>
+                  </a>
                 </div>
-                <a href={BUSINESS.whatsapp}>
-                  <span className="row-icon wa"><WhatsAppIcon /></span>
-                  <span className="row-text">
-                    <span>{BUSINESS.whatsappDisplay}</span>
-                    <span className="city">WhatsApp</span>
-                  </span>
-                </a>
                 <ContactDrawer />
-                <a href={`mailto:${BUSINESS.email}`}>
-                  <span className="row-icon"><EmailIcon /></span>
-                  <span className="row-text">
-                    <span>{BUSINESS.email}</span>
-                    <span className="city">Email</span>
-                  </span>
-                </a>
               </div>
               <a className="btn btn-green" style={{ marginTop: 16, width: "100%" }} href={BUSINESS.whatsapp}>
                 Quick Response on WhatsApp

@@ -258,6 +258,7 @@ table { border-collapse: collapse; width: 100%; }
 .hero-contact-list .row-icon.wa { background: var(--green); color: #fff; }
 .hero-contact-list .row-text { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .hero-contact-list .city { color: var(--faint); font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+.contact-inline-rows { display: flex; flex-direction: column; gap: 10px; }
 .contact-phones-inline { display: flex; flex-direction: column; gap: 10px; }
 @media (max-width: 640px) {
   .hero-contact-list a { padding: 9px 12px; font-size: 14px; }
@@ -265,14 +266,45 @@ table { border-collapse: collapse; width: 100%; }
   .hero-contact-list .city { font-size: 11.5px; }
 }
 
-/* on phones the per-city numbers move into a slide-in drawer, so the hero
-   card stays short enough that the next section peeks into view on load */
+/* on phones the whole numbers box collapses to a single drawer toggle, so
+   the hero card stays short enough that the next section peeks into view */
+.contact-drawer-trigger-wrap { position: relative; }
 .contact-drawer-trigger { display: none; width: 100%; align-items: center; gap: 12px; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: #fff; font-family: inherit; font-weight: 600; color: var(--ink); font-size: 15px; cursor: pointer; text-align: left; }
 .contact-drawer-trigger:hover { border-color: var(--green); color: var(--green); }
 .contact-drawer-trigger .chev { margin-left: auto; font-size: 20px; line-height: 1; color: var(--faint); flex: 0 0 auto; }
 @media (max-width: 640px) {
-  .contact-phones-inline { display: none; }
+  .contact-inline-rows { display: none; }
   .contact-drawer-trigger { display: flex; }
+}
+
+/* recurring heads-up bubble reminding phone visitors the numbers are one tap away */
+.contact-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 11px 14px;
+  border-radius: 10px;
+  box-shadow: 0 14px 30px -14px rgba(22, 35, 60, 0.55);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 30;
+}
+.contact-hint.show { opacity: 1; transform: translateY(0); pointer-events: auto; cursor: pointer; }
+.contact-hint::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 26px;
+  border: 6px solid transparent;
+  border-top-color: var(--ink);
 }
 
 .contact-drawer-overlay { position: fixed; inset: 0; background: rgba(22, 35, 60, 0.45); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 70; }
