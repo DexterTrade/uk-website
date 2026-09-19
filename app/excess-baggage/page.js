@@ -30,6 +30,28 @@ export default function ExcessBaggagePage() {
           ]}
         />
 
+        <div className="wrap">
+          <div className="compare-card">
+            <div className="compare-col bad">
+              <h4>Checking in excess at the airport</h4>
+              <ul>
+                <li>Priced on the spot, per kilo</li>
+                <li>No guarantee of space</li>
+                <li>Paid at check-in, cash or card</li>
+              </ul>
+            </div>
+            <div className="compare-vs">vs</div>
+            <div className="compare-col good">
+              <h4>Booking excess baggage with us</h4>
+              <ul>
+                <li>Fixed price, confirmed in advance</li>
+                <li>Space booked against your flight date</li>
+                <li>Collected or dropped off, delivered separately</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <section className="section wrap">
           <h2 className="h-sec">Why people use this</h2>
           <p className="lede">Popular around weddings, Eid, and family visits &mdash; anywhere you&rsquo;re carrying more than you can fly with.</p>

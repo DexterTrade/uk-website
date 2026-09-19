@@ -2,6 +2,8 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import NextDispatch from "../components/NextDispatch";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Sea Cargo, UK to Pakistan & Kashmir",
@@ -10,7 +12,14 @@ export const metadata = {
   alternates: { canonical: "/sea-cargo" },
 };
 
-export default function SeaCargoPage() {
+export default async function SeaCargoPage() {
+  const supabase = await createClient();
+  const { data: seaRate } = await supabase
+    .from("rates")
+    .select("next_dispatch_date, next_dispatch_note")
+    .eq("mode", "sea")
+    .maybeSingle();
+
   return (
     <>
       <SiteHeader variant="service" />
@@ -29,6 +38,8 @@ export default function SeaCargoPage() {
             { label: "Track a shipment", href: "/tracking", variant: "btn-ghost" },
           ]}
         />
+
+        <NextDispatch date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
 
         <section className="section wrap">
           <h2 className="h-sec">LCL or FCL &mdash; whichever fits</h2>

@@ -30,6 +30,16 @@ export default function PakToUkPage() {
           ]}
         />
 
+        <div className="wrap">
+          <div className="route-strip">
+            <span className="route-city">Karachi</span>
+            <span className="route-city">Lahore</span>
+            <span className="route-city">Islamabad</span>
+            <span className="route-arrow">&rarr;</span>
+            <span className="route-city route-dest">UK, door to door</span>
+          </div>
+        </div>
+
         <section className="section wrap">
           <h2 className="h-sec">Air or sea, from Pakistan</h2>
           <p className="lede">The same two services as our outbound route, running the other way.</p>

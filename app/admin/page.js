@@ -28,7 +28,10 @@ export default async function AdminPage() {
       .from("invoices")
       .select("id, number, customer_name, shipment_reference, issued_date, total, status, shipments(reference)")
       .order("issued_date", { ascending: false }),
-    supabase.from("rates").select("mode, headline_rate, rate_note, pickup_charge").order("mode"),
+    supabase
+      .from("rates")
+      .select("mode, headline_rate, rate_note, pickup_charge, next_dispatch_date, next_dispatch_note")
+      .order("mode"),
   ]);
 
   const shipments = (shipmentsRaw || []).map((s) => ({
@@ -58,6 +61,8 @@ export default async function AdminPage() {
     headline_rate: r.headline_rate,
     rate_note: r.rate_note || "",
     pickup_charge: Number(r.pickup_charge),
+    next_dispatch_date: r.next_dispatch_date || "",
+    next_dispatch_note: r.next_dispatch_note || "",
   }));
 
   return <AdminClient shipments={shipments} invoices={invoices} rates={rates} staffEmail={userData?.user?.email} />;

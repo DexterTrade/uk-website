@@ -38,7 +38,13 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
     Object.fromEntries(
       rates.map((r) => [
         r.mode,
-        { headline_rate: r.headline_rate, rate_note: r.rate_note, pickup_charge: String(r.pickup_charge) },
+        {
+          headline_rate: r.headline_rate,
+          rate_note: r.rate_note,
+          pickup_charge: String(r.pickup_charge),
+          next_dispatch_date: r.next_dispatch_date || "",
+          next_dispatch_note: r.next_dispatch_note || "",
+        },
       ])
     )
   );
@@ -471,6 +477,33 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     onChange={(e) => updateRateField(mode, "rate_note", e.target.value)}
                   />
                 </label>
+                {mode === "sea" && (
+                  <>
+                    <p className="fine" style={{ marginTop: 20, marginBottom: 4 }}>
+                      Next departure &mdash; shown as a countdown banner on the Sea Cargo page. Leave the date blank to hide it.
+                    </p>
+                    <div className="grid-fields">
+                      <label className="field">
+                        Next dispatch date
+                        <input
+                          className="input"
+                          type="date"
+                          value={rateForm.sea?.next_dispatch_date || ""}
+                          onChange={(e) => updateRateField("sea", "next_dispatch_date", e.target.value)}
+                        />
+                      </label>
+                      <label className="field">
+                        Dispatch note
+                        <input
+                          className="input"
+                          placeholder="Karachi-bound LCL container"
+                          value={rateForm.sea?.next_dispatch_note || ""}
+                          onChange={(e) => updateRateField("sea", "next_dispatch_note", e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </>
+                )}
                 <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save

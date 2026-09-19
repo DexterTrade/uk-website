@@ -30,6 +30,20 @@ export default function AirCargoPage() {
           ]}
         />
 
+        <div className="wrap">
+          <div className="schedule-strip">
+            <span className="schedule-label">UK collection days</span>
+            <div className="schedule-days">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                <span key={d} className={`schedule-day${d !== "Sun" ? " active" : ""}`}>
+                  {d}
+                </span>
+              ))}
+            </div>
+            <span className="fine" style={{ marginLeft: "auto" }}>Book any day &mdash; cargo consolidates for the next weekly departure.</span>
+          </div>
+        </div>
+
         <section className="section wrap">
           <h2 className="h-sec">Why send by air</h2>
           <p className="lede">The right choice when speed matters more than volume.</p>
