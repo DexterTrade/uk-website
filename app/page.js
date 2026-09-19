@@ -3,6 +3,7 @@ import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import { PhoneIcon, EmailIcon, WhatsAppIcon } from "./components/contact-icons";
+import ContactDrawer from "./components/ContactDrawer";
 import { BUSINESS } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,15 +49,17 @@ export default async function Home() {
                 Call your nearest branch, or reach us on WhatsApp for a quick response.
               </p>
               <div className="hero-contact-list">
-                {BUSINESS.phones.map((p) => (
-                  <a key={p.city} href={`tel:${p.href}`}>
-                    <span className="row-icon"><PhoneIcon /></span>
-                    <span className="row-text">
-                      <span>{p.display}</span>
-                      <span className="city">{p.city}</span>
-                    </span>
-                  </a>
-                ))}
+                <div className="contact-phones-inline">
+                  {BUSINESS.phones.map((p) => (
+                    <a key={p.city} href={`tel:${p.href}`}>
+                      <span className="row-icon"><PhoneIcon /></span>
+                      <span className="row-text">
+                        <span>{p.display}</span>
+                        <span className="city">{p.city}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
                 <a href={BUSINESS.whatsapp}>
                   <span className="row-icon wa"><WhatsAppIcon /></span>
                   <span className="row-text">
@@ -64,6 +67,7 @@ export default async function Home() {
                     <span className="city">WhatsApp</span>
                   </span>
                 </a>
+                <ContactDrawer />
                 <a href={`mailto:${BUSINESS.email}`}>
                   <span className="row-icon"><EmailIcon /></span>
                   <span className="row-text">

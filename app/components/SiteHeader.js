@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BUSINESS } from "@/lib/seo";
+import { PhoneIcon } from "./contact-icons";
 
 const NAV_ITEMS = [
   { href: "/sea-cargo", label: "Sea Cargo" },
@@ -62,11 +64,27 @@ export default function SiteHeader({ variant = "home" }) {
         <div className={`nav-overlay${open ? " open" : ""}`} onClick={close} aria-hidden="true" />
 
         <nav className={`site-nav${open ? " open" : ""}`} id="site-nav">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} onClick={close}>
-              {item.label}
-            </Link>
-          ))}
+          <div className="site-nav-head">
+            <span className="site-nav-title">Menu</span>
+            <button type="button" className="site-nav-close" onClick={close} aria-label="Close menu">
+              &times;
+            </button>
+          </div>
+          <div className="site-nav-links">
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.href} href={item.href} onClick={close}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="site-nav-foot">
+            <a className="btn btn-green btn-sm" href={BUSINESS.whatsapp} onClick={close}>
+              Quick Response on WhatsApp
+            </a>
+            <a className="site-nav-phone" href={`tel:${BUSINESS.phones[0].href}`} onClick={close}>
+              <PhoneIcon /> {BUSINESS.phones[0].display}
+            </a>
+          </div>
         </nav>
       </div>
     </header>

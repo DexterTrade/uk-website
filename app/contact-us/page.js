@@ -3,6 +3,7 @@ import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import EnquiryForm from "../components/EnquiryForm";
 import { PhoneIcon, EmailIcon, WhatsAppIcon } from "../components/contact-icons";
+import ContactDrawer from "../components/ContactDrawer";
 import { BUSINESS, pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
@@ -35,15 +36,17 @@ export default function ContactUsPage() {
                 Quick Response on WhatsApp
               </a>
               <div className="hero-contact-list">
-                {BUSINESS.phones.map((p) => (
-                  <a key={p.city} href={`tel:${p.href}`}>
-                    <span className="row-icon"><PhoneIcon /></span>
-                    <span className="row-text">
-                      <span>{p.display}</span>
-                      <span className="city">{p.city}</span>
-                    </span>
-                  </a>
-                ))}
+                <div className="contact-phones-inline">
+                  {BUSINESS.phones.map((p) => (
+                    <a key={p.city} href={`tel:${p.href}`}>
+                      <span className="row-icon"><PhoneIcon /></span>
+                      <span className="row-text">
+                        <span>{p.display}</span>
+                        <span className="city">{p.city}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
                 <a href={BUSINESS.whatsapp}>
                   <span className="row-icon wa"><WhatsAppIcon /></span>
                   <span className="row-text">
@@ -51,6 +54,7 @@ export default function ContactUsPage() {
                     <span className="city">WhatsApp</span>
                   </span>
                 </a>
+                <ContactDrawer />
                 <a href={`mailto:${BUSINESS.email}`}>
                   <span className="row-icon"><EmailIcon /></span>
                   <span className="row-text">
