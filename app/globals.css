@@ -95,18 +95,18 @@ table { border-collapse: collapse; width: 100%; }
     right: 0;
     bottom: 0;
     left: auto;
-    width: min(84vw, 320px);
+    width: min(88vw, 360px);
     margin-left: 0;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     background: #fff;
-    border-radius: 18px 0 0 18px;
-    box-shadow: -18px 0 44px -20px rgba(22, 35, 60, 0.5);
-    padding: 78px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 22px 0 0 22px;
+    box-shadow: -22px 0 50px -22px rgba(22, 35, 60, 0.5);
+    padding: 84px 28px calc(28px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     transform: translateX(100%);
-    transition: transform 0.28s ease;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     z-index: 45;
   }
   .site-nav.open { transform: translateX(0); }
@@ -114,19 +114,37 @@ table { border-collapse: collapse; width: 100%; }
   .site-nav-head {
     display: flex;
     align-items: center;
-    padding: 0 2px 16px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--line-light);
-    flex: 0 0 auto;
+    padding: 0 2px 20px;
+    margin-bottom: 10px;
   }
-  .site-nav-title { font-family: var(--font-head); font-weight: 800; font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+  .site-nav-title { font-family: var(--font-head); font-weight: 700; font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--faint); }
 
+  /* editorial numbered list -- elegant, generous whitespace, no per-row
+     borders or fills; the display type does the work */
   .site-nav-links { display: flex; flex-direction: column; flex: 1 1 auto; }
-  .site-nav a { display: flex; align-items: center; gap: 13px; padding: 14px 2px; border-bottom: 1px solid var(--line-light); font-size: 15.5px; font-weight: 600; color: var(--ink); transition: color 0.15s ease; }
-  .site-nav-links a:last-child { border-bottom: none; }
-  .site-nav a:hover, .site-nav a:active { color: var(--green); }
-  .site-nav-links a svg { flex: 0 0 auto; color: var(--faint); transition: color 0.15s ease; }
-  .site-nav-links a:hover svg, .site-nav-links a:active svg { color: var(--green); }
+  .site-nav a {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 15px 2px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transition: color 0.18s ease, gap 0.18s ease;
+  }
+  .site-nav a .idx {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--faint);
+    flex: 0 0 auto;
+    transition: color 0.18s ease;
+  }
+  .site-nav a:hover, .site-nav a:active { color: var(--green); gap: 20px; }
+  .site-nav a:hover .idx, .site-nav a:active .idx { color: var(--green); }
 
   .site-nav-foot {
     display: flex;

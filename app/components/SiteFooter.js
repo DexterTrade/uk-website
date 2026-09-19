@@ -61,7 +61,6 @@ export default function SiteFooter() {
             <a href={BUSINESS.whatsapp}>WhatsApp &middot; {BUSINESS.whatsappDisplay}</a>
             <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </div>
-          <p className="footer-hours">Mon&ndash;Sat, 9am&ndash;6pm</p>
         </div>
       </div>
 

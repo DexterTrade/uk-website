@@ -4,16 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BUSINESS } from "@/lib/seo";
 import { PhoneIcon } from "./contact-icons";
-import { ShipIcon, PlaneIcon, SuitcaseIcon, SwapIcon, HomeIcon, PinIcon, HelpIcon } from "./nav-icons";
 
 const NAV_ITEMS = [
-  { href: "/sea-cargo", label: "Sea Cargo", Icon: ShipIcon },
-  { href: "/air-cargo", label: "Air Cargo", Icon: PlaneIcon },
-  { href: "/excess-baggage", label: "Excess Baggage", Icon: SuitcaseIcon },
-  { href: "/pak-to-uk", label: "Pak to UK", Icon: SwapIcon },
-  { href: "/moving-back-home", label: "Relocation", Icon: HomeIcon },
-  { href: "/tracking", label: "Track", Icon: PinIcon },
-  { href: "/faq", label: "FAQ", Icon: HelpIcon },
+  { href: "/sea-cargo", label: "Sea Cargo" },
+  { href: "/air-cargo", label: "Air Cargo" },
+  { href: "/excess-baggage", label: "Excess Baggage" },
+  { href: "/pak-to-uk", label: "Pak to UK" },
+  { href: "/moving-back-home", label: "Relocation" },
+  { href: "/tracking", label: "Track" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const SUBTITLES = {
@@ -69,9 +68,9 @@ export default function SiteHeader({ variant = "home" }) {
             <span className="site-nav-title">Menu</span>
           </div>
           <div className="site-nav-links">
-            {NAV_ITEMS.map(({ href, label, Icon }) => (
+            {NAV_ITEMS.map(({ href, label }, i) => (
               <Link key={href} href={href} onClick={close}>
-                <Icon width="18" height="18" />
+                <span className="idx">{String(i + 1).padStart(2, "0")}</span>
                 {label}
               </Link>
             ))}
