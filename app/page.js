@@ -1,11 +1,8 @@
 import Link from "next/link";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
-import BottomCta from "./components/BottomCta";
-import FaqJsonLd from "./components/FaqJsonLd";
 import WhatsAppFloat from "./components/WhatsAppFloat";
-import { PlaneIcon, ShipIcon } from "./components/icons";
-import { FAQS } from "@/lib/faq";
+import { PlaneIllustration, ShipIllustration } from "./components/illustrations";
 import { BUSINESS } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,32 +12,21 @@ export const metadata = {
   },
 };
 
-const SERVICES = [
+const BRIEF_SERVICES = [
   {
-    num: "01",
-    href: "/sea-cargo",
-    title: "Sea cargo & containers",
-    body: "Economical cargo by sea — shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own.",
-  },
-  {
-    num: "02",
-    alt: true,
-    href: "/air-cargo",
-    title: "Air cargo, UK → Pakistan",
-    body: "Fast cargo by air — weekly consolidated departures to Karachi, Lahore and Islamabad. Best for anything time-critical.",
-  },
-  {
-    num: "03",
     href: "/excess-baggage",
-    title: "Excess baggage",
-    body: "Flying with more than your airline allowance? Send the extra boxes and bags separately.",
+    title: "Excess Baggage",
+    body: "Flying to Pakistan with more than your airline allowance? Send the extra weight as cargo instead — usually much cheaper than airline excess baggage fees.",
   },
   {
-    num: "04",
-    alt: true,
     href: "/pak-to-uk",
-    title: "Pakistan → UK",
-    body: "The same direct cargo service, running the other way, with UK customs clearance and delivery.",
+    title: "Pakistan to UK",
+    body: "Sending goods from Pakistan back to the UK? The same air and sea service, running in reverse, with UK customs clearance and door delivery.",
+  },
+  {
+    href: "/moving-back-home",
+    title: "Moving Back to Pakistan",
+    body: "Relocating home for good? We pack and deliver your whole household — furniture, appliances and all — safely to your door in Pakistan.",
   },
 ];
 
@@ -58,7 +44,6 @@ export default async function Home() {
 
   return (
     <>
-      <FaqJsonLd />
       <SiteHeader />
 
       <main id="top">
@@ -74,26 +59,16 @@ export default async function Home() {
                 consignments, economical cargo by sea for volume, and a dedicated London cargo hub handling
                 direct, door to door collection on every booking.
               </p>
-              <div className="cta-row">
-                <Link className="btn btn-navy" href="/contact-us">Request a quote</Link>
-                <Link className="btn btn-ghost" href="/tracking">Track a shipment</Link>
+
+              <div className="hero-urdu" dir="rtl" lang="ur">
+                <p className="urdu-h">پاکستان اور کشمیر تک دروازے سے دروازے کارگو سروس</p>
+                <p className="urdu-p">
+                  برطانیہ سے پاکستان اور کشمیر تک ایک قابلِ اعتماد کارگو سروس۔ فوری ترسیل کے لیے تیز ہوائی کارگو،
+                  زیادہ سامان کے لیے سستا سمندری کارگو، اور ہر بکنگ پر گھر سے براہِ راست وصولی۔
+                </p>
               </div>
             </div>
             <div className="card card-shadow">
-              <div className="hero-card-stats">
-                <div>
-                  <div className="n">5&ndash;7d</div>
-                  <div className="l">Air, door to door</div>
-                </div>
-                <div>
-                  <div className="n">30&ndash;40d</div>
-                  <div className="l">Sea, port to door</div>
-                </div>
-                <div>
-                  <div className="n">Full cover</div>
-                  <div className="l">Goods insurance</div>
-                </div>
-              </div>
               <h2 style={{ fontSize: 19, fontWeight: 700 }}>Speak to us now</h2>
               <p style={{ fontSize: 14.5, color: "var(--soft)", marginTop: 6 }}>
                 Call your nearest branch, or message us on WhatsApp for the fastest reply.
@@ -117,103 +92,68 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="band-rate" id="rates">
-          <div className="section wrap" style={{ paddingTop: 48, paddingBottom: 56 }}>
-            <span className="eyebrow">Live pricing</span>
-            <h2 className="h-sec" style={{ marginTop: 14 }}>Rates</h2>
-            <p className="lede">
-              Simple, direct cargo pricing by sea or by air, plus one small UK pickup charge. Ask for a full
-              quote and we confirm the exact price the same working day.
-            </p>
-            <div className="rate-grid">
-              <Link className="rate-card" href="/sea-cargo">
-                <div className="rate-icon"><ShipIcon /></div>
-                <h3>Sea Cargo</h3>
-                <div className="rate-value">{seaRate.headline_rate}</div>
-                <p className="rate-note">{seaRate.rate_note}</p>
-                <div className="rate-pickup">+ &pound;{Number(seaRate.pickup_charge).toFixed(0)} UK pickup</div>
-                <span className="btn btn-navy btn-sm">See sea cargo rates &rarr;</span>
+        <section className="feature-section wrap">
+          <div className="feature-grid">
+            <div className="feature-image">
+              <ShipIllustration />
+            </div>
+            <div className="feature-info">
+              <span className="eyebrow">Sea Cargo</span>
+              <h2>Economical cargo by sea</h2>
+              <p className="lede-sm">
+                Shared-container (LCL) space by the cubic metre, or a full container of your own — the
+                economical route for furniture, business stock and full households.
+              </p>
+              <div className="feature-rate">
+                <span className="value">{seaRate.headline_rate}</span>
+                <span className="unit">{seaRate.rate_note}</span>
+              </div>
+              <div className="charges-list">
+                <div className="row"><span>Freight rate</span><strong>{seaRate.headline_rate}</strong></div>
+                <div className="row"><span>UK pickup</span><strong>&pound;{Number(seaRate.pickup_charge).toFixed(0)}</strong></div>
+              </div>
+              <p className="fine" style={{ marginTop: 10 }}>Full cost breakdown provided with your quote.</p>
+              <Link className="btn btn-navy" href="/sea-cargo">See sea cargo &rarr;</Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="feature-section wrap">
+          <div className="feature-grid alt">
+            <div className="feature-info">
+              <span className="eyebrow">Air Cargo</span>
+              <h2>Fast cargo by air</h2>
+              <p className="lede-sm">
+                Weekly consolidated departures to Karachi, Lahore and Islamabad — the fast route when speed
+                matters more than volume.
+              </p>
+              <div className="feature-rate">
+                <span className="value">{airRate.headline_rate}</span>
+                <span className="unit">{airRate.rate_note}</span>
+              </div>
+              <div className="charges-list">
+                <div className="row"><span>Freight rate</span><strong>{airRate.headline_rate}</strong></div>
+                <div className="row"><span>UK pickup</span><strong>&pound;{Number(airRate.pickup_charge).toFixed(0)}</strong></div>
+              </div>
+              <p className="fine" style={{ marginTop: 10 }}>Full cost breakdown provided with your quote.</p>
+              <Link className="btn btn-navy" href="/air-cargo">See air cargo &rarr;</Link>
+            </div>
+            <div className="feature-image">
+              <PlaneIllustration />
+            </div>
+          </div>
+        </section>
+
+        <section className="section wrap" style={{ paddingTop: 8 }}>
+          <div className="brief-row">
+            {BRIEF_SERVICES.map((s) => (
+              <Link key={s.href} href={s.href} className="brief-card">
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+                <span className="go">Learn more &rarr;</span>
               </Link>
-              <Link className="rate-card navy" href="/air-cargo">
-                <div className="rate-icon"><PlaneIcon /></div>
-                <h3>Air Cargo</h3>
-                <div className="rate-value">{airRate.headline_rate}</div>
-                <p className="rate-note">{airRate.rate_note}</p>
-                <div className="rate-pickup">+ &pound;{Number(airRate.pickup_charge).toFixed(0)} UK pickup</div>
-                <span className="btn btn-navy btn-sm">See air cargo rates &rarr;</span>
-              </Link>
-            </div>
-            <p className="fine" style={{ marginTop: 14 }}>
-              Rates exclude destination duties and optional insurance. See the{" "}
-              <Link href="/excess-baggage">excess baggage</Link> and <Link href="/pak-to-uk">Pakistan to UK</Link>{" "}
-              pages for those routes.
-            </p>
-          </div>
-        </section>
-
-        <section className="band-soft" id="services">
-          <div className="section wrap">
-            <h2 className="h-sec">Services</h2>
-            <p className="lede">A speedy, reliable cargo service across four ways to move goods between the UK, Pakistan and Kashmir.</p>
-            <div className="cards">
-              {SERVICES.map((s) => (
-                <Link key={s.href} href={s.href} className="svc" style={{ display: "block", color: "inherit" }}>
-                  <div className={`num${s.alt ? " alt" : ""}`}>{s.num}</div>
-                  <h3 style={{ color: "var(--ink)" }}>{s.title}</h3>
-                  <p>{s.body}</p>
-                  <p style={{ marginTop: 14, fontSize: 14, fontWeight: 600, color: "var(--green)" }}>Learn more &rarr;</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section wrap" id="how">
-          <h2 className="h-sec">How it works</h2>
-          <div className="cards">
-            <div className="step">
-              <span className="k">STEP 1</span>
-              <h3>Get a quote</h3>
-              <p>Send us weight, dimensions and the destination city. We quote a fixed all-in price, air or sea, the same working day.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 2</span>
-              <h3>We collect</h3>
-              <p>Direct collection anywhere in the UK, or drop off at our cargo hub. Goods are weighed, labelled and logged against your reference.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 3</span>
-              <h3>Clearance &amp; transit</h3>
-              <p>We file the export paperwork, book the space, and clear the consignment on arrival.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 4</span>
-              <h3>Delivered</h3>
-              <p>Door delivery to the consignee, with signed proof of delivery logged against your reference.</p>
-            </div>
-          </div>
-        </section>
-
-        <BottomCta
-          title="Track your shipment any time."
-          body="Enter your reference number to see live milestones, from UK collection through to door delivery."
-          primary={{ label: "Open tracking", href: "/tracking" }}
-          secondary={{ label: "See a live example: PC-4471", href: "/tracking?ref=PC-4471" }}
-        />
-
-        <section className="section wrap" id="faq">
-          <h2 className="h-sec">Frequently asked</h2>
-          <div className="faq">
-            {FAQS.slice(0, 3).map((f) => (
-              <details key={f.q}>
-                <summary>{f.q}<span className="plus">+</span></summary>
-                <p>{f.a}</p>
-              </details>
             ))}
           </div>
-          <p style={{ marginTop: 20 }}>
-            <Link href="/faq" style={{ fontWeight: 600 }}>See all FAQs &rarr;</Link>
-          </p>
         </section>
       </main>
 

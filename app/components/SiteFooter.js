@@ -29,6 +29,7 @@ export default function SiteFooter() {
             <Link href="/air-cargo">Air Cargo</Link>
             <Link href="/excess-baggage">Excess Baggage</Link>
             <Link href="/pak-to-uk">Pakistan to UK</Link>
+            <Link href="/moving-back-home">Moving Back to Pakistan</Link>
           </nav>
         </div>
 

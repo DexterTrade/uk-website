@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/air-cargo", label: "Air Cargo" },
   { href: "/excess-baggage", label: "Excess Baggage" },
   { href: "/pak-to-uk", label: "Pak to UK" },
+  { href: "/moving-back-home", label: "Relocation" },
   { href: "/tracking", label: "Track" },
   { href: "/faq", label: "FAQ" },
 ];

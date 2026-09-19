@@ -1,4 +1,4 @@
-import { Archivo, IBM_Plex_Sans } from "next/font/google";
+import { Archivo, IBM_Plex_Sans, Noto_Nastaliq_Urdu } from "next/font/google";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import OrganizationJsonLd from "./components/OrganizationJsonLd";
 import "./globals.css";
@@ -13,6 +13,12 @@ const plexSans = IBM_Plex_Sans({
   variable: "--font-plex",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
+  variable: "--font-urdu",
+  subsets: ["arabic"],
+  weight: ["400", "600", "700"],
 });
 
 export const metadata = {
@@ -87,7 +93,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable}`}>
+    <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable} ${notoNastaliqUrdu.variable}`}>
       <body>
         <OrganizationJsonLd />
         {children}

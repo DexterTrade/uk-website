@@ -74,7 +74,7 @@ table { border-collapse: collapse; width: 100%; }
   .brand .sub { display: none; }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1120px) {
   .nav-toggle { display: flex; position: relative; z-index: 56; }
   .nav-overlay {
     position: fixed;
@@ -173,6 +173,40 @@ table { border-collapse: collapse; width: 100%; }
   .contact-card { padding: 22px; }
   .contact-card h2 { font-size: 16.5px; }
 }
+
+/* urdu hero text */
+.hero-urdu { margin-top: 24px; padding-top: 22px; border-top: 1px solid #e6eaf2; direction: rtl; text-align: right; }
+.hero-urdu .urdu-h { font-family: var(--font-urdu), "Noto Nastaliq Urdu", serif; font-size: clamp(22px, 3.4vw, 30px); font-weight: 700; color: var(--ink); line-height: 2.1; }
+.hero-urdu .urdu-p { font-family: var(--font-urdu), "Noto Nastaliq Urdu", serif; font-size: 16px; color: var(--muted); margin-top: 8px; line-height: 2.3; max-width: 46ch; margin-left: auto; }
+
+/* big feature sections (sea / air cargo on the homepage) */
+.feature-section { padding: 60px 0; }
+.feature-section + .feature-section { border-top: 1px solid #e6eaf2; }
+.feature-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 44px; align-items: center; }
+.feature-grid.alt { grid-template-columns: 1fr 1.5fr; }
+.feature-image { border-radius: 18px; overflow: hidden; aspect-ratio: 220 / 130; box-shadow: 0 24px 54px -30px rgba(22, 35, 60, 0.4); }
+.feature-grid.alt .feature-image { order: 2; }
+.feature-info h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 800; margin-top: 14px; }
+.feature-info .lede-sm { font-size: 15.5px; color: var(--muted); margin-top: 10px; line-height: 1.65; max-width: 46ch; }
+.feature-rate { margin-top: 22px; display: flex; align-items: baseline; gap: 8px; }
+.feature-rate .value { font-family: var(--font-head); font-size: 30px; font-weight: 800; color: var(--green); }
+.feature-rate .unit { font-size: 13px; color: var(--faint); }
+.charges-list { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+.charges-list .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
+.charges-list .row strong { color: var(--ink); font-weight: 600; }
+.feature-info .btn { margin-top: 24px; }
+@media (max-width: 860px) {
+  .feature-grid, .feature-grid.alt { grid-template-columns: 1fr; }
+  .feature-grid.alt .feature-image { order: -1; }
+}
+
+/* brief service cards (excess baggage / pak-to-uk / moving back home) */
+.brief-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.brief-card { display: block; color: inherit; border: 1px solid var(--line); border-radius: 14px; padding: 26px; background: #fff; transition: border-color 0.15s ease; }
+.brief-card:hover { border-color: var(--green); }
+.brief-card h3 { font-size: 18px; font-weight: 700; color: var(--ink); }
+.brief-card p { font-size: 14.5px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+.brief-card .go { display: block; margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--green); }
 
 /* hero contact card */
 .hero-contact-list { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }

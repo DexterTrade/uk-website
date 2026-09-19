@@ -55,6 +55,7 @@ export default function OrganizationJsonLd() {
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Cargo to Kashmir" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Excess baggage shipping" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Air & sea cargo, Pakistan to UK" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Household relocation, UK to Pakistan" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Customs clearance" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Goods insurance" } },
     ],
