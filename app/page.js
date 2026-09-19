@@ -43,7 +43,7 @@ export default async function Home() {
                 direct, door to door collection on every booking.
               </p>
             </div>
-            <div className="card card-shadow">
+            <div className="card card-shadow max-[640px]:hidden">
               <h2 className="text-[19px] font-bold">Speak to us now</h2>
               <p className="mt-1.5 text-[14.5px] text-soft">
                 Call your nearest branch, or reach us on WhatsApp for a quick response.
@@ -76,7 +76,6 @@ export default async function Home() {
                     </span>
                   </a>
                 </div>
-                <ContactDrawer />
               </div>
               <a className="btn btn-green mt-4 w-full" href={BUSINESS.whatsapp}>
                 Quick Response on WhatsApp
@@ -84,6 +83,10 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* mobile-only left-edge trigger, rendered outside the hero card so
+            it's still mounted when the card itself is hidden on phones */}
+        <ContactDrawer />
 
         <section className="wrap py-[60px]">
           <div className="grid grid-cols-[1.5fr_1fr] items-center gap-11 max-[860px]:grid-cols-1">

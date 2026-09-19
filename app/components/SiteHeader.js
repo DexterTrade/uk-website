@@ -82,7 +82,7 @@ export default function SiteHeader({ variant = "home" }) {
           className={`ml-auto flex flex-wrap items-center justify-end gap-[18px] max-[1120px]:absolute max-[1120px]:inset-x-0 max-[1120px]:top-full max-[1120px]:z-40 max-[1120px]:grid max-[1120px]:bg-white max-[1120px]:shadow-[0_20px_44px_-24px_rgba(22,35,60,0.35)] max-[1120px]:transition-[grid-template-rows] max-[1120px]:duration-300 max-[1120px]:ease-out ${open ? "max-[1120px]:grid-rows-[1fr]" : "max-[1120px]:grid-rows-[0fr]"}`}
           id="site-nav"
         >
-          <div className="contents max-[1120px]:block max-[1120px]:overflow-hidden">
+          <div className="contents max-[1120px]:block max-[1120px]:min-h-0 max-[1120px]:overflow-hidden">
             <div className="contents max-[1120px]:mx-auto max-[1120px]:flex max-[1120px]:w-full max-[1120px]:max-w-md max-[1120px]:flex-col max-[1120px]:px-6 max-[1120px]:pt-5 max-[1120px]:pb-[calc(28px_+_env(safe-area-inset-bottom,0px))]">
               <div className="hidden max-[1120px]:mb-3 max-[1120px]:flex max-[1120px]:items-center max-[1120px]:border-b max-[1120px]:border-line-light max-[1120px]:pb-4">
                 <span className="font-head text-[11.5px] font-bold tracking-[0.22em] text-faint uppercase">Menu</span>

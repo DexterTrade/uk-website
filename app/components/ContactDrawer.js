@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { BUSINESS } from "@/lib/seo";
 import { PhoneIcon, EmailIcon, WhatsAppIcon } from "./contact-icons";
 
-const HINT_INTERVAL_MS = 30000;
+const HINT_INTERVAL_MS = 20000;
 const HINT_VISIBLE_MS = 4500;
+const HINT_FIRST_DELAY_MS = 1200;
 
 export default function ContactDrawer() {
   const [open, setOpen] = useState(false);
@@ -26,20 +27,25 @@ export default function ContactDrawer() {
     };
   }, [open]);
 
-  // Small mobile-only nudge: every 30s, remind the visitor the numbers are
-  // one tap away, since the full list is now tucked behind the drawer.
+  // Small mobile-only nudge: shows shortly after landing (so a first-time
+  // visitor immediately knows the numbers live behind this tab), then every
+  // 20s afterwards while the drawer stays closed.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(max-width: 640px)").matches) return;
 
     let hideTimer;
-    const interval = setInterval(() => {
+    const showHint = () => {
       if (openRef.current) return;
       setHint(true);
       hideTimer = setTimeout(() => setHint(false), HINT_VISIBLE_MS);
-    }, HINT_INTERVAL_MS);
+    };
+
+    const firstTimer = setTimeout(showHint, HINT_FIRST_DELAY_MS);
+    const interval = setInterval(showHint, HINT_INTERVAL_MS);
 
     return () => {
+      clearTimeout(firstTimer);
       clearInterval(interval);
       clearTimeout(hideTimer);
     };

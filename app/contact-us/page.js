@@ -30,7 +30,7 @@ export default function ContactUsPage() {
 
         <section className="section wrap pt-2">
           <div className="contact-grid">
-            <div className="contact-card">
+            <div className="contact-card max-[640px]:hidden">
               <h2>Reach us directly</h2>
               <a className="btn btn-green w-full" href={BUSINESS.whatsapp}>
                 Quick Response on WhatsApp
@@ -63,7 +63,6 @@ export default function ContactUsPage() {
                     </span>
                   </a>
                 </div>
-                <ContactDrawer />
               </div>
               <div className="contact-meta">
                 <div><strong>{BUSINESS.legalName}</strong></div>
@@ -78,6 +77,9 @@ export default function ContactUsPage() {
             </div>
           </div>
         </section>
+
+        {/* mobile-only left-edge trigger, rendered outside the hidden card */}
+        <ContactDrawer />
       </main>
       <SiteFooter />
     </>
