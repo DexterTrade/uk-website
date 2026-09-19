@@ -2,13 +2,14 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import FaqJsonLd from "../components/FaqJsonLd";
 import { FAQS } from "@/lib/faq";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Frequently Asked Questions",
   description:
     "Delivery times, prohibited items, collection, customs duties, insurance, and Pakistan-to-UK and excess baggage questions, answered.",
-  alternates: { canonical: "/faq" },
-};
+  path: "/faq",
+});
 
 export default function FaqPage() {
   return (

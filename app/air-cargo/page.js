@@ -2,13 +2,14 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Air Cargo, UK to Pakistan & Kashmir",
   description:
     "Fast cargo by air from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door collection, customs clearance and 5-7 day delivery.",
-  alternates: { canonical: "/air-cargo" },
-};
+  path: "/air-cargo",
+});
 
 export default function AirCargoPage() {
   return (

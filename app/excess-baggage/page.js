@@ -2,13 +2,14 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Excess Baggage to Pakistan",
   description:
     "Flying to Pakistan and taking more than your airline allowance? Send the extra boxes and bags separately by air cargo, usually for less than airline excess fees.",
-  alternates: { canonical: "/excess-baggage" },
-};
+  path: "/excess-baggage",
+});
 
 export default function ExcessBaggagePage() {
   return (

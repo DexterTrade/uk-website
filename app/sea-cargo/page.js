@@ -4,13 +4,14 @@ import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import NextDispatch from "../components/NextDispatch";
 import { createClient } from "@/lib/supabase/server";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Sea Cargo, UK to Pakistan & Kashmir",
   description:
     "Direct cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 30-40 day transit.",
-  alternates: { canonical: "/sea-cargo" },
-};
+  path: "/sea-cargo",
+});
 
 export default async function SeaCargoPage() {
   const supabase = await createClient();

@@ -2,13 +2,14 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Pakistan to UK Freight",
   description:
     "Air and sea freight from Pakistan to the UK, with collection in Pakistan, UK customs clearance and door delivery across the UK.",
-  alternates: { canonical: "/pak-to-uk" },
-};
+  path: "/pak-to-uk",
+});
 
 export default function PakToUkPage() {
   return (

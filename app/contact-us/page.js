@@ -2,14 +2,14 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import EnquiryForm from "../components/EnquiryForm";
-import { BUSINESS } from "@/lib/seo";
+import { BUSINESS, pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Contact Us",
   description:
     "Get a fixed-price quote for air or sea freight, excess baggage or Pakistan to UK shipping. Phone, WhatsApp and email details for PAK Cargo.",
-  alternates: { canonical: "/contact-us" },
-};
+  path: "/contact-us",
+});
 
 export default function ContactUsPage() {
   return (
