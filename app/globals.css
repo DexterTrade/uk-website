@@ -192,6 +192,10 @@ table { border-collapse: collapse; width: 100%; }
 .table-wrap td.key { font-weight: 600; color: var(--ink); }
 .table-wrap td.rate { color: var(--navy); font-weight: 600; }
 .table-wrap tr:last-child td { border-bottom: none; }
+@media (max-width: 480px) {
+  .table-wrap table { min-width: 460px; }
+  .table-wrap th, .table-wrap td { padding: 11px 12px; font-size: 13.5px; }
+}
 .num-right { text-align: right; }
 
 /* faq */
