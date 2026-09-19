@@ -67,7 +67,6 @@ export default function SiteHeader({ variant = "home" }) {
               {item.label}
             </Link>
           ))}
-          <Link className="btn btn-green btn-sm" href="/contact-us" onClick={close}>Get a quote</Link>
         </nav>
       </div>
     </header>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import WhatsAppFloat from "./components/WhatsAppFloat";
+import { PhoneIcon, EmailIcon, WhatsAppIcon } from "./components/contact-icons";
 import { BUSINESS } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,22 +45,35 @@ export default async function Home() {
             <div className="card card-shadow">
               <h2 style={{ fontSize: 19, fontWeight: 700 }}>Speak to us now</h2>
               <p style={{ fontSize: 14.5, color: "var(--soft)", marginTop: 6 }}>
-                Call your nearest branch, or message us on WhatsApp for the fastest reply.
+                Call your nearest branch, or reach us on WhatsApp for a quick response.
               </p>
               <div className="hero-contact-list">
                 {BUSINESS.phones.map((p) => (
                   <a key={p.city} href={`tel:${p.href}`}>
-                    <span>{p.display}</span>
-                    <span className="city">{p.city}</span>
+                    <span className="row-icon"><PhoneIcon /></span>
+                    <span className="row-text">
+                      <span>{p.display}</span>
+                      <span className="city">{p.city}</span>
+                    </span>
                   </a>
                 ))}
+                <a href={BUSINESS.whatsapp}>
+                  <span className="row-icon wa"><WhatsAppIcon /></span>
+                  <span className="row-text">
+                    <span>{BUSINESS.whatsappDisplay}</span>
+                    <span className="city">WhatsApp</span>
+                  </span>
+                </a>
                 <a href={`mailto:${BUSINESS.email}`}>
-                  <span>{BUSINESS.email}</span>
-                  <span className="city">Email</span>
+                  <span className="row-icon"><EmailIcon /></span>
+                  <span className="row-text">
+                    <span>{BUSINESS.email}</span>
+                    <span className="city">Email</span>
+                  </span>
                 </a>
               </div>
               <a className="btn btn-green" style={{ marginTop: 16, width: "100%" }} href={BUSINESS.whatsapp}>
-                Message us on WhatsApp
+                Quick Response on WhatsApp
               </a>
             </div>
           </div>

@@ -24,15 +24,18 @@ function Timeline({ stages }) {
   );
 }
 
-function ShipmentResult({ loading, shipmentKey, data }) {
+function ShipmentResult({ loading, searched, shipmentKey, data }) {
   if (loading) {
     return <p className="fine" style={{ marginTop: 16 }}>Looking up shipment…</p>;
+  }
+  if (!searched) {
+    return null;
   }
   if (!data) {
     return (
       <p className="alert alert-error">
-        No shipment found for &ldquo;{shipmentKey || ""}&rdquo;. Check the reference and try again, or{" "}
-        <a href={BUSINESS.whatsapp}>message us on WhatsApp</a>.
+        No shipment found for &ldquo;{shipmentKey || ""}&rdquo;. Check the reference and sender&rsquo;s
+        phone number and try again, or <a href={BUSINESS.whatsapp}>reach us on WhatsApp for a quick response</a>.
       </p>
     );
   }
@@ -68,45 +71,57 @@ function ShipmentResult({ loading, shipmentKey, data }) {
 
 export default function TrackingClient() {
   const params = useSearchParams();
-  const initialRef = params.get("ref") || "PC-4471";
+  const initialRef = params.get("ref") || "";
+  const initialPhone = params.get("phone") || "";
 
   const [trackInput, setTrackInput] = useState(initialRef);
+  const [phoneInput, setPhoneInput] = useState(initialPhone);
   const [trackKey, setTrackKey] = useState(initialRef);
+  const [phoneKey, setPhoneKey] = useState(initialPhone);
   const [shipmentData, setShipmentData] = useState(null);
-  const [shipmentLoading, setShipmentLoading] = useState(true);
+  const [shipmentLoading, setShipmentLoading] = useState(Boolean(initialRef && initialPhone));
+  const [searched, setSearched] = useState(false);
+  const [searchNonce, setSearchNonce] = useState(initialRef && initialPhone ? 1 : 0);
 
   useEffect(() => {
+    if (!trackKey || !phoneKey || !searchNonce) return;
     let ignore = false;
-    trackShipment(trackKey).then((data) => {
+    trackShipment(trackKey, phoneKey).then((data) => {
       if (!ignore) {
         setShipmentData(data);
         setShipmentLoading(false);
+        setSearched(true);
       }
     });
     return () => {
       ignore = true;
     };
-  }, [trackKey]);
+  }, [trackKey, phoneKey, searchNonce]);
 
-  function runTrack(ref) {
+  function runTrack(ref, phone) {
+    if (!ref || !phone) return;
     setShipmentLoading(true);
     setTrackKey(ref);
+    setPhoneKey(phone);
+    setSearchNonce((n) => n + 1);
   }
 
   return (
     <main className="wrap-narrow" style={{ padding: "44px 20px 72px" }}>
       <h1 style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 800 }}>Track a shipment</h1>
       <p className="lede">
-        Enter your AWB / tracking number or booking reference. Demo references: <strong>PC-4471</strong>{" "}
-        (air), <strong>BK-20931</strong> (sea).
+        Enter your AWB / tracking number or booking reference, plus the sender&rsquo;s phone number used
+        for the booking. Demo: <strong>PC-4471</strong> with phone <strong>07700 900001</strong> (air), or{" "}
+        <strong>BK-20931</strong> with phone <strong>07700 900002</strong> (sea).
       </p>
 
       <section className="panel">
         <form
           className="row-inline"
+          style={{ flexWrap: "wrap" }}
           onSubmit={(e) => {
             e.preventDefault();
-            runTrack(trackInput);
+            runTrack(trackInput.trim(), phoneInput.trim());
           }}
         >
           <input
@@ -116,14 +131,25 @@ export default function TrackingClient() {
             style={{ minHeight: 48 }}
             value={trackInput}
             onChange={(e) => setTrackInput(e.target.value)}
+            required
+          />
+          <input
+            className="input"
+            placeholder="Sender's phone number"
+            aria-label="Sender's phone number"
+            style={{ minHeight: 48 }}
+            value={phoneInput}
+            onChange={(e) => setPhoneInput(e.target.value)}
+            required
           />
           <button className="btn btn-green" type="submit">Track</button>
         </form>
-        <ShipmentResult loading={shipmentLoading} shipmentKey={trackKey} data={shipmentData} />
+        <ShipmentResult loading={shipmentLoading} searched={searched} shipmentKey={trackKey} data={shipmentData} />
       </section>
 
       <p className="fine" style={{ marginTop: 22 }}>
-        Can&rsquo;t find your reference? <a href={BUSINESS.whatsapp}>Message us on WhatsApp</a> and we will look it up.
+        Can&rsquo;t find your shipment? <a href={BUSINESS.whatsapp}>Reach us on WhatsApp for a quick response</a> and
+        we will look it up.
       </p>
     </main>
   );

@@ -19,7 +19,7 @@ export default function SiteFooter() {
             Air and sea freight, excess baggage, and Pakistan to UK cargo &mdash; collected, cleared and
             delivered door to door, with live tracking on every shipment.
           </p>
-          <a className="btn btn-green btn-sm" href={BUSINESS.whatsapp}>Message us on WhatsApp</a>
+          <a className="btn btn-green btn-sm" href={BUSINESS.whatsapp}>Quick Response on WhatsApp</a>
         </div>
 
         <div className="footer-col">
