@@ -1,5 +1,6 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
+import PageHero from "../components/PageHero";
 import EnquiryForm from "../components/EnquiryForm";
 import { BUSINESS } from "@/lib/seo";
 
@@ -15,33 +16,46 @@ export default function ContactUsPage() {
     <>
       <SiteHeader variant="service" />
       <main>
-        <section className="section wrap" style={{ paddingTop: 56 }}>
-          <span className="eyebrow">Contact us</span>
-          <h1 style={{ fontSize: "clamp(30px,4vw,42px)", fontWeight: 800, margin: "18px 0 12px" }}>Get a quote</h1>
-          <p className="lede" style={{ maxWidth: "56ch" }}>
-            Tell us what you are sending and where it is going &mdash; air, sea, excess baggage or Pakistan to UK.
-            We reply the same working day with a fixed price.
-          </p>
+        <PageHero
+          eyebrow="Contact us"
+          title="Get a quote"
+          intro="Tell us what you are sending and where it is going — air, sea, excess baggage or Pakistan to UK. We reply the same working day with a fixed price."
+          stats={[
+            { n: "Same day", l: "Reply on working days" },
+            { n: "Fixed price", l: "Confirmed before you book" },
+          ]}
+        />
 
-          <div
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, marginTop: 40 }}
-          >
-            <div>
-              <a className="btn btn-green" style={{ width: "fit-content" }} href={BUSINESS.whatsapp}>
+        <section className="section wrap" style={{ paddingTop: 8 }}>
+          <div className="contact-grid">
+            <div className="contact-card">
+              <h2>Reach us directly</h2>
+              <a className="btn btn-green" style={{ width: "100%" }} href={BUSINESS.whatsapp}>
                 Message us on WhatsApp
               </a>
-              <div style={{ fontSize: 15, lineHeight: 1.9, color: "var(--muted)", marginTop: 22 }}>
-                <div><strong style={{ color: "var(--ink)" }}>{BUSINESS.legalName}</strong></div>
-                <div>{BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}</div>
+              <div className="hero-contact-list">
                 {BUSINESS.phones.map((p) => (
-                  <div key={p.city}>{p.city} <a href={`tel:${p.href}`}>{p.display}</a></div>
+                  <a key={p.city} href={`tel:${p.href}`}>
+                    <span>{p.display}</span>
+                    <span className="city">{p.city}</span>
+                  </a>
                 ))}
-                <div>WhatsApp <a href={BUSINESS.whatsapp}>{BUSINESS.whatsappDisplay}</a></div>
-                <div>Email <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a></div>
+                <a href={`mailto:${BUSINESS.email}`}>
+                  <span>{BUSINESS.email}</span>
+                  <span className="city">Email</span>
+                </a>
+              </div>
+              <div className="contact-meta">
+                <div><strong>{BUSINESS.legalName}</strong></div>
+                <div>{BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}</div>
                 <div>Mon&ndash;Sat, 9am&ndash;6pm</div>
               </div>
             </div>
-            <EnquiryForm />
+
+            <div className="contact-card">
+              <h2>Or send us a message</h2>
+              <EnquiryForm />
+            </div>
           </div>
         </section>
       </main>

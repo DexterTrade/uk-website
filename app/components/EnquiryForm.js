@@ -11,7 +11,7 @@ export default function EnquiryForm() {
   }
 
   return (
-    <form className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }} onSubmit={handleSubmit}>
+    <form style={{ display: "flex", flexDirection: "column", gap: 14 }} onSubmit={handleSubmit}>
       <label className="field">
         Your name
         <input className="input" name="name" required />
