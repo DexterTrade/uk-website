@@ -126,22 +126,22 @@ export default async function Home() {
               quote and we confirm the exact price the same working day.
             </p>
             <div className="rate-grid">
-              <div className="rate-card">
-                <div className="rate-illustration"><ShipIcon /></div>
+              <Link className="rate-card" href="/sea-cargo">
+                <div className="rate-icon"><ShipIcon /></div>
                 <h3>Sea Cargo</h3>
                 <div className="rate-value">{seaRate.headline_rate}</div>
                 <p className="rate-note">{seaRate.rate_note}</p>
                 <div className="rate-pickup">+ &pound;{Number(seaRate.pickup_charge).toFixed(0)} UK pickup</div>
-                <Link className="btn btn-navy btn-sm" href="/sea-cargo">See sea cargo rates &rarr;</Link>
-              </div>
-              <div className="rate-card navy">
-                <div className="rate-illustration"><PlaneIcon /></div>
+                <span className="btn btn-navy btn-sm">See sea cargo rates &rarr;</span>
+              </Link>
+              <Link className="rate-card navy" href="/air-cargo">
+                <div className="rate-icon"><PlaneIcon /></div>
                 <h3>Air Cargo</h3>
                 <div className="rate-value">{airRate.headline_rate}</div>
                 <p className="rate-note">{airRate.rate_note}</p>
                 <div className="rate-pickup">+ &pound;{Number(airRate.pickup_charge).toFixed(0)} UK pickup</div>
-                <Link className="btn btn-navy btn-sm" href="/air-cargo">See air cargo rates &rarr;</Link>
-              </div>
+                <span className="btn btn-navy btn-sm">See air cargo rates &rarr;</span>
+              </Link>
             </div>
             <p className="fine" style={{ marginTop: 14 }}>
               Rates exclude destination duties and optional insurance. See the{" "}

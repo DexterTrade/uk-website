@@ -16,7 +16,7 @@ export default function PakToUkPage() {
       <SiteHeader variant="service" />
       <main>
         <PageHero
-          eyebrow="Air &amp; sea freight · Pakistan to UK"
+          eyebrow="Air & sea freight · Pakistan to UK"
           title="The reverse route, just as handled end to end."
           intro="Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door delivery anywhere in the UK."
           stats={[

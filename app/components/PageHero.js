@@ -1,18 +1,13 @@
 import Link from "next/link";
 
-export default function PageHero({ eyebrow, title, intro, stats, ctas }) {
+export default function PageHero({ eyebrow, title, intro, stats, ctas, icon }) {
   return (
     <section className="hero">
-      <div className="wrap" style={{ padding: "56px 0 48px" }}>
+      <div className="wrap page-hero-inner">
+        {icon && <div className="page-hero-icon">{icon}</div>}
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h1 style={{ fontSize: "clamp(32px,4.5vw,48px)", lineHeight: 1.08, fontWeight: 800, margin: "18px 0 16px", maxWidth: "22ch" }}>
-          {title}
-        </h1>
-        {intro && (
-          <p className="intro" style={{ fontSize: 18, lineHeight: 1.6, color: "var(--muted)", maxWidth: "62ch" }}>
-            {intro}
-          </p>
-        )}
+        <h1 className="page-hero-title">{title}</h1>
+        {intro && <p className="intro page-hero-intro">{intro}</p>}
         {ctas && (
           <div className="cta-row">
             {ctas.map((c) => (
