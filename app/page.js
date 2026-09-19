@@ -66,7 +66,9 @@ export default async function Home() {
           <div className="wrap hero-grid">
             <div>
               <span className="eyebrow">Direct cargo &middot; By sea &amp; by air &middot; Nationwide UK collection</span>
-              <h1>DOOR TO DOOR CARGO TO PAKISTAN &amp; KASHMIR.</h1>
+              <h1>
+                DOOR TO DOOR CARGO TO <span className="hl">PAKISTAN</span> &amp; <span className="hl">KASHMIR</span>.
+              </h1>
               <p className="intro">
                 A trusted cargo service connecting the UK to Pakistan and Kashmir. Fast cargo by air for urgent
                 consignments, economical cargo by sea for volume, and a dedicated London cargo hub handling
@@ -76,22 +78,22 @@ export default async function Home() {
                 <Link className="btn btn-navy" href="/contact-us">Request a quote</Link>
                 <Link className="btn btn-ghost" href="/tracking">Track a shipment</Link>
               </div>
-              <div className="stats">
+            </div>
+            <div className="card card-shadow">
+              <div className="hero-card-stats">
                 <div>
-                  <div className="n">5&ndash;7 days</div>
+                  <div className="n">5&ndash;7d</div>
                   <div className="l">Air, door to door</div>
                 </div>
                 <div>
-                  <div className="n">30&ndash;40 days</div>
+                  <div className="n">30&ndash;40d</div>
                   <div className="l">Sea, port to door</div>
                 </div>
                 <div>
                   <div className="n">Full cover</div>
-                  <div className="l">Optional goods insurance</div>
+                  <div className="l">Goods insurance</div>
                 </div>
               </div>
-            </div>
-            <div className="card card-shadow">
               <h2 style={{ fontSize: 19, fontWeight: 700 }}>Speak to us now</h2>
               <p style={{ fontSize: 14.5, color: "var(--soft)", marginTop: 6 }}>
                 Call your nearest branch, or message us on WhatsApp for the fastest reply.
@@ -115,35 +117,38 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="section wrap" id="rates">
-          <h2 className="h-sec">Rates</h2>
-          <p className="lede">
-            Simple, direct cargo pricing by sea or by air, plus one small UK pickup charge. Ask for a full
-            quote and we confirm the exact price the same working day.
-          </p>
-          <div className="rate-grid">
-            <div className="rate-card">
-              <div className="rate-icon"><ShipIcon /></div>
-              <h3>Sea Cargo</h3>
-              <div className="rate-value">{seaRate.headline_rate}</div>
-              <p className="rate-note">{seaRate.rate_note}</p>
-              <div className="rate-pickup">+ &pound;{Number(seaRate.pickup_charge).toFixed(0)} UK pickup</div>
-              <Link className="btn btn-navy btn-sm" href="/sea-cargo">See sea cargo rates &rarr;</Link>
+        <section className="band-rate" id="rates">
+          <div className="section wrap" style={{ paddingTop: 48, paddingBottom: 56 }}>
+            <span className="eyebrow">Live pricing</span>
+            <h2 className="h-sec" style={{ marginTop: 14 }}>Rates</h2>
+            <p className="lede">
+              Simple, direct cargo pricing by sea or by air, plus one small UK pickup charge. Ask for a full
+              quote and we confirm the exact price the same working day.
+            </p>
+            <div className="rate-grid">
+              <div className="rate-card">
+                <div className="rate-icon"><ShipIcon /></div>
+                <h3>Sea Cargo</h3>
+                <div className="rate-value">{seaRate.headline_rate}</div>
+                <p className="rate-note">{seaRate.rate_note}</p>
+                <div className="rate-pickup">+ &pound;{Number(seaRate.pickup_charge).toFixed(0)} UK pickup</div>
+                <Link className="btn btn-navy btn-sm" href="/sea-cargo">See sea cargo rates &rarr;</Link>
+              </div>
+              <div className="rate-card navy">
+                <div className="rate-icon"><PlaneIcon /></div>
+                <h3>Air Cargo</h3>
+                <div className="rate-value">{airRate.headline_rate}</div>
+                <p className="rate-note">{airRate.rate_note}</p>
+                <div className="rate-pickup">+ &pound;{Number(airRate.pickup_charge).toFixed(0)} UK pickup</div>
+                <Link className="btn btn-navy btn-sm" href="/air-cargo">See air cargo rates &rarr;</Link>
+              </div>
             </div>
-            <div className="rate-card navy">
-              <div className="rate-icon"><PlaneIcon /></div>
-              <h3>Air Cargo</h3>
-              <div className="rate-value">{airRate.headline_rate}</div>
-              <p className="rate-note">{airRate.rate_note}</p>
-              <div className="rate-pickup">+ &pound;{Number(airRate.pickup_charge).toFixed(0)} UK pickup</div>
-              <Link className="btn btn-navy btn-sm" href="/air-cargo">See air cargo rates &rarr;</Link>
-            </div>
+            <p className="fine" style={{ marginTop: 14 }}>
+              Rates exclude destination duties and optional insurance. See the{" "}
+              <Link href="/excess-baggage">excess baggage</Link> and <Link href="/pak-to-uk">Pakistan to UK</Link>{" "}
+              pages for those routes.
+            </p>
           </div>
-          <p className="fine" style={{ marginTop: 14 }}>
-            Rates exclude destination duties and optional insurance. See the{" "}
-            <Link href="/excess-baggage">excess baggage</Link> and <Link href="/pak-to-uk">Pakistan to UK</Link>{" "}
-            pages for those routes.
-          </p>
         </section>
 
         <section className="band-soft" id="services">
