@@ -14,7 +14,7 @@ export const metadata = {
 };
 
 const RATE_DEFAULTS = {
-  sea: { headline_rate: "From £195/m³", rate_note: "Shared container (LCL) · 30–40 day delivery", pickup_charge: 35 },
+  sea: { headline_rate: "From £1.20/kg", rate_note: "Shared container (LCL) · 8–10 week delivery", pickup_charge: 35 },
   air: { headline_rate: "From £3.10/kg", rate_note: "Tiered by weight · 5–7 day delivery", pickup_charge: 35 },
 };
 
