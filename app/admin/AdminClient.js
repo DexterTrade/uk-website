@@ -4,35 +4,25 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, STATUS_CLASS, STATUSES, FILTERS } from "@/lib/data";
-import { issueInvoice, markInvoicePaid, signOutAction, updateRate, updateShipmentStatus } from "./actions";
+import { signOutAction, updateRate, updateShipmentStatus } from "./actions";
 
 const NAV = [
   { key: "dash", label: "Dashboard" },
   { key: "ship", label: "Shipments" },
   { key: "inv", label: "Invoices" },
-  { key: "new", label: "New invoice" },
   { key: "rates", label: "Rates" },
 ];
 
-const EMPTY_LINE = () => ({ desc: "", qty: "1", unit: "0.00" });
-
-const invClass = (s) => (s === "Paid" ? "badge" : s === "Draft" ? "badge badge-grey" : "badge badge-red");
 const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
-export default function AdminClient({ shipments, invoices, rates, staffEmail }) {
+export default function AdminClient({ shipments, invoices, rates, monthKey, monthLabel, staffEmail }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [view, setView] = useState("dash");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-
-  const [lines, setLines] = useState([{ id: 1, ...EMPTY_LINE() }]);
-  const [nextLineId, setNextLineId] = useState(2);
-  const [form, setForm] = useState({ customer: "", ref: "", service: "Air cargo", due: "" });
-  const [issuedNote, setIssuedNote] = useState("");
-  const [formError, setFormError] = useState("");
 
   const [rateForm, setRateForm] = useState(() =>
     Object.fromEntries(
@@ -52,74 +42,30 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
   const [rateSaved, setRateSaved] = useState({});
 
   const active = useMemo(() => shipments.filter((s) => s.status !== "Delivered"), [shipments]);
-  const unpaid = useMemo(() => invoices.filter((i) => i.status === "Unpaid"), [invoices]);
-  const monthly = useMemo(() => invoices.filter((i) => i.issued.indexOf("Sep 2026") !== -1), [invoices]);
   const attention = useMemo(() => shipments.filter((s) => s.flag), [shipments]);
+
+  // monthKey ("2026-09") comes from the server so this follows the calendar
+  // instead of matching a hardcoded month name.
+  const monthly = useMemo(
+    () => invoices.filter((i) => (i.issuedISO || "").startsWith(monthKey)),
+    [invoices, monthKey]
+  );
 
   const shipmentRows = useMemo(
     () =>
       shipments
         .filter((s) => filter === "All" || s.status === filter)
-        .filter((s) => matches(`${s.ref} ${s.customer} ${s.route} ${s.service}`, search)),
+        .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service}`, search)),
     [shipments, filter, search]
   );
   const invoiceRows = useMemo(
-    () => invoices.filter((i) => matches(`${i.number} ${i.customer} ${i.ref}`, search)),
+    () => invoices.filter((i) => matches(`${i.ref} ${i.customer} ${i.town}`, search)),
     [invoices, search]
-  );
-
-  const draftTotal = useMemo(
-    () => lines.reduce((sum, l) => sum + (parseFloat(l.qty) || 0) * (parseFloat(l.unit) || 0), 0),
-    [lines]
   );
 
   function handleStatusChange(shipmentId, status) {
     startTransition(async () => {
       await updateShipmentStatus(shipmentId, status);
-      router.refresh();
-    });
-  }
-
-  function handleMarkPaid(invoiceId) {
-    startTransition(async () => {
-      await markInvoicePaid(invoiceId);
-      router.refresh();
-    });
-  }
-
-  function updateLine(id, field, value) {
-    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
-  }
-
-  function removeLine(id) {
-    setLines((prev) => prev.filter((l) => l.id !== id));
-  }
-
-  function addLine() {
-    setLines((prev) => [...prev, { id: nextLineId, ...EMPTY_LINE() }]);
-    setNextLineId((n) => n + 1);
-  }
-
-  function handleIssue() {
-    setFormError("");
-    startTransition(async () => {
-      const result = await issueInvoice({
-        customer: form.customer,
-        reference: form.ref,
-        service: form.service,
-        dueDate: form.due || null,
-        lines,
-      });
-      if (result?.error) {
-        setFormError(result.error);
-        return;
-      }
-      setIssuedNote(
-        `${result.invoice.number} issued for ${result.invoice.customer_name} — £${money(result.invoice.total)}. It now appears in the invoice list.`
-      );
-      setLines([{ id: 1, ...EMPTY_LINE() }]);
-      setNextLineId(2);
-      setForm({ customer: "", ref: "", service: "Air cargo", due: "" });
       router.refresh();
     });
   }
@@ -185,20 +131,22 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button className="btn btn-green btn-sm" onClick={() => setView("new")}>+ New invoice</button>
+          <Link className="btn btn-green btn-sm" href="/admin/new-booking">
+            + New booking
+          </Link>
         </div>
 
         {view === "dash" && (
           <section className="admin-view">
             <h1>Dashboard</h1>
-            <p className="sub">Week of 14 September 2026</p>
+            <p className="sub">{monthLabel}</p>
             <div className="kpis">
               <div className="kpi">
                 <div className="k">Active shipments</div>
                 <div className="v">{active.length}</div>
                 <div className="n good">
-                  {active.filter((s) => s.service === "Air cargo").length} air &middot;{" "}
-                  {active.filter((s) => s.service !== "Air cargo").length} sea
+                  {active.filter((s) => s.mode === "air").length} air &middot;{" "}
+                  {active.filter((s) => s.mode === "sea").length} sea
                 </div>
               </div>
               <div className="kpi">
@@ -207,14 +155,14 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                 <div className="n">Booked, not yet picked up</div>
               </div>
               <div className="kpi">
-                <div className="k">Unpaid invoices</div>
-                <div className="v">{unpaid.length}</div>
-                <div className="n bad">£{money(unpaid.reduce((a, b) => a + b.total, 0))} outstanding</div>
+                <div className="k">Bookings this month</div>
+                <div className="v">{monthly.length}</div>
+                <div className="n">{shipments.length} in total</div>
               </div>
               <div className="kpi">
                 <div className="k">Invoiced this month</div>
                 <div className="v">£{money(monthly.reduce((a, b) => a + b.total, 0))}</div>
-                <div className="n">Across {monthly.length} invoices</div>
+                <div className="n">Across {monthly.length} bookings</div>
               </div>
             </div>
             <div className="pane">
@@ -240,6 +188,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                   </tbody>
                 </table>
               </div>
+              {attention.length === 0 && <p className="empty">Nothing flagged right now.</p>}
             </div>
           </section>
         )}
@@ -257,11 +206,11 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[820px]">
+                <table className="min-w-[940px]">
                   <thead>
                     <tr>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
-                      <th>Weight</th><th>Status</th><th>Invoice</th>
+                      <th>Weight</th><th>Collection</th><th>Status</th><th className="num-right">Charged</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -272,6 +221,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                         <td>{s.service}</td>
                         <td>{s.route}</td>
                         <td>{s.weight}</td>
+                        <td>{s.collection}</td>
                         <td>
                           <select
                             className="status-select"
@@ -284,7 +234,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                             ))}
                           </select>
                         </td>
-                        <td>{s.invoice}</td>
+                        <td className="num-right font-semibold">£{money(s.total)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -299,143 +249,37 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
           <section className="admin-view">
             <h1>Invoices</h1>
             <p className="sub">
-              £{money(unpaid.reduce((a, b) => a + b.total, 0))} outstanding across {unpaid.length} unpaid invoices.
+              £{money(invoices.reduce((a, b) => a + b.total, 0))} invoiced across {invoices.length} bookings.
+              Every booking is paid at the point of sale, so there is nothing outstanding to chase.
             </p>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[760px]">
+                <table className="min-w-[820px]">
                   <thead>
                     <tr>
-                      <th>Invoice</th><th>Customer</th><th>Shipment</th><th>Issued</th>
-                      <th className="num-right">Total</th><th>Status</th><th></th>
+                      <th>Reference</th><th>Customer</th><th>Town</th><th>Mode</th><th>Issued</th>
+                      <th className="num-right">Rate/kg</th>
+                      <th className="num-right">Duty + handling</th>
+                      <th className="num-right">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoiceRows.map((i) => (
                       <tr key={i.id}>
-                        <td className="key">{i.number}</td>
+                        <td className="key">{i.ref}</td>
                         <td>{i.customer}</td>
-                        <td>{i.ref}</td>
+                        <td>{i.town}</td>
+                        <td>{i.mode}</td>
                         <td>{i.issued}</td>
+                        <td className="num-right">£{money(i.rate)}</td>
+                        <td className="num-right">£{money(i.other)}</td>
                         <td className="num-right font-semibold">£{money(i.total)}</td>
-                        <td><span className={invClass(i.status)}>{i.status}</span></td>
-                        <td>
-                          {i.status !== "Paid" && (
-                            <button className="btn btn-ghost btn-sm" disabled={isPending} onClick={() => handleMarkPaid(i.id)}>
-                              Mark paid
-                            </button>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {invoiceRows.length === 0 && <p className="empty">No invoices match that search.</p>}
-            </div>
-          </section>
-        )}
-
-        {view === "new" && (
-          <section className="admin-view max-w-[880px]">
-            <h1>New invoice</h1>
-            <p className="sub">Lines total live. Issuing saves the invoice for internal records &mdash; customers only ever see tracking, never invoices.</p>
-            <div className="pane p-6">
-              <div className="grid-fields">
-                <label className="field">
-                  Customer
-                  <input
-                    className="input"
-                    placeholder="Full name"
-                    value={form.customer}
-                    onChange={(e) => setForm((f) => ({ ...f, customer: e.target.value }))}
-                  />
-                </label>
-                <label className="field">
-                  Shipment reference
-                  <input
-                    className="input"
-                    placeholder="PC-0000"
-                    value={form.ref}
-                    onChange={(e) => setForm((f) => ({ ...f, ref: e.target.value }))}
-                  />
-                </label>
-                <label className="field">
-                  Service
-                  <select
-                    className="select"
-                    value={form.service}
-                    onChange={(e) => setForm((f) => ({ ...f, service: e.target.value }))}
-                  >
-                    <option>Air cargo</option>
-                    <option>Sea freight (LCL)</option>
-                    <option>Sea freight (FCL)</option>
-                  </select>
-                </label>
-                <label className="field">
-                  Due date
-                  <input
-                    className="input"
-                    type="date"
-                    value={form.due}
-                    onChange={(e) => setForm((f) => ({ ...f, due: e.target.value }))}
-                  />
-                </label>
-              </div>
-
-              <div className="line-rows">
-                {lines.map((l) => (
-                  <div className="line-row" key={l.id}>
-                    <label className="field field-mini desc">
-                      Description
-                      <input
-                        className="input"
-                        value={l.desc}
-                        placeholder="Air freight 24 kg"
-                        onChange={(e) => updateLine(l.id, "desc", e.target.value)}
-                      />
-                    </label>
-                    <label className="field field-mini">
-                      Qty
-                      <input
-                        className="input"
-                        inputMode="decimal"
-                        value={l.qty}
-                        onChange={(e) => updateLine(l.id, "qty", e.target.value)}
-                      />
-                    </label>
-                    <label className="field field-mini">
-                      Unit £
-                      <input
-                        className="input"
-                        inputMode="decimal"
-                        value={l.unit}
-                        onChange={(e) => updateLine(l.id, "unit", e.target.value)}
-                      />
-                    </label>
-                    <div className="amount">
-                      <span className="v">£{money((parseFloat(l.qty) || 0) * (parseFloat(l.unit) || 0))}</span>
-                      <button aria-label="Remove line" onClick={() => removeLine(l.id)}>&times;</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="line-foot">
-                <button className="btn btn-ghost btn-sm" onClick={addLine}>+ Add line</button>
-                <div className="flex items-baseline gap-[18px]">
-                  <span className="text-[15px] text-soft">Invoice total</span>
-                  <span className="total">£{money(draftTotal)}</span>
-                </div>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button className="btn btn-green" disabled={isPending} onClick={handleIssue}>
-                  {isPending ? "Issuing…" : "Issue invoice"}
-                </button>
-                <button className="btn btn-ghost" onClick={() => window.print()}>Preview print</button>
-              </div>
-              {formError && <p className="alert alert-error">{formError}</p>}
-              {issuedNote && <p className="alert alert-ok">{issuedNote}</p>}
             </div>
           </section>
         )}

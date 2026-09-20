@@ -32,6 +32,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/faq` | FAQ accordion (content in `lib/faq.js`) |
 | `/tracking` | Public shipment tracking (see below) |
 | `/admin`, `/admin/login` | Staff-only operations panel, protected by Supabase Auth |
+| `/admin/new-booking` | Staff-only booking form — creates the customer, shipment and invoice in one submit |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
 Cargo, Excess Baggage, Pak to UK, Relocation, Track, FAQ.
@@ -43,23 +44,60 @@ or the Supabase dashboard — this repo does not keep a local `supabase/migratio
 folder; migrations were applied directly through the Supabase MCP tools during
 development).
 
-### `shipments`
-The core shipment record. One row per booking.
+### `customers`
+The UK sender. One row per real person, and the master record the booking form
+prefills from when someone books again.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
-| `reference` | text | Booking/tracking reference, e.g. `PC-4471`, `BK-20931` |
-| `customer_name` | text | |
-| `service` | text | e.g. "Air Freight", "Sea Freight" |
-| `route` | text | e.g. "London → Karachi" |
-| `weight_label` | text | Human-readable pieces/weight string |
-| `status` | text | One of `STATUSES` in `lib/data.js` (Booked → Delivered) |
-| `eta_label` | text | Nullable, human-readable ETA |
-| `summary` | text | Short status blurb shown on the tracking page |
-| `flag` | text | Free-text internal flag shown in admin only |
-| `sender_phone` | text | UK phone number used to verify a tracking lookup (added in `add_sender_phone_verification_to_tracking`) |
+| `name` | text | |
+| `phone` | text | UK mobile, stored normalized as `07xxxxxxxxx` |
+| `email` | text, nullable | Optional — plenty of customers don't give one |
+| `address` | text | |
+| `postcode` | text | UK, stored uppercased and spaced (`B10 9AB`) |
+| `town` | text | Also the origin half of the derived tracking route |
 | `created_at`, `updated_at` | timestamptz | |
+
+**Unique index on `normalize_uk_phone(phone)`, not on `phone` itself** — this
+is what makes `07700 900001`, `+44 7700 900001` and `0044 7700 900001` one
+customer instead of three. Don't replace it with a plain unique constraint on
+the raw column.
+
+### `shipments`
+The core shipment record. One row per booking, always created together with
+its invoice by `create_booking()` — never on its own.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `reference` | text | `PC0001`, `PC0002`, … — **defaults to `next_shipment_reference()`**, so never set it from application code |
+| `customer_id` | uuid FK → `customers.id` (`ON DELETE RESTRICT`) | |
+| `mode` | text | CHECK `'air'` or `'sea'` |
+| `parcels` | int | CHECK between 1 and 30 |
+| `weight_kg` | numeric(10,2) | CHECK > 0 |
+| `goods_description` | text | |
+| `goods_value_gbp` | numeric(12,2) | CHECK ≥ 1 |
+| `collection_date` | date | Past dates allowed on purpose — staff back-date walk-ins |
+| `receiver_name` | text | |
+| `receiver_phone` | text | Overseas; `+92…` for Pakistan, E.164 otherwise |
+| `receiver_phone_alt` | text, nullable | The one optional contact field on the receiver |
+| `receiver_email` | text, nullable | |
+| `receiver_address` | text | |
+| `receiver_city` | text | Also the destination half of the derived tracking route |
+| `receiver_country` | text | 2-letter code, defaults `'PK'` |
+| `status` | text | One of `STATUSES` in `lib/data.js` (Booked → Delivered) |
+| `eta_label` | text, nullable | Human-readable ETA |
+| `summary` | text | Short status blurb shown on the tracking page; seeded by `create_booking()` |
+| `flag` | text, nullable | Free-text internal flag shown in admin only |
+| `created_at`, `updated_at` | timestamptz | |
+
+There is deliberately **no `route` or `weight_label` column** any more (and no
+`service`, `customer_name` or `sender_phone`). Those were display strings
+frozen at write time; they're now derived at read time — `route` from
+`customers.town → receiver_city`, `weight_label` from `parcels` + `weight_kg`
+— inside `get_shipment_by_reference()` and in `app/admin/page.js`. If you need
+a new display string, derive it too rather than adding a column.
 
 ### `shipment_stages`
 Timeline entries for a shipment (one shipment → many stages).
@@ -75,34 +113,42 @@ Timeline entries for a shipment (one shipment → many stages).
 
 ### `invoices`
 **Internal only — never exposed to the public.** See "Invoicing is internal
-only" below.
+only" below. Exactly one invoice per shipment.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
-| `number` | text | e.g. `INV-1042`, generated via `nextval_invoice_number()` |
-| `shipment_id` | uuid FK → `shipments.id`, nullable | |
-| `shipment_reference` | text, nullable | Free-text fallback if no shipment match |
-| `customer_name` | text | |
-| `customer_city` | text, nullable | |
+| `shipment_id` | uuid FK → `shipments.id` (`ON DELETE CASCADE`) | NOT NULL and **UNIQUE** — the 1:1 rule is enforced by the database, not by convention |
+| `rate_per_kg` | numeric(10,2) | CHECK ≥ 0 |
+| `other_charges` | numeric(12,2) | Customs duty + handling + packing, combined. CHECK ≥ 0 |
+| `total_charges` | numeric(12,2) | Stored **as staff entered it**, not recomputed — see below |
+| `bill_to_name` | text | |
+| `bill_to_address` | text | |
+| `bill_to_postcode` | text | |
+| `bill_to_town` | text | |
+| `bill_to_phone` | text | |
+| `bill_to_email` | text, nullable | |
 | `issued_date` | date | Defaults to `CURRENT_DATE` |
-| `due_date` | date, nullable | |
-| `status` | text | One of `INVOICE_STATUSES` in `lib/data.js`: Draft, Unpaid, Paid |
-| `total` | numeric | |
 | `created_at`, `updated_at` | timestamptz | |
 
-### `invoice_lines`
-Line items for an invoice (one invoice → many lines).
+Two things here are deliberate and shouldn't be "tidied up":
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid PK | |
-| `invoice_id` | uuid FK → `invoices.id` | |
-| `position` | int | |
-| `description` | text | |
-| `qty` | numeric | |
-| `unit_price` | numeric | |
-| `amount` | numeric, nullable | |
+- **The `bill_to_*` fields duplicate `customers`.** That's a snapshot, not
+  denormalization by accident: reprinting `PC0001` two years later has to show
+  the address the customer was actually given, even if they've since moved and
+  their `customers` row has been updated.
+- **`total_charges` is not derived.** The form *suggests*
+  `(rate_per_kg × weight_kg) + other_charges` and prefills it, but staff can
+  overwrite it when a customer was quoted something different, and whatever
+  they submit is what's stored. Don't add a generated column or a CHECK tying
+  it to the formula.
+
+There is **no invoice number, no status, no due date and no line-items table**.
+Bookings are paid at the point of sale, so there is no Draft/Unpaid/Paid
+lifecycle to model; the shipment reference (`PC0001`) is the only identifier
+anyone quotes; and with fixed-shape pricing there are no free-form lines, so
+`invoice_lines`, `invoice_number_seq` and `nextval_invoice_number()` were all
+dropped. The printed invoice renders the three figures above as its lines.
 
 ### `rates`
 Exactly two rows (`mode = 'sea'`, `mode = 'air'`). Public read-only, and the
@@ -131,17 +177,18 @@ RLS is **enabled on every table**. Policies:
 
 | Table | Policy | Role | Effect |
 |---|---|---|---|
+| `customers` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipments` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `invoices` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
-| `invoice_lines` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `rates` | `public read rates` | `anon`, `authenticated` | Public `SELECT` only |
 | `rates` | `staff update rates` | `authenticated` | Staff can `UPDATE` |
 
-**There is no public SELECT policy on `shipments`, `shipment_stages`,
-`invoices` or `invoice_lines`.** The *only* way the public site reads shipment
-data is through the narrow SECURITY DEFINER RPC below — direct table access
-from the anon key returns nothing.
+**There is no public SELECT policy on `customers`, `shipments`,
+`shipment_stages` or `invoices`.** The *only* way the public site reads
+shipment data is through the narrow SECURITY DEFINER RPC below — direct table
+access from the anon key returns nothing. Customer contact details in
+particular are never readable by `anon` through any path.
 
 ## Database functions (RPCs)
 
@@ -153,29 +200,50 @@ not enough (this was an explicit requirement: tracking must not let someone
 enumerate/guess other people's shipments by reference alone).
 
 - Matches `reference` case-insensitively.
-- Matches phone numbers via `normalize_uk_phone()` on both sides (see below)
-  so `07700 900001` and `+44 7700 900001` are treated as equal.
+- The sender's phone now lives on `customers`, so the function joins through
+  `shipments.customer_id` to compare it. Both sides go through
+  `normalize_uk_phone()` (see below), so `07700 900001`, `+44 7700 900001` and
+  `0044 7700 900001` are all treated as equal.
 - Returns a single JSON object with `reference, status, service, route,
   weight_label, eta_label, summary, stages[]` — **never** invoice/pricing
-  data.
+  data. `service`, `route` and `weight_label` are **derived inside the
+  function** (from `mode`, `customers.town → receiver_city`, and
+  `parcels` + `weight_kg`) since they're no longer stored columns. The JSON
+  shape the tracking page consumes is unchanged.
 - Returns `null` (not an error) on no match or on an empty/unparseable phone.
 - Called from `app/tracking/actions.js` → `trackShipment(reference, senderPhone)`.
 
-### `normalize_uk_phone(p text) → text`
-Plain SQL, `IMMUTABLE`. Strips all non-digits, then if the result is 12
-digits and starts with `44` (i.e. a `+44...` international number with the
-leading `0` dropped), rewrites it to the `0...` national form so it matches
-numbers stored in local format. **Known gap**: does not handle the `00 44...`
-(double-zero international prefix) form — only bare `+44...`/`44...`. Not
-currently a problem since all seeded/real numbers are UK numbers entered in
-either local or `+44` form.
+### `create_booking(payload jsonb) → jsonb`
+`SECURITY INVOKER`, granted to `authenticated` only (explicitly revoked from
+`public`/`anon`). **The only way a booking is created.** In one transaction it
+finds-or-creates the customer by normalized phone (refreshing their details if
+they've changed), inserts the shipment, seeds a first `shipment_stages` row so
+tracking isn't empty immediately after booking, and inserts the invoice with
+its `bill_to_*` snapshot. Returns `{ reference, shipment_id, customer_id }`.
 
-### `nextval_invoice_number() → bigint`
-`SECURITY DEFINER`. Pulls the next value from `invoice_number_seq`, used to
-build invoice numbers like `INV-1042` in `issueInvoice()`. Only ever called
-from an authenticated admin server action (see below) — not exposed to the
-public UI, but the function itself doesn't check role (the *caller* is what's
-locked down).
+It exists because the Supabase JS client **cannot span tables atomically** — a
+failure partway through separate inserts would leave an orphan shipment with
+no invoice. `SECURITY INVOKER` is deliberate: the caller's own RLS applies, so
+staff can write and `anon` cannot, with no privilege escalation. The calling
+Server Action still runs `requireStaff()` first.
+
+### `find_customer_by_phone(p_phone text) → jsonb`
+`SECURITY INVOKER`, `authenticated` only. Prefill lookup for the booking form.
+Matching happens on the normalized number, which PostgREST can't express as a
+column filter — hence an RPC rather than a `.from("customers")` query.
+
+### `next_shipment_reference() → text`
+Returns `'PC' || lpad(nextval('shipment_reference_seq'), 4, '0')` — `PC0001`,
+`PC0002`, … It is the **column default** on `shipments.reference`, so nothing
+in application code should ever generate or pass a reference. Generating it in
+the database is what makes it race-free; computing it in JS from the current
+maximum would let two simultaneous submits claim the same number.
+
+### `normalize_uk_phone(p text) → text`
+Plain SQL, `IMMUTABLE`. Strips all non-digits, then rewrites `0044…` (14
+digits) and `44…`/`+44…` (12 digits) into the `0…` national form so every way
+of typing a UK number compares equal. Used both by tracking verification and
+by the unique index on `customers`, which is why it must stay `IMMUTABLE`.
 
 ### `set_updated_at() → trigger`
 Standard `updated_at = now()` trigger function, attached to tables with an
@@ -187,7 +255,8 @@ Standard `updated_at = now()` trigger function, attached to tables with an
    route, no RPC, no API that returns invoice data to an unauthenticated
    visitor. This was deliberately built once (a public invoice-lookup RPC)
    and then **removed** for security — do not re-add anything that lets the
-   public read `invoices`/`invoice_lines` by any identifier.
+   public read `invoices` by any identifier. The same applies to `customers`:
+   sender names, addresses and phone numbers are staff-only.
 2. **Tracking requires reference + sender phone**, not reference alone (see
    `get_shipment_by_reference` above). Don't loosen this back to a single
    parameter.
@@ -214,20 +283,68 @@ Standard `updated_at = now()` trigger function, attached to tables with an
 - `app/admin/login/actions.js` — `signIn()` Server Action, redirects to
   `?next=` target (default `/admin`) on success.
 - `app/admin/actions.js` — `signOutAction`, `updateShipmentStatus`,
-  `markInvoicePaid`, `updateRate`, `issueInvoice`. Every one of these calls
+  `updateRate`, `lookupCustomer`, `createBooking`. Every one of these calls
   `requireStaff()` first.
 
 ## Admin panel (`/admin`)
 
-Server Component (`app/admin/page.js`) fetches shipments (with their invoice
-number via the `invoices(number)` join), invoices (with shipment reference
-via join), and both rate rows in parallel, then hands them to
-`AdminClient.js` (client component) for the interactive table/filter/edit UI.
-Key actions: change shipment status, mark an invoice paid, edit sea/air rates
-(headline rate, note, **estimated time**, UK pickup charge, and the
-next-dispatch date/note — all per mode), and issue a new invoice (creates
-`invoices` row + `invoice_lines`, using `nextval_invoice_number()` for the
-number).
+Server Component (`app/admin/page.js`) fetches shipments (joined to
+`customers` for the sender and to `invoices` for the amount charged), invoices
+(joined back to `shipments` for the reference), and both rate rows in
+parallel, then hands them to `AdminClient.js` (client component) for the
+interactive table/filter/edit UI. Tabs: Dashboard, Shipments, Invoices,
+Rates. Key actions: change shipment status, and edit sea/air rates (headline
+rate, note, **estimated time**, UK pickup charge, and the next-dispatch
+date/note — all per mode).
+
+The dashboard's "this month" figures take a `monthKey` (`"2026-09"`) computed
+on the server in `page.js`, rather than string-matching a hardcoded month name
+the way they used to — that quietly read zero the moment the month rolled
+over.
+
+### New booking (`/admin/new-booking`)
+
+Its own route, not a tab — it's ~20 fields across three sections and benefits
+from a real URL. `page.js` is a thin Server Component that passes down
+`today` (computing the default collection date inside the client component
+would render UTC on the server and local time in the browser, which can
+disagree across midnight and trip hydration); `BookingForm.js` is the form.
+
+Three sections: **Shipment details** (mode, parcels, weight, description,
+worth, collection date) → **Invoicing and payment** (rate per kg, duty +
+handling + packing, total) → **Customer** (UK sender, overseas receiver).
+
+- **Total charges is suggested, not computed.** It prefills with
+  `(rate × weight) + other charges` and keeps in step with those inputs until
+  staff type their own figure; after that it's left alone and the recalculated
+  number is offered as a "use this total" link instead.
+- **Returning customers prefill.** Blurring the sender mobile calls
+  `lookupCustomer` → `find_customer_by_phone`, and fills in the rest of the
+  sender block.
+- **The receiver is assumed to be in Pakistan.** A "Not in Pakistan" toggle
+  switches both receiver mobile fields from the Pakistan rule to generic
+  E.164 and reveals a short country select (`OTHER_COUNTRIES` in the
+  validation module — a dozen realistic destinations plus "Other", not all
+  ~200 countries, since the dialling code carries the detail).
+- On success it shows the generated `PC0001` reference on its own, since that
+  is what the customer needs to track with.
+
+### Validation (`lib/validation/booking.js`)
+
+One `yup` schema, run **twice**: in the browser for live per-field errors, and
+again inside `createBooking()` before anything reaches the database. The
+second run is not redundant — a Server Action is a public HTTP endpoint, so
+anything validated only on the client can be bypassed by posting to it
+directly. The same module also owns phone/postcode normalization
+(`normalizeUkMobile`, `normalizePkMobile`, `normalizeInternational`,
+`formatPostcode`) and `toBookingPayload()`, which produces the canonical shape
+`create_booking` expects.
+
+Rules worth knowing: sender must be a **UK mobile** (`07…`, landlines
+rejected — it's the number used to verify tracking); receiver must be a
+Pakistan mobile (`+923…`) unless the overseas toggle is on; both email fields
+and the second receiver mobile are the only optional inputs; `goods_value_gbp`
+has a minimum of £1 and no maximum; collection dates may be in the past.
 
 `updateRate(mode, {...})` in `app/admin/actions.js` revalidates `/admin`,
 `/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage` and `/pak-to-uk` — every
@@ -250,9 +367,13 @@ reference and the sender's phone number before it will look anything up
 setState-in-effect lint violation and to allow re-submitting the same
 values). On submit it calls the `trackShipment` Server Action
 (`app/tracking/actions.js`), which passes both values straight to the
-`get_shipment_by_reference` RPC and returns `null` on any mismatch. Demo
-pairs seeded in the DB: `PC-4471` / `07700 900001` (air), `BK-20931` /
-`07700 900002` (sea).
+`get_shipment_by_reference` RPC and returns `null` on any mismatch.
+
+**There is no seeded demo data any more.** The old `PC-4471` / `07700 900001`
+and `BK-20931` / `07700 900002` pairs were removed along with the old
+reference format — the database starts empty and `PC0001` is the first real
+booking. To test tracking, create a booking in `/admin/new-booking` and use
+its reference plus the sender mobile you entered.
 
 ## Business config (`lib/seo.js`)
 
@@ -422,8 +543,16 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
   gradients). If replaced again, they must land at these exact paths (not
   `public/` root) to be picked up by `app/page.js`, `app/contact-us/page.js`
   and `NextDispatch.js` (sea/air only — `moving-home.jpg` isn't used there).
-- Phone normalization only handles bare `+44`/`44` international prefixes,
-  not `00 44...`.
+- **No invoice document yet.** The invoicing data model is complete and the
+  booking form writes it, but there is still no printable/PDF invoice — the
+  agreed design is a staff-only `/admin/invoices/[reference]` page with an A4
+  print stylesheet (business header from `BUSINESS` in `lib/seo.js`, the
+  `bill_to_*` snapshot, and the three pricing figures as lines), printed or
+  saved as PDF from the browser. Nothing public, no email sending.
+- **Bookings can't be edited or deleted after creation.** A typo means
+  correcting it directly in Supabase for now. Editing also needs a decision
+  about whether changing a returning customer's details should rewrite the
+  `bill_to_*` snapshot on invoices already issued (it shouldn't).
 - **Sea cargo's `£1.20/kg` headline rate is a placeholder**, set when the
   pricing model was switched from per-m³ to per-kg at the user's explicit
   request — not a real quoted figure. Same for `estimated_time` values
