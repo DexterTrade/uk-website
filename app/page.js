@@ -88,7 +88,56 @@ export default async function Home() {
             it's still mounted when the card itself is hidden on phones */}
         <ContactDrawer />
 
-        <section className="wrap py-[60px]">
+        <section id="phone-numbers" className="wrap border-t border-[#e6eaf2] py-[46px]">
+          <span className="eyebrow">Call us directly</span>
+          <h2 className="mt-3 text-[clamp(21px,2.6vw,27px)] font-extrabold">Speak to a branch, or WhatsApp us</h2>
+          <p className="lede mt-[10px] max-w-[48ch]">
+            Every branch takes calls directly, or reach us on WhatsApp for a quick response.
+          </p>
+          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+            {BUSINESS.phones.map((p) => (
+              <a
+                key={p.city}
+                href={`tel:${p.href}`}
+                className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+              >
+                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green-soft text-green">
+                  <PhoneIcon />
+                </span>
+                <span>
+                  <span className="block text-[15.5px] font-bold text-ink">{p.display}</span>
+                  <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">{p.city}</span>
+                </span>
+              </a>
+            ))}
+            <a
+              href={BUSINESS.whatsapp}
+              className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+            >
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green text-white">
+                <WhatsAppIcon />
+              </span>
+              <span>
+                <span className="block text-[15.5px] font-bold text-ink">{BUSINESS.whatsappDisplay}</span>
+                <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">WhatsApp</span>
+              </span>
+            </a>
+            <a
+              href={`mailto:${BUSINESS.email}`}
+              className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+            >
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green-soft text-green">
+                <EmailIcon />
+              </span>
+              <span>
+                <span className="block text-[15.5px] font-bold text-ink">{BUSINESS.email}</span>
+                <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">Email</span>
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <section className="wrap border-t border-[#e6eaf2] py-[60px]">
           <div className="grid grid-cols-[1.5fr_1fr] items-center gap-11 max-[860px]:grid-cols-1">
             <div className="overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
               <img className="block h-full w-full object-cover" src="/assets/photos/sea-cargo.jpg" alt="Sea cargo — container ship" />
@@ -96,10 +145,6 @@ export default async function Home() {
             <div>
               <span className="eyebrow">Sea Cargo</span>
               <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Economical cargo by sea</h2>
-              <p className="mt-[10px] max-w-[46ch] text-[15.5px] leading-[1.65] text-muted">
-                Shared-container (LCL) space by the cubic metre, or a full container of your own — the
-                economical route for furniture, business stock and full households.
-              </p>
               <div className="mt-[22px] flex items-baseline gap-2">
                 <span className="font-head text-[30px] font-extrabold text-green">{seaRate.headline_rate}</span>
                 <span className="text-[13px] text-faint">{seaRate.rate_note}</span>
@@ -119,10 +164,6 @@ export default async function Home() {
             <div>
               <span className="eyebrow">Air Cargo</span>
               <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Fast cargo by air</h2>
-              <p className="mt-[10px] max-w-[46ch] text-[15.5px] leading-[1.65] text-muted">
-                Weekly consolidated departures to Karachi, Lahore and Islamabad — the fast route when speed
-                matters more than volume.
-              </p>
               <div className="mt-[22px] flex items-baseline gap-2">
                 <span className="font-head text-[30px] font-extrabold text-green">{airRate.headline_rate}</span>
                 <span className="text-[13px] text-faint">{airRate.rate_note}</span>

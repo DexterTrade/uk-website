@@ -477,33 +477,30 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     onChange={(e) => updateRateField(mode, "rate_note", e.target.value)}
                   />
                 </label>
-                {mode === "sea" && (
-                  <>
-                    <p className="fine mt-5 mb-1">
-                      Next departure &mdash; shown as a countdown banner on the Sea Cargo page. Leave the date blank to hide it.
-                    </p>
-                    <div className="grid-fields">
-                      <label className="field">
-                        Next dispatch date
-                        <input
-                          className="input"
-                          type="date"
-                          value={rateForm.sea?.next_dispatch_date || ""}
-                          onChange={(e) => updateRateField("sea", "next_dispatch_date", e.target.value)}
-                        />
-                      </label>
-                      <label className="field">
-                        Dispatch note
-                        <input
-                          className="input"
-                          placeholder="Karachi-bound LCL container"
-                          value={rateForm.sea?.next_dispatch_note || ""}
-                          onChange={(e) => updateRateField("sea", "next_dispatch_note", e.target.value)}
-                        />
-                      </label>
-                    </div>
-                  </>
-                )}
+                <p className="fine mt-5 mb-1">
+                  Next departure &mdash; shown as a poster banner on the {mode === "sea" ? "Sea" : "Air"} Cargo page.
+                  Leave the date blank to hide it.
+                </p>
+                <div className="grid-fields">
+                  <label className="field">
+                    Next dispatch date
+                    <input
+                      className="input"
+                      type="date"
+                      value={rateForm[mode]?.next_dispatch_date || ""}
+                      onChange={(e) => updateRateField(mode, "next_dispatch_date", e.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    Dispatch note
+                    <input
+                      className="input"
+                      placeholder={mode === "sea" ? "Karachi-bound LCL container" : "Weekly consolidated departure"}
+                      value={rateForm[mode]?.next_dispatch_note || ""}
+                      onChange={(e) => updateRateField(mode, "next_dispatch_note", e.target.value)}
+                    />
+                  </label>
+                </div>
                 <div className="mt-[18px] flex items-center gap-[14px]">
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save

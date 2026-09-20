@@ -12,6 +12,7 @@ export default function ContactDrawer() {
   const [open, setOpen] = useState(false);
   const [hint, setHint] = useState(false);
   const openRef = useRef(open);
+  const phoneSectionVisibleRef = useRef(false);
   const close = () => setOpen(false);
 
   useEffect(() => {
@@ -27,9 +28,29 @@ export default function ContactDrawer() {
     };
   }, [open]);
 
+  // If the page has its own always-visible phone numbers section (e.g. the
+  // homepage), don't nag with the hint while it's already on screen — the
+  // visitor can already see the numbers directly.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById("phone-numbers");
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        phoneSectionVisibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting) setHint(false);
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Small mobile-only nudge: shows shortly after landing (so a first-time
   // visitor immediately knows the numbers live behind this tab), then every
-  // 20s afterwards while the drawer stays closed.
+  // 20s afterwards while the drawer stays closed and the phone numbers
+  // section (if the page has one) isn't already in view.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(max-width: 640px)").matches) return;
@@ -37,6 +58,7 @@ export default function ContactDrawer() {
     let hideTimer;
     const showHint = () => {
       if (openRef.current) return;
+      if (phoneSectionVisibleRef.current) return;
       setHint(true);
       hideTimer = setTimeout(() => setHint(false), HINT_VISIBLE_MS);
     };
