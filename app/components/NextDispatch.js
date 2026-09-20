@@ -21,8 +21,9 @@ export default function NextDispatch({ mode = "sea", date, note }) {
   const target = new Date(`${date}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((target - today) / 86400000);
 
-  if (target < today) return null;
+  if (diffDays < 0) return null;
 
   const formatted = target.toLocaleDateString("en-GB", {
     weekday: "long",
@@ -31,6 +32,7 @@ export default function NextDispatch({ mode = "sea", date, note }) {
     year: "numeric",
   });
 
+  const daysAway = diffDays === 0 ? "today" : diffDays === 1 ? "in 1 day" : `in ${diffDays} days`;
   const copy = MODE_COPY[mode] || MODE_COPY.sea;
 
   return (
@@ -41,7 +43,10 @@ export default function NextDispatch({ mode = "sea", date, note }) {
         <div className="flex flex-wrap items-center justify-between gap-6 p-6 md:p-7">
           <div>
             <span className="eyebrow">{copy.label}</span>
-            <h3 className="mt-2 text-xl font-extrabold md:text-2xl">{formatted}</h3>
+            <h3 className="mt-2 text-xl font-extrabold md:text-2xl">
+              {formatted}
+              {mode === "sea" && <span className="ml-2 text-base font-semibold text-green">({daysAway})</span>}
+            </h3>
             {note && <p className="mt-1 text-sm text-muted">{note}</p>}
           </div>
 

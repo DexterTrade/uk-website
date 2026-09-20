@@ -17,7 +17,7 @@ export default async function AirCargoPage() {
   const supabase = await createClient();
   const { data: airRate } = await supabase
     .from("rates")
-    .select("next_dispatch_date, next_dispatch_note")
+    .select("next_dispatch_date, next_dispatch_note, pickup_charge")
     .eq("mode", "air")
     .maybeSingle();
 
@@ -25,6 +25,8 @@ export default async function AirCargoPage() {
     <>
       <SiteHeader variant="service" />
       <main>
+        <NextDispatch mode="air" date={airRate?.next_dispatch_date} note={airRate?.next_dispatch_note} />
+
         <PageHero
           eyebrow="Cargo by air · UK to Pakistan & Kashmir"
           title="Fast, express cargo by air — door to door in 5-7 days."
@@ -39,8 +41,6 @@ export default async function AirCargoPage() {
             { label: "Track a shipment", href: "/tracking", variant: "btn-ghost" },
           ]}
         />
-
-        <NextDispatch mode="air" date={airRate?.next_dispatch_date} note={airRate?.next_dispatch_note} />
 
         <div className="wrap">
           <div className="schedule-strip">
@@ -98,6 +98,14 @@ export default async function AirCargoPage() {
                   <tr><td className="key">100 kg +</td><td className="rate">&pound;3.10 / kg</td><td>5&ndash;7 days</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
+                Minimum weight: 1 kg
+              </span>
+              <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
+                Collection charge: &pound;{Number(airRate?.pickup_charge ?? 35).toFixed(0)}
+              </span>
             </div>
             <p className="fine mt-[14px]">
               Rates exclude destination duties and optional insurance. Volumetric weight applies to light, bulky

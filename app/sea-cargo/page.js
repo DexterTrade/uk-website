@@ -17,7 +17,7 @@ export default async function SeaCargoPage() {
   const supabase = await createClient();
   const { data: seaRate } = await supabase
     .from("rates")
-    .select("next_dispatch_date, next_dispatch_note")
+    .select("next_dispatch_date, next_dispatch_note, pickup_charge")
     .eq("mode", "sea")
     .maybeSingle();
 
@@ -25,6 +25,8 @@ export default async function SeaCargoPage() {
     <>
       <SiteHeader variant="service" />
       <main>
+        <NextDispatch mode="sea" date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
+
         <PageHero
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
           title="Direct cargo by sea — the economical route for volume and household goods."
@@ -39,8 +41,6 @@ export default async function SeaCargoPage() {
             { label: "Track a shipment", href: "/tracking", variant: "btn-ghost" },
           ]}
         />
-
-        <NextDispatch mode="sea" date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
 
         <section className="section wrap">
           <h2 className="h-sec">LCL or FCL &mdash; whichever fits</h2>
@@ -83,6 +83,11 @@ export default async function SeaCargoPage() {
                   <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>30&ndash;40 days</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
+                Collection charge: &pound;{Number(seaRate?.pickup_charge ?? 35).toFixed(0)}
+              </span>
             </div>
             <p className="fine mt-[14px]">
               Rates exclude destination duties and optional insurance.

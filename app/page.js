@@ -88,7 +88,7 @@ export default async function Home() {
             it's still mounted when the card itself is hidden on phones */}
         <ContactDrawer />
 
-        <section id="phone-numbers" className="wrap border-t border-[#e6eaf2] py-[46px]">
+        <section id="phone-numbers" className="hidden max-[640px]:block wrap border-t border-[#e6eaf2] py-[46px]">
           <span className="eyebrow">Call us directly</span>
           <h2 className="mt-3 text-[clamp(21px,2.6vw,27px)] font-extrabold">Speak to a branch, or WhatsApp us</h2>
           <p className="lede mt-[10px] max-w-[48ch]">
