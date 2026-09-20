@@ -27,7 +27,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | Route | Purpose |
 |---|---|
 | `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, and three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan) |
-| `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/moving-back-home` | Dedicated service pages, each with its own layout (not templated identically) |
+| `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/moving-back-home` | Dedicated service pages, each with its own layout (not templated identically). Sea/Air lead with the `NextDispatch` poster (see below), placed *above* `PageHero`. Excess Baggage, Pak to UK and Moving Back Home render their "How it works" as a connected flow via `app/components/ProcessDiagram.js` (numbered boxes with arrows between them) rather than a plain card grid. Excess Baggage and Pak to UK are Server Components that fetch `rates.estimated_time` (see "Admin panel" below) |
 | `/contact-us` | Contact details + enquiry form |
 | `/faq` | FAQ accordion (content in `lib/faq.js`) |
 | `/tracking` | Public shipment tracking (see below) |
@@ -105,17 +105,23 @@ Line items for an invoice (one invoice → many lines).
 | `amount` | numeric, nullable | |
 
 ### `rates`
-Exactly two rows (`mode = 'sea'`, `mode = 'air'`). Public read-only — this is
-what drives the homepage rate cards and the sea-cargo "next dispatch" banner.
+Exactly two rows (`mode = 'sea'`, `mode = 'air'`). Public read-only, and the
+**single source of truth** for every rate/time/pickup figure shown anywhere
+on the site — every page that mentions a delivery estimate, headline rate or
+UK pickup fee for sea or air reads it from this table, not from its own
+hardcoded copy. Edit a value once in `/admin` → Rates and it updates
+everywhere that mode's figure appears (see "Admin panel" below for the exact
+propagation list).
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
 | `mode` | text | `'sea'` or `'air'` |
-| `headline_rate` | text | e.g. "From £195/m³" |
-| `rate_note` | text, nullable | e.g. "Shared container (LCL) · 30–40 day delivery" |
-| `pickup_charge` | numeric | Flat UK pickup fee shown alongside the rate |
-| `next_dispatch_date` | date, nullable | Drives the sea-cargo dispatch banner (`NextDispatch.js`) |
+| `headline_rate` | text | Current values: sea `"From £1.20/kg"`, air `"From £3.10/kg"` — **sea is deliberately priced per kg, not per m³**, per an explicit request; this is a departure from typical sea-freight convention (usually priced by volume), so don't "fix" it back to `/m³` without checking with the user first |
+| `rate_note` | text, nullable | Short descriptor only, e.g. `"Shared container (LCL)"` / `"Tiered by weight"` — does **not** include a delivery-time phrase; that lives in `estimated_time` now so the two can be edited/read independently |
+| `estimated_time` | text, nullable | The delivery-time figure shown everywhere: sea `"8–10 weeks"`, air `"8–10 days"`. Added specifically to stop this drifting into 3+ different hardcoded values across pages (it had: `"30–40 days"`, `"5–7 days"` and `"8–10 weeks"`/`"8–10 days"` simultaneously live in different places before this column existed) |
+| `pickup_charge` | numeric | Flat UK pickup fee, shown as "UK pickup" / "Collection charge" depending on the page |
+| `next_dispatch_date` | date, nullable | Drives the `NextDispatch` poster on both the Sea Cargo and Air Cargo pages (both modes, not sea-only) |
 | `next_dispatch_note` | text, nullable | |
 | `updated_at` | timestamptz | |
 
@@ -218,9 +224,23 @@ number via the `invoices(number)` join), invoices (with shipment reference
 via join), and both rate rows in parallel, then hands them to
 `AdminClient.js` (client component) for the interactive table/filter/edit UI.
 Key actions: change shipment status, mark an invoice paid, edit sea/air rates
-(including the next-dispatch date/note shown on the public sea-cargo page),
-and issue a new invoice (creates `invoices` row + `invoice_lines`, using
-`nextval_invoice_number()` for the number).
+(headline rate, note, **estimated time**, UK pickup charge, and the
+next-dispatch date/note — all per mode), and issue a new invoice (creates
+`invoices` row + `invoice_lines`, using `nextval_invoice_number()` for the
+number).
+
+`updateRate(mode, {...})` in `app/admin/actions.js` revalidates `/admin`,
+`/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage` and `/pak-to-uk` — every
+page that reads from `rates`. If you add another page that displays a rate
+field, add its path to that revalidation list too, or edits there will show
+a stale value until the next unrelated deploy/rebuild.
+
+Pages currently reading `rates` (so treat all of these as "the same figure,
+five places" — see the `rates` table note above):
+- `app/page.js` (homepage) — `headline_rate`, `rate_note`, `estimated_time`, `pickup_charge` for both modes
+- `app/sea-cargo/page.js`, `app/air-cargo/page.js` — full row for their own mode, feeds both the `PageHero` stat and the rates table
+- `app/excess-baggage/page.js` — air's `estimated_time` only (excess baggage rides on air cargo, so its stated delivery time follows air's)
+- `app/pak-to-uk/page.js` — both modes' `estimated_time` (shown as "Air, door to door" / "Sea, port to door" stats)
 
 ## Public tracking flow (`/tracking`)
 
@@ -253,25 +273,71 @@ propagates sitewide:
 
 ## Contact UI components
 
+These have been redesigned several times — what follows is the **current**
+design as of the `estimated_time` consolidation work. If it looks stale
+against the live site, trust the code over this doc and update this section.
+
 - **`app/components/contact-icons.js`** — `PhoneIcon`, `EmailIcon`,
   `WhatsAppIcon`, small inline SVGs, `{...props}` spreadable.
-- **`app/components/WhatsAppFloat.js`** — fixed floating WhatsApp button,
-  every page.
-- **`app/components/ContactDrawer.js`** — on phones (≤640px), the homepage
-  hero card and Contact Us page collapse their entire numbers box (phone
-  list, WhatsApp, email) down to a single "Call or WhatsApp us" toggle row.
-  Tapping it opens a **left-sliding** drawer (plain nav-style list rows, not
-  boxed/grid rows) with every phone number, WhatsApp and email. Also runs a
-  mobile-only recurring nudge: every 30s, while the drawer is closed, a small
-  bubble reading "Here are our numbers — tap to call or WhatsApp" appears
-  above the toggle for ~4.5s (tapping it opens the drawer directly). Above
-  640px this component's trigger/drawer stay hidden and the full inline list
-  shows instead (desktop/tablet layout untouched).
-- **`app/components/SiteHeader.js`** — mobile nav is a right-sliding drawer
-  with its own header (title + close button), a plain hover-list of nav
-  links, and a footer area with a WhatsApp CTA + first branch number. Desktop
-  nav (`.site-nav-links { display: contents }` above 1120px) is a plain
-  horizontal link row, untouched by the mobile styling.
+- **`app/components/WhatsAppFloat.js`** — fixed floating WhatsApp button
+  (bottom-right), every page.
+- **`app/components/ContactDrawer.js`** — mobile-only (≤640px) UI for phone
+  numbers, rendered as its own component, not nested inside a page's hero
+  card (so it stays mounted even where that card is hidden). Two parts:
+  - A small **arrow tab fixed to the left edge** of the viewport (vertically
+    centered), *not* a full-width row — tapping it opens a left-sliding
+    drawer panel (`fixed inset-y-0 left-0`, `translate-x` open/closed) with
+    every phone number, WhatsApp and email as bordered **info cards** (icon
+    badge + number + label) — deliberately *not* styled like the nav list,
+    since these are reference details to glance at, not navigation links.
+  - A recurring heads-up nudge: fires ~1.2s after page load, then every 20s
+    while the drawer is closed, showing a bubble next to the tab for ~4.5s.
+    Suppressed via `IntersectionObserver` while an element with
+    `id="phone-numbers"` is in the viewport (currently only the homepage has
+    one) — no point nagging someone who can already see the numbers on
+    screen. No-ops entirely on pages without that element.
+  - On the homepage and Contact Us page, the hero/contact card's own inline
+    phone/WhatsApp/email list (`.hero-contact-list`) is hidden on mobile
+    (`max-[640px]:hidden`) — the drawer is the only mobile access path there.
+    The homepage additionally has a **separate, always-mobile-only** "Call
+    us directly" section (`id="phone-numbers"`, `hidden max-[640px]:block`)
+    a few sections below the hero — visible only on phones, since desktop
+    already shows the same numbers in the hero card and showing both would
+    duplicate.
+- **`app/components/SiteHeader.js`** — mobile/tablet nav (<1120px) is a
+  **full-width panel that opens vertically below the header**, not a side
+  drawer: `display: grid` with `grid-template-rows` animated `0fr → 1fr` on
+  open (a "CSS grid accordion" — smooth height reveal with no text
+  distortion, unlike animating `scale` or `max-height`). Panel content is a
+  numbered list (`01`, `02`...) of nav links in large display type, plus a
+  footer with a WhatsApp CTA and the first branch number. Two things worth
+  knowing if you touch this:
+  - CSS Grid items default to `min-height: auto`, which ignores the
+    `grid-template-rows` track size and keeps the item full-height
+    regardless — the closed state needs an explicit `min-h-0` on the grid
+    item or it silently stays visible. (Same class of bug as a separate,
+    earlier `min-width: auto` grid trap on a different component.)
+  - The closed state also carries explicit `opacity-0 pointer-events-none`
+    (and open carries `opacity-100 pointer-events-auto`) as a deliberate
+    belt-and-suspenders guarantee on top of the grid collapse, added after a
+    report that the panel stayed visible when closed — kept even though the
+    grid-rows mechanics checked out correct in the compiled CSS, since it
+    costs nothing and removes any doubt.
+  - Desktop nav (≥1120px) is unaffected — the wrapper `<div>`s around the
+    links use base `contents` + `max-[1120px]:` overrides, so on desktop
+    they collapse and the `<Link>`s become direct flex children of `<nav>`,
+    exactly like the pre-redesign markup.
+- **`app/components/NextDispatch.js`** — the "next departure" poster on both
+  the Sea Cargo and Air Cargo pages (`mode="sea"|"air"` prop). Deliberately
+  minimal, redesigned away from an earlier version with a dark gradient
+  overlay and a floating countdown circle on top of the photo: now a plain
+  stack — photo on top (plain `<img>`, no overlay), then a clean white info
+  row below it with the departure date (plus, sea-only, a small "(in N
+  days)" countdown next to the date), the `estimated_time` stat (label
+  "Estimated time"), and a "Book your space" CTA. Renders nothing at all if
+  `date` is empty/past (`next_dispatch_date` unset, or in the past) — staff
+  clear the date in `/admin` to hide it entirely rather than there being a
+  separate visibility toggle.
 
 ## Styling architecture
 
@@ -296,8 +362,10 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
     repeat across many files, written with `@apply` (e.g. `.btn`/
     `.btn-green`/`.btn-navy`/`.btn-ghost`, `.wrap`/`.wrap-narrow`,
     `.eyebrow`, `.card`, `.badge`, `.input`/`.select`/`.textarea`,
-    `.hero-contact-list`/`.row-icon`/`.row-text` (shared by the homepage
-    hero, Contact Us page and the contact drawer), the service-page
+    `.hero-contact-list`/`.row-icon`/`.row-text` (the inline phone/WhatsApp/
+    email rows shared by the homepage hero and Contact Us page — *not* used
+    by the contact drawer body, which has its own bordered info-card style
+    inlined directly in `ContactDrawer.js`), the service-page
     patterns (`.cards`/`.svc`/`.step`, `.band-soft`, `.table-wrap`,
     `.rate-grid`/`.rate-card`, `.compare-card`, `.schedule-strip`,
     `.route-strip`), the FAQ accordion, the tracking result panel
@@ -352,9 +420,17 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
 - `public/assets/photos/sea-cargo.jpg`, `air-cargo.jpg`, `moving-home.jpg` —
   real AI-generated photos (already swapped in from earlier placeholder
   gradients). If replaced again, they must land at these exact paths (not
-  `public/` root) to be picked up by `app/page.js` / `app/contact-us/page.js`.
+  `public/` root) to be picked up by `app/page.js`, `app/contact-us/page.js`
+  and `NextDispatch.js` (sea/air only — `moving-home.jpg` isn't used there).
 - Phone normalization only handles bare `+44`/`44` international prefixes,
   not `00 44...`.
+- **Sea cargo's `£1.20/kg` headline rate is a placeholder**, set when the
+  pricing model was switched from per-m³ to per-kg at the user's explicit
+  request — not a real quoted figure. Same for `estimated_time` values
+  (`8–10 weeks` sea / `8–10 days` air) — given directly by the user as the
+  numbers to display, not derived from an existing rate card. All three are
+  editable in `/admin` → Rates whenever real figures are available; nothing
+  else needs to change since every page reads them from the same row now.
 - `PageHero`'s intro paragraph renders at 18px on all screen sizes. The
   original hand-written CSS had a mobile-only 16px override that a
   specificity clash silently defeated (a higher-specificity unconditional
