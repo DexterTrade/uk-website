@@ -10,13 +10,22 @@ const NAV = [
   { key: "dash", label: "Dashboard" },
   { key: "ship", label: "Shipments" },
   { key: "inv", label: "Invoices" },
+  { key: "cust", label: "Customers" },
   { key: "rates", label: "Rates" },
 ];
 
 const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
-export default function AdminClient({ shipments, invoices, rates, monthKey, monthLabel, staffEmail }) {
+export default function AdminClient({
+  shipments,
+  invoices,
+  customers,
+  rates,
+  monthKey,
+  monthLabel,
+  staffEmail,
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -61,6 +70,10 @@ export default function AdminClient({ shipments, invoices, rates, monthKey, mont
   const invoiceRows = useMemo(
     () => invoices.filter((i) => matches(`${i.ref} ${i.customer} ${i.town}`, search)),
     [invoices, search]
+  );
+  const customerRows = useMemo(
+    () => customers.filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.town} ${c.postcode}`, search)),
+    [customers, search]
   );
 
   function handleStatusChange(shipmentId, status) {
@@ -178,7 +191,11 @@ export default function AdminClient({ shipments, invoices, rates, monthKey, mont
                   <tbody>
                     {attention.map((s) => (
                       <tr key={s.id}>
-                        <td className="key">{s.ref}</td>
+                        <td className="key">
+                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}`}>
+                            {s.ref}
+                          </Link>
+                        </td>
                         <td>{s.customer}</td>
                         <td>{s.route}</td>
                         <td><span className={statusBadgeClass(s.status)}>{s.status}</span></td>
@@ -216,8 +233,20 @@ export default function AdminClient({ shipments, invoices, rates, monthKey, mont
                   <tbody>
                     {shipmentRows.map((s) => (
                       <tr key={s.id}>
-                        <td className="key">{s.ref}</td>
-                        <td>{s.customer}</td>
+                        <td className="key">
+                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}`}>
+                            {s.ref}
+                          </Link>
+                        </td>
+                        <td>
+                          {s.customerId ? (
+                            <Link className="hover:text-ink hover:underline" href={`/admin/customers/${s.customerId}`}>
+                              {s.customer}
+                            </Link>
+                          ) : (
+                            s.customer
+                          )}
+                        </td>
                         <td>{s.service}</td>
                         <td>{s.route}</td>
                         <td>{s.weight}</td>
@@ -266,7 +295,11 @@ export default function AdminClient({ shipments, invoices, rates, monthKey, mont
                   <tbody>
                     {invoiceRows.map((i) => (
                       <tr key={i.id}>
-                        <td className="key">{i.ref}</td>
+                        <td className="key">
+                          <Link className="text-green hover:underline" href={`/admin/invoices/${i.ref}`}>
+                            {i.ref}
+                          </Link>
+                        </td>
                         <td>{i.customer}</td>
                         <td>{i.town}</td>
                         <td>{i.mode}</td>
@@ -280,6 +313,52 @@ export default function AdminClient({ shipments, invoices, rates, monthKey, mont
                 </table>
               </div>
               {invoiceRows.length === 0 && <p className="empty">No invoices match that search.</p>}
+            </div>
+          </section>
+        )}
+
+        {view === "cust" && (
+          <section className="admin-view">
+            <h1>Customers</h1>
+            <p className="sub">
+              {customerRows.length} {customerRows.length === 1 ? "customer" : "customers"}. One record per mobile
+              number &mdash; booking again with the same number reuses it rather than creating a duplicate.
+            </p>
+            <div className="pane">
+              <div className="scroll">
+                <table className="min-w-[820px]">
+                  <thead>
+                    <tr>
+                      <th>Name</th><th>Mobile</th><th>Email</th><th>Town</th>
+                      <th className="num-right">Bookings</th>
+                      <th className="num-right">Spend</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customerRows.map((c) => (
+                      <tr key={c.id}>
+                        <td className="key">
+                          <Link className="text-green hover:underline" href={`/admin/customers/${c.id}`}>
+                            {c.name}
+                          </Link>
+                        </td>
+                        <td>{c.phone}</td>
+                        <td>{c.email}</td>
+                        <td>{c.town}</td>
+                        <td className="num-right">{c.bookings}</td>
+                        <td className="num-right font-semibold">£{money(c.spend)}</td>
+                        <td>
+                          <Link className="btn btn-ghost btn-sm" href={`/admin/customers/${c.id}`}>
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {customerRows.length === 0 && <p className="empty">No customers match that search.</p>}
             </div>
           </section>
         )}

@@ -33,6 +33,10 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/tracking` | Public shipment tracking (see below) |
 | `/admin`, `/admin/login` | Staff-only operations panel, protected by Supabase Auth |
 | `/admin/new-booking` | Staff-only booking form — creates the customer, shipment and invoice in one submit |
+| `/admin/shipments/[reference]` | Shipment detail — specs, sender, receiver, invoice summary, tracking timeline |
+| `/admin/shipments/[reference]/edit` | Edit an existing booking (same form component as new-booking) |
+| `/admin/invoices/[reference]` | The printable invoice document (A4 print stylesheet, print/save-as-PDF) |
+| `/admin/customers/[id]` | Customer record — details plus all their shipments and invoices |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
 Cargo, Excess Baggage, Pak to UK, Relocation, Track, FAQ.
@@ -78,7 +82,7 @@ its invoice by `create_booking()` — never on its own.
 | `weight_kg` | numeric(10,2) | CHECK > 0 |
 | `goods_description` | text | |
 | `goods_value_gbp` | numeric(12,2) | CHECK ≥ 1 |
-| `collection_date` | date | Past dates allowed on purpose — staff back-date walk-ins |
+| `collection_date` | date | **Cannot be back-dated** when booking. One exception, handled in validation: editing a booking whose date has since passed must stay saveable, so the *unchanged* original value is allowed through |
 | `receiver_name` | text | |
 | `receiver_phone` | text | Overseas; `+92…` for Pakistan, E.164 otherwise |
 | `receiver_phone_alt` | text, nullable | The one optional contact field on the receiver |
@@ -227,6 +231,20 @@ no invoice. `SECURITY INVOKER` is deliberate: the caller's own RLS applies, so
 staff can write and `anon` cannot, with no privilege escalation. The calling
 Server Action still runs `requireStaff()` first.
 
+### `update_booking(p_reference text, payload jsonb) → jsonb`
+`SECURITY INVOKER`, `authenticated` only. The edit counterpart to
+`create_booking` — customer, shipment and invoice updated in one transaction.
+Two behaviours worth knowing:
+
+- **It rewrites the invoice's `bill_to_*` snapshot.** That is not a
+  contradiction of the snapshot rule: this path exists to correct a booking
+  that was entered wrong. Nothing *else* may touch those columns.
+- **Changing the sender phone to one that already belongs to another customer
+  re-links the shipment to that customer** rather than overwriting their
+  number. If the previous customer is left with no shipments at all (which
+  only happens when the row was a duplicate created by the typo being
+  corrected), it is deleted.
+
 ### `find_customer_by_phone(p_phone text) → jsonb`
 `SECURITY INVOKER`, `authenticated` only. Prefill lookup for the booking form.
 Matching happens on the normalized number, which PostgREST can't express as a
@@ -293,9 +311,45 @@ Server Component (`app/admin/page.js`) fetches shipments (joined to
 (joined back to `shipments` for the reference), and both rate rows in
 parallel, then hands them to `AdminClient.js` (client component) for the
 interactive table/filter/edit UI. Tabs: Dashboard, Shipments, Invoices,
-Rates. Key actions: change shipment status, and edit sea/air rates (headline
-rate, note, **estimated time**, UK pickup charge, and the next-dispatch
-date/note — all per mode).
+Customers, Rates. Key actions: change shipment status, and edit sea/air rates
+(headline rate, note, **estimated time**, UK pickup charge, and the
+next-dispatch date/note — all per mode). Every reference and customer name in
+those tables links through to the matching detail page.
+
+Customer booking counts and lifetime spend on the Customers tab are derived in
+`page.js` from the shipments already fetched, rather than asking Postgres for
+a per-customer aggregate.
+
+### Detail pages
+
+Three read views, all staff-only under `/admin/*` (so covered by the same
+proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
+
+- **`/admin/shipments/[reference]`** — specs, sender (linked to the customer
+  record), receiver, invoice summary and the tracking timeline. "Edit booking"
+  leads to the edit form.
+- **`/admin/invoices/[reference]`** — the invoice document itself: business
+  header with the company number, the `bill_to_*` snapshot, the delivery
+  address, and the pricing as lines. Because staff can overwrite the suggested
+  total, the lines don't always sum to it; the difference renders as its own
+  **Adjustment** line rather than printing a document whose arithmetic looks
+  wrong. Printing is plain `window.print()` plus an `@media print` block in
+  `globals.css` that strips the admin chrome — no PDF library, no new
+  dependency.
+- **`/admin/customers/[id]`** — the customer's details, lifetime value, and
+  every shipment and invoice of theirs, each linking onward.
+
+Keyed by `reference`, not `id`, for shipments and invoices: the reference is
+what staff and customers actually quote, and since invoices are 1:1 with
+shipments it identifies both.
+
+### Editing a booking
+
+`/admin/shipments/[reference]/edit` renders the **same `BookingForm`
+component** as `/admin/new-booking` — it takes `initial` and `reference` props
+and switches to `updateBooking`. Keeping one component means a field added to
+the booking form can't be forgotten on the edit form. It lives at
+`app/admin/BookingForm.js` (not inside `new-booking/`) for that reason.
 
 The dashboard's "this month" figures take a `monthKey` (`"2026-09"`) computed
 on the server in `page.js`, rather than string-matching a hardcoded month name
@@ -332,10 +386,20 @@ handling + packing, total) → **Customer** (UK sender, overseas receiver).
 ### Validation (`lib/validation/booking.js`)
 
 One `yup` schema, run **twice**: in the browser for live per-field errors, and
-again inside `createBooking()` before anything reaches the database. The
-second run is not redundant — a Server Action is a public HTTP endpoint, so
-anything validated only on the client can be bypassed by posting to it
-directly. The same module also owns phone/postcode normalization
+again inside `createBooking()`/`updateBooking()` before anything reaches the
+database. The second run is not redundant — a Server Action is a public HTTP
+endpoint, so anything validated only on the client can be bypassed by posting
+to it directly.
+
+**Errors appear per field, on touch.** A field validates when first blurred
+and on every keystroke after that, via `bookingSchema.validateAt(name, …)`;
+attempting a submit marks everything touched so flagged fields clear as
+they're fixed. Two details: `validateAt` is given the whole values object
+because `receiver_phone`'s rule depends on `receiver_country`, and toggling
+the country **un-touches** the mobile fields it clears — a blank the user
+didn't type shouldn't be flagged red.
+
+The same module also owns phone/postcode normalization
 (`normalizeUkMobile`, `normalizePkMobile`, `normalizeInternational`,
 `formatPostcode`) and `toBookingPayload()`, which produces the canonical shape
 `create_booking` expects.
@@ -344,7 +408,9 @@ Rules worth knowing: sender must be a **UK mobile** (`07…`, landlines
 rejected — it's the number used to verify tracking); receiver must be a
 Pakistan mobile (`+923…`) unless the overseas toggle is on; both email fields
 and the second receiver mobile are the only optional inputs; `goods_value_gbp`
-has a minimum of £1 and no maximum; collection dates may be in the past.
+has a minimum of £1 and no maximum; collection dates cannot be back-dated
+(with the editing exception described on the `collection_date` column above,
+implemented by passing `{ context: { originalDate } }` into `validate`).
 
 `updateRate(mode, {...})` in `app/admin/actions.js` revalidates `/admin`,
 `/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage` and `/pak-to-uk` — every
@@ -383,7 +449,10 @@ propagates sitewide:
 - `BUSINESS.phones[]` — `{ city, display, href }` per branch (London,
   Birmingham, Nottingham)
 - `BUSINESS.whatsapp` / `whatsappDisplay` — `wa.me` link + display number
-- `BUSINESS.email` — `info@pakcargo.com`
+- `BUSINESS.email` — `info@pakcargo.co.uk`
+- `BUSINESS.companyNumber` — `17455357`. A UK limited company must show its
+  registration number on its website and on every invoice, so this renders in
+  the site footer and on the printed invoice document
 - `BUSINESS.legalName`, address fields, `hours`
 - `pageMeta({ title, description, path })` — every page's `metadata` export
   should build on this, not just set `{title, description}` directly. Without
@@ -543,16 +612,15 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
   gradients). If replaced again, they must land at these exact paths (not
   `public/` root) to be picked up by `app/page.js`, `app/contact-us/page.js`
   and `NextDispatch.js` (sea/air only — `moving-home.jpg` isn't used there).
-- **No invoice document yet.** The invoicing data model is complete and the
-  booking form writes it, but there is still no printable/PDF invoice — the
-  agreed design is a staff-only `/admin/invoices/[reference]` page with an A4
-  print stylesheet (business header from `BUSINESS` in `lib/seo.js`, the
-  `bill_to_*` snapshot, and the three pricing figures as lines), printed or
-  saved as PDF from the browser. Nothing public, no email sending.
-- **Bookings can't be edited or deleted after creation.** A typo means
-  correcting it directly in Supabase for now. Editing also needs a decision
-  about whether changing a returning customer's details should rewrite the
-  `bill_to_*` snapshot on invoices already issued (it shouldn't).
+- **Bookings can't be deleted from the UI** (only edited). Deleting a shipment
+  cascades to its invoice and stages, which is a real destructive action and
+  hasn't been given a confirmation flow yet — do it in Supabase for now.
+- **No invoice emailing.** The invoice document is print/save-as-PDF only;
+  there is no email provider wired up, deliberately.
+- **`BUSINESS.streetAddress` / `postalCode` in `lib/seo.js` are still
+  placeholders** (`Unit 0, Example Industrial Estate`, `XX0 0XX`). They now
+  print on every invoice as well as in the footer and structured data, so
+  they're worth replacing with the real registered address.
 - **Sea cargo's `£1.20/kg` headline rate is a placeholder**, set when the
   pricing model was switched from per-m³ to per-kg at the user's explicit
   request — not a real quoted figure. Same for `estimated_time` values

@@ -82,7 +82,10 @@ export default function SiteFooter() {
       </div>
 
       <div className="wrap flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.08] py-[22px] text-[13px] text-[#8b96ad]">
-        <span>&copy; {new Date().getFullYear()} PAK Cargo Ltd</span>
+        <span>
+          &copy; {new Date().getFullYear()} {BUSINESS.legalName} &middot; Registered in England &amp; Wales
+          no. {BUSINESS.companyNumber}
+        </span>
         <span>Air &amp; sea freight, UK &harr; Pakistan</span>
       </div>
     </footer>

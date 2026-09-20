@@ -97,3 +97,34 @@ export async function createBooking(values) {
   revalidatePath("/admin");
   return { ok: true, booking: data };
 }
+
+// Editing an existing booking. `originalDate` is the collection date as
+// stored: passed through as yup context so a booking whose collection date
+// has since passed can still be re-saved, while changing that date still
+// requires today or later.
+export async function updateBooking(reference, values, originalDate) {
+  const supabase = await requireStaff();
+
+  let clean;
+  try {
+    clean = await bookingSchema.validate(values, {
+      abortEarly: false,
+      stripUnknown: true,
+      context: { originalDate },
+    });
+  } catch (err) {
+    return { error: "Please correct the highlighted fields.", fields: fieldErrors(err) };
+  }
+
+  const { data, error } = await supabase.rpc("update_booking", {
+    p_reference: reference,
+    payload: toBookingPayload(clean),
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/shipments/${reference}`);
+  revalidatePath(`/admin/invoices/${reference}`);
+  revalidatePath("/admin/customers", "layout");
+  return { ok: true, booking: data };
+}

@@ -12,7 +12,7 @@ import {
   isUkMobile,
   suggestedTotal,
 } from "@/lib/validation/booking";
-import { createBooking, lookupCustomer } from "../actions";
+import { createBooking, lookupCustomer, updateBooking } from "./actions";
 
 const emptyValues = (today) => ({
   // Shipment
@@ -85,8 +85,13 @@ function SubHead({ children, right }) {
   );
 }
 
-export default function BookingForm({ today }) {
-  const [values, setValues] = useState(() => emptyValues(today));
+// Serves both /admin/new-booking and /admin/shipments/[reference]/edit:
+// `initial` and `reference` are absent when creating, present when editing.
+export default function BookingForm({ today, initial = null, reference = null }) {
+  const isEdit = Boolean(reference);
+  const originalDate = initial?.collection_date || null;
+
+  const [values, setValues] = useState(() => initial || emptyValues(today));
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [created, setCreated] = useState(null);
@@ -94,8 +99,20 @@ export default function BookingForm({ today }) {
   const [isPending, startTransition] = useTransition();
 
   // Once staff type their own figure into Total charges we stop overwriting
-  // it, and offer the recalculated number as a nudge instead.
-  const totalTouched = useRef(false);
+  // it, and offer the recalculated number as a nudge instead. Editing starts
+  // "touched": an existing total is a decision already made, not a draft.
+  const totalTouched = useRef(isEdit);
+
+  // A field is validated from the moment it is first blurred, and on every
+  // keystroke after that — so errors appear when you leave a field, and clear
+  // as soon as you fix it, rather than waiting for a failed submit.
+  const touched = useRef(new Set());
+
+  const validationContext = { originalDate };
+
+  // The collection date can't be back-dated, except that an existing booking
+  // whose date has since passed must stay re-savable.
+  const minCollectionDate = originalDate && originalDate < today ? originalDate : today;
 
   const suggestion = useMemo(
     () => suggestedTotal(values.weight_kg, values.rate_per_kg, values.other_charges),
@@ -110,25 +127,49 @@ export default function BookingForm({ today }) {
 
   const overseas = values.receiver_country !== "PK";
 
+  // validateAt resolves conditional rules (receiver_phone depends on
+  // receiver_country) against the whole object, so the full values are passed
+  // even though only one field's message is wanted.
+  function validateField(name, source) {
+    bookingSchema
+      .validateAt(name, source, { context: validationContext })
+      .then(() => setErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev)))
+      .catch((err) => setErrors((prev) => ({ ...prev, [name]: err.message })));
+  }
+
+  function handleBlur(name) {
+    touched.current.add(name);
+    validateField(name, values);
+  }
+
   function setField(name, value) {
-    setValues((prev) => {
-      const next = { ...prev, [name]: value };
-      // Keep the suggested total in step with its inputs until it's overridden.
-      if (!totalTouched.current && ["weight_kg", "rate_per_kg", "other_charges"].includes(name)) {
-        const ready = next.weight_kg !== "" && next.rate_per_kg !== "" && next.other_charges !== "";
-        next.total_charges = ready
-          ? String(suggestedTotal(next.weight_kg, next.rate_per_kg, next.other_charges))
-          : "";
+    const next = { ...values, [name]: value };
+    // Keep the suggested total in step with its inputs until it's overridden.
+    if (!totalTouched.current && ["weight_kg", "rate_per_kg", "other_charges"].includes(name)) {
+      const ready = next.weight_kg !== "" && next.rate_per_kg !== "" && next.other_charges !== "";
+      next.total_charges = ready
+        ? String(suggestedTotal(next.weight_kg, next.rate_per_kg, next.other_charges))
+        : "";
+    }
+    setValues(next);
+
+    if (touched.current.has(name)) validateField(name, next);
+    else setErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));
+
+    // Changing the country changes which rule the mobiles are judged by.
+    if (name === "receiver_country") {
+      for (const dependent of ["receiver_phone", "receiver_phone_alt"]) {
+        if (touched.current.has(dependent)) validateField(dependent, next);
       }
-      return next;
-    });
-    setErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));
+    }
   }
 
   function applySuggestion() {
     totalTouched.current = false;
-    setValues((prev) => ({ ...prev, total_charges: String(suggestion) }));
-    setErrors((prev) => (prev.total_charges ? { ...prev, total_charges: undefined } : prev));
+    const next = { ...values, total_charges: String(suggestion) };
+    setValues(next);
+    if (touched.current.has("total_charges")) validateField("total_charges", next);
+    else setErrors((prev) => (prev.total_charges ? { ...prev, total_charges: undefined } : prev));
   }
 
   function toggleOverseas() {
@@ -140,6 +181,10 @@ export default function BookingForm({ today }) {
       receiver_phone: "",
       receiver_phone_alt: "",
     }));
+    // Clearing the fields un-touches them: the blank they're looking at isn't
+    // something they typed wrong, so it shouldn't be flagged red yet.
+    touched.current.delete("receiver_phone");
+    touched.current.delete("receiver_phone_alt");
     setErrors((prev) => ({
       ...prev,
       receiver_country: undefined,
@@ -150,6 +195,7 @@ export default function BookingForm({ today }) {
 
   // Returning customer? Fill the rest of the sender block in for them.
   function handlePhoneBlur() {
+    handleBlur("sender_phone");
     if (!isUkMobile(values.sender_phone)) return;
     startTransition(async () => {
       const found = await lookupCustomer(values.sender_phone);
@@ -174,11 +220,13 @@ export default function BookingForm({ today }) {
     setFormError("");
 
     bookingSchema
-      .validate(values, { abortEarly: false, stripUnknown: true })
+      .validate(values, { abortEarly: false, stripUnknown: true, context: validationContext })
       .then(() => {
         setErrors({});
         startTransition(async () => {
-          const result = await createBooking(values);
+          const result = isEdit
+            ? await updateBooking(reference, values, originalDate)
+            : await createBooking(values);
           if (result?.error) {
             setFormError(result.error);
             if (result.fields) setErrors(result.fields);
@@ -188,6 +236,9 @@ export default function BookingForm({ today }) {
         });
       })
       .catch((err) => {
+        // Everything is touched once submit has been attempted, so fixing a
+        // flagged field clears it immediately rather than on the next submit.
+        for (const key of Object.keys(values)) touched.current.add(key);
         setErrors(fieldErrors(err));
         setFormError("Please correct the highlighted fields.");
         document.querySelector("[data-invalid='true']")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -196,6 +247,7 @@ export default function BookingForm({ today }) {
 
   function reset() {
     totalTouched.current = false;
+    touched.current = new Set();
     setValues(emptyValues(today));
     setErrors({});
     setFormError("");
@@ -210,20 +262,27 @@ export default function BookingForm({ today }) {
     return (
       <main className="min-h-screen bg-bg-soft px-5 py-16">
         <div className="mx-auto max-w-[560px] rounded-xl border border-line bg-white p-9 text-center shadow-[0_18px_40px_-34px_rgba(22,35,60,0.45)]">
-          <span className="badge">Booking created</span>
+          <span className="badge">{isEdit ? "Changes saved" : "Booking created"}</span>
           <p className="mt-5 text-[13.5px] font-semibold text-soft">Tracking reference</p>
           <p className="mt-1 font-head text-[44px] leading-none font-extrabold text-green">{created.reference}</p>
           <p className="mt-5 text-[15px] leading-[1.6] text-muted">
-            The shipment and its invoice are saved. Give the customer this reference — they track with it and the
-            mobile number on the booking.
+            {isEdit
+              ? "The shipment, its invoice and the customer record have been updated."
+              : "The shipment and its invoice are saved. Give the customer this reference — they track with it and the mobile number on the booking."}
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <button className="btn btn-green" onClick={reset}>
-              New booking
-            </button>
-            <Link className="btn btn-ghost" href="/admin">
-              Back to admin
+            <Link className="btn btn-green" href={`/admin/shipments/${created.reference}`}>
+              View shipment
             </Link>
+            {isEdit ? (
+              <Link className="btn btn-ghost" href="/admin">
+                Back to admin
+              </Link>
+            ) : (
+              <button className="btn btn-ghost" onClick={reset}>
+                New booking
+              </button>
+            )}
           </div>
         </div>
       </main>
@@ -235,13 +294,20 @@ export default function BookingForm({ today }) {
       <div className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[980px] flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div>
-            <Link className="text-[13px] font-semibold text-soft hover:text-ink" href="/admin">
-              &larr; Admin
+            <Link
+              className="text-[13px] font-semibold text-soft hover:text-ink"
+              href={isEdit ? `/admin/shipments/${reference}` : "/admin"}
+            >
+              &larr; {isEdit ? reference : "Admin"}
             </Link>
-            <h1 className="mt-1 font-head text-[22px] font-extrabold text-ink">New booking</h1>
+            <h1 className="mt-1 font-head text-[22px] font-extrabold text-ink">
+              {isEdit ? `Edit booking ${reference}` : "New booking"}
+            </h1>
           </div>
           <p className="max-w-[46ch] text-[13px] text-soft">
-            Creates the shipment and its invoice together. The reference is generated automatically.
+            {isEdit
+              ? "Updates the shipment, its invoice and the customer record together."
+              : "Creates the shipment and its invoice together. The reference is generated automatically."}
           </p>
         </div>
       </div>
@@ -255,6 +321,7 @@ export default function BookingForm({ today }) {
                   className={inputClass("mode", "select")}
                   value={values.mode}
                   onChange={(e) => setField("mode", e.target.value)}
+                  onBlur={() => handleBlur("mode")}
                 >
                   {MODES.map((m) => (
                     <option key={m.value} value={m.value}>
@@ -269,6 +336,7 @@ export default function BookingForm({ today }) {
                   className={inputClass("parcels", "select")}
                   value={values.parcels}
                   onChange={(e) => setField("parcels", e.target.value)}
+                  onBlur={() => handleBlur("parcels")}
                 >
                   {PARCEL_OPTIONS.map((n) => (
                     <option key={n} value={n}>
@@ -288,6 +356,7 @@ export default function BookingForm({ today }) {
                   placeholder="24.5"
                   value={values.weight_kg}
                   onChange={(e) => setField("weight_kg", e.target.value)}
+                  onBlur={() => handleBlur("weight_kg")}
                 />
               </Field>
 
@@ -301,6 +370,7 @@ export default function BookingForm({ today }) {
                   placeholder="250"
                   value={values.goods_value_gbp}
                   onChange={(e) => setField("goods_value_gbp", e.target.value)}
+                  onBlur={() => handleBlur("goods_value_gbp")}
                 />
               </Field>
 
@@ -308,8 +378,10 @@ export default function BookingForm({ today }) {
                 <input
                   className={inputClass("collection_date")}
                   type="date"
+                  min={minCollectionDate}
                   value={values.collection_date}
                   onChange={(e) => setField("collection_date", e.target.value)}
+                  onBlur={() => handleBlur("collection_date")}
                 />
               </Field>
 
@@ -320,6 +392,7 @@ export default function BookingForm({ today }) {
                   placeholder="Clothes, dry food and household items"
                   value={values.goods_description}
                   onChange={(e) => setField("goods_description", e.target.value)}
+                  onBlur={() => handleBlur("goods_description")}
                 />
               </Field>
             </div>
@@ -341,6 +414,7 @@ export default function BookingForm({ today }) {
                   placeholder="3.10"
                   value={values.rate_per_kg}
                   onChange={(e) => setField("rate_per_kg", e.target.value)}
+                  onBlur={() => handleBlur("rate_per_kg")}
                 />
               </Field>
 
@@ -354,6 +428,7 @@ export default function BookingForm({ today }) {
                   placeholder="30.00"
                   value={values.other_charges}
                   onChange={(e) => setField("other_charges", e.target.value)}
+                  onBlur={() => handleBlur("other_charges")}
                 />
               </Field>
 
@@ -370,6 +445,7 @@ export default function BookingForm({ today }) {
                     totalTouched.current = true;
                     setField("total_charges", e.target.value);
                   }}
+                  onBlur={() => handleBlur("total_charges")}
                 />
               </Field>
             </div>
@@ -429,6 +505,7 @@ export default function BookingForm({ today }) {
                   placeholder="Full name"
                   value={values.sender_name}
                   onChange={(e) => setField("sender_name", e.target.value)}
+                  onBlur={() => handleBlur("sender_name")}
                 />
               </Field>
 
@@ -439,6 +516,7 @@ export default function BookingForm({ today }) {
                   placeholder="name@example.com"
                   value={values.sender_email}
                   onChange={(e) => setField("sender_email", e.target.value)}
+                  onBlur={() => handleBlur("sender_email")}
                 />
               </Field>
 
@@ -448,6 +526,7 @@ export default function BookingForm({ today }) {
                   placeholder="12 Example Road"
                   value={values.sender_address}
                   onChange={(e) => setField("sender_address", e.target.value)}
+                  onBlur={() => handleBlur("sender_address")}
                 />
               </Field>
 
@@ -457,6 +536,7 @@ export default function BookingForm({ today }) {
                   placeholder="Birmingham"
                   value={values.sender_town}
                   onChange={(e) => setField("sender_town", e.target.value)}
+                  onBlur={() => handleBlur("sender_town")}
                 />
               </Field>
 
@@ -466,6 +546,7 @@ export default function BookingForm({ today }) {
                   placeholder="B10 9AB"
                   value={values.sender_postcode}
                   onChange={(e) => setField("sender_postcode", e.target.value.toUpperCase())}
+                  onBlur={() => handleBlur("sender_postcode")}
                 />
               </Field>
             </div>
@@ -505,6 +586,7 @@ export default function BookingForm({ today }) {
                       className={inputClass("receiver_country", "select")}
                       value={values.receiver_country}
                       onChange={(e) => setField("receiver_country", e.target.value)}
+                      onBlur={() => handleBlur("receiver_country")}
                     >
                       <option value="">Select a country…</option>
                       {OTHER_COUNTRIES.map((c) => (
@@ -522,6 +604,7 @@ export default function BookingForm({ today }) {
                     placeholder="Full name"
                     value={values.receiver_name}
                     onChange={(e) => setField("receiver_name", e.target.value)}
+                    onBlur={() => handleBlur("receiver_name")}
                   />
                 </Field>
 
@@ -536,6 +619,7 @@ export default function BookingForm({ today }) {
                     placeholder={overseas ? "+971 50 123 4567" : "0300 1234567"}
                     value={values.receiver_phone}
                     onChange={(e) => setField("receiver_phone", e.target.value)}
+                    onBlur={() => handleBlur("receiver_phone")}
                   />
                 </Field>
 
@@ -547,6 +631,7 @@ export default function BookingForm({ today }) {
                     placeholder={overseas ? "+971 55 765 4321" : "0321 7654321"}
                     value={values.receiver_phone_alt}
                     onChange={(e) => setField("receiver_phone_alt", e.target.value)}
+                    onBlur={() => handleBlur("receiver_phone_alt")}
                   />
                 </Field>
 
@@ -557,6 +642,7 @@ export default function BookingForm({ today }) {
                     placeholder="name@example.com"
                     value={values.receiver_email}
                     onChange={(e) => setField("receiver_email", e.target.value)}
+                    onBlur={() => handleBlur("receiver_email")}
                   />
                 </Field>
 
@@ -566,6 +652,7 @@ export default function BookingForm({ today }) {
                     placeholder="House 5, Street 2, Model Town"
                     value={values.receiver_address}
                     onChange={(e) => setField("receiver_address", e.target.value)}
+                    onBlur={() => handleBlur("receiver_address")}
                   />
                 </Field>
 
@@ -575,6 +662,7 @@ export default function BookingForm({ today }) {
                     placeholder="Lahore"
                     value={values.receiver_city}
                     onChange={(e) => setField("receiver_city", e.target.value)}
+                    onBlur={() => handleBlur("receiver_city")}
                   />
                 </Field>
               </div>
@@ -593,11 +681,11 @@ export default function BookingForm({ today }) {
               </span>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link className="btn btn-ghost btn-sm" href="/admin">
+              <Link className="btn btn-ghost btn-sm" href={isEdit ? `/admin/shipments/${reference}` : "/admin"}>
                 Cancel
               </Link>
               <button className="btn btn-green" type="submit" disabled={isPending}>
-                {isPending ? "Saving…" : "Create booking"}
+                {isPending ? "Saving…" : isEdit ? "Save changes" : "Create booking"}
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import BookingForm from "./BookingForm";
+import BookingForm from "../BookingForm";
 
 export const metadata = {
   title: "New booking",

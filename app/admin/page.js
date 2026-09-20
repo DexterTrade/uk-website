@@ -24,12 +24,18 @@ function weightLabel(parcels, weightKg) {
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  const [{ data: userData }, { data: shipmentsRaw }, { data: invoicesRaw }, { data: ratesRaw }] = await Promise.all([
+  const [
+    { data: userData },
+    { data: shipmentsRaw },
+    { data: invoicesRaw },
+    { data: ratesRaw },
+    { data: customersRaw },
+  ] = await Promise.all([
     supabase.auth.getUser(),
     supabase
       .from("shipments")
       .select(
-        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(name, phone, town), invoices(total_charges)"
+        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(id, name, phone, town), invoices(total_charges)"
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -42,6 +48,7 @@ export default async function AdminPage() {
       .from("rates")
       .select("mode, headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note")
       .order("mode"),
+    supabase.from("customers").select("id, name, phone, email, town, postcode").order("name"),
   ]);
 
   // invoices.shipment_id is UNIQUE, so PostgREST embeds the invoice as an
@@ -51,10 +58,11 @@ export default async function AdminPage() {
   const shipments = (shipmentsRaw || []).map((s) => ({
     id: s.id,
     ref: s.reference,
-    customer: s.customers?.name || "—",
+    customerId: embedded(s.customers)?.id || null,
+    customer: embedded(s.customers)?.name || "—",
     service: s.mode === "air" ? "Air cargo" : "Sea cargo",
     mode: s.mode,
-    route: `${s.customers?.town || "UK"} → ${s.receiver_city}`,
+    route: `${embedded(s.customers)?.town || "UK"} → ${s.receiver_city}`,
     receiver: s.receiver_name,
     weight: weightLabel(s.parcels, s.weight_kg),
     collection: formatDate(s.collection_date),
@@ -77,6 +85,23 @@ export default async function AdminPage() {
     total: Number(i.total_charges),
   }));
 
+  // Booking and spend counts are derived from the shipments already loaded
+  // rather than asking Postgres for aggregates per customer.
+  const customers = (customersRaw || []).map((c) => {
+    const theirs = shipments.filter((s) => s.customerId === c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      email: c.email || "—",
+      town: c.town,
+      postcode: c.postcode,
+      bookings: theirs.length,
+      spend: theirs.reduce((sum, s) => sum + s.total, 0),
+      lastRef: theirs[0]?.ref || "—",
+    };
+  });
+
   const rates = (ratesRaw || []).map((r) => ({
     mode: r.mode,
     headline_rate: r.headline_rate,
@@ -97,6 +122,7 @@ export default async function AdminPage() {
     <AdminClient
       shipments={shipments}
       invoices={invoices}
+      customers={customers}
       rates={rates}
       monthKey={monthKey}
       monthLabel={monthLabel}

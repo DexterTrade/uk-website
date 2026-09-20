@@ -629,4 +629,29 @@
   .print\:hidden-force {
     display: none !important;
   }
+
+  /* The invoice document is the only thing that should reach paper: strip the
+     admin chrome's background, card border and page padding so it prints as a
+     plain A4 sheet rather than a screenshot of a web page. */
+  .invoice-doc {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .invoice-doc,
+  .invoice-doc * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  main:has(.invoice-doc) {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+  main:has(.invoice-doc) > div {
+    max-width: none;
+    padding: 0;
+  }
 }
