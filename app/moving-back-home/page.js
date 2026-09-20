@@ -2,12 +2,32 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import ProcessDiagram from "../components/ProcessDiagram";
 import { pageMeta } from "@/lib/seo";
+
+const STEPS = [
+  {
+    title: "Get a quote",
+    body: "Tell us what you’re bringing. We survey the volume and quote a fixed price, air or sea.",
+  },
+  {
+    title: "We collect & pack",
+    body: "Our team collects from your UK address and packs everything securely for the move.",
+  },
+  {
+    title: "Shipped to Pakistan",
+    body: "Your household goods travel by sea or air, whichever suits your timeline and budget.",
+  },
+  {
+    title: "Delivered home",
+    body: "Cleared through customs and delivered to your new address in Pakistan.",
+  },
+];
 
 export const metadata = pageMeta({
   title: "Moving Back to Pakistan",
   description:
-    "Relocating to Pakistan for good? We pack, ship and deliver your whole household — furniture, appliances and personal belongings — door to door.",
+    "Relocating to Pakistan for good? We pack, ship and deliver your whole household — furniture, appliances and personal belongings — door to door, with direct cargo by sea and by air.",
   path: "/moving-back-home",
 });
 
@@ -19,7 +39,7 @@ export default function MovingBackHomePage() {
         <PageHero
           eyebrow="Relocation · UK to Pakistan"
           title="Moving back to Pakistan? We'll bring your whole household with you."
-          intro="Furniture, appliances and personal belongings — packed, shipped and delivered to your door. A dedicated relocation service for families moving home for good."
+          intro="Furniture, appliances and personal belongings — packed, shipped and delivered to your door. A dedicated relocation service and trusted cargo service for families moving home to Pakistan for good."
           stats={[
             { n: "Full household", l: "Furniture & appliances" },
             { n: "Door to door", l: "Packed to delivered" },
@@ -61,28 +81,8 @@ export default function MovingBackHomePage() {
         <section className="band-soft">
           <div className="section wrap">
             <h2 className="h-sec">How it works</h2>
-            <div className="cards">
-              <div className="step">
-                <span className="k">STEP 1</span>
-                <h3>Get a quote</h3>
-                <p>Tell us what you&rsquo;re bringing. We survey the volume and quote a fixed price, air or sea.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 2</span>
-                <h3>We collect &amp; pack</h3>
-                <p>Our team collects from your UK address and packs everything securely for the move.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 3</span>
-                <h3>Shipped to Pakistan</h3>
-                <p>Your household goods travel by sea or air, whichever suits your timeline and budget.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 4</span>
-                <h3>Delivered home</h3>
-                <p>Cleared through customs and delivered to your new address in Pakistan.</p>
-              </div>
-            </div>
+            <p className="lede">From a UK quote to your new front door in Pakistan &mdash; four steps.</p>
+            <ProcessDiagram steps={STEPS} />
           </div>
         </section>
 

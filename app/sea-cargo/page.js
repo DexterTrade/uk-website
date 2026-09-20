@@ -28,7 +28,7 @@ export default async function SeaCargoPage() {
         <PageHero
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
           title="Direct cargo by sea — the economical route for volume and household goods."
-          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable cargo service for furniture, machinery, business stock and household consignments, with onward delivery into Kashmir."
+          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, direct cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
           stats={[
             { n: "30–40 days", l: "Port to door" },
             { n: "LCL or FCL", l: "Shared or full container" },
@@ -40,7 +40,7 @@ export default async function SeaCargoPage() {
           ]}
         />
 
-        <NextDispatch date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
+        <NextDispatch mode="sea" date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
 
         <section className="section wrap">
           <h2 className="h-sec">LCL or FCL &mdash; whichever fits</h2>

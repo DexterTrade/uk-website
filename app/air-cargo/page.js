@@ -2,16 +2,25 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import NextDispatch from "../components/NextDispatch";
+import { createClient } from "@/lib/supabase/server";
 import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
   title: "Air Cargo, UK to Pakistan & Kashmir",
   description:
-    "Fast cargo by air from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door collection, customs clearance and 5-7 day delivery.",
+    "Fast, express air cargo Pakistan service from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door cargo collection, customs clearance and 5-7 day delivery.",
   path: "/air-cargo",
 });
 
-export default function AirCargoPage() {
+export default async function AirCargoPage() {
+  const supabase = await createClient();
+  const { data: airRate } = await supabase
+    .from("rates")
+    .select("next_dispatch_date, next_dispatch_note")
+    .eq("mode", "air")
+    .maybeSingle();
+
   return (
     <>
       <SiteHeader variant="service" />
@@ -19,7 +28,7 @@ export default function AirCargoPage() {
         <PageHero
           eyebrow="Cargo by air · UK to Pakistan & Kashmir"
           title="Fast, express cargo by air — door to door in 5-7 days."
-          intro="Weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."
+          intro="A speedy cargo service connecting the UK to Pakistan by air: weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."
           stats={[
             { n: "5–7 days", l: "Collection to door delivery" },
             { n: "Weekly", l: "Consolidated departures" },
@@ -30,6 +39,8 @@ export default function AirCargoPage() {
             { label: "Track a shipment", href: "/tracking", variant: "btn-ghost" },
           ]}
         />
+
+        <NextDispatch mode="air" date={airRate?.next_dispatch_date} note={airRate?.next_dispatch_note} />
 
         <div className="wrap">
           <div className="schedule-strip">
@@ -47,7 +58,7 @@ export default function AirCargoPage() {
 
         <section className="section wrap">
           <h2 className="h-sec">Why send by air</h2>
-          <p className="lede">The right choice when speed matters more than volume.</p>
+          <p className="lede">The right choice when speed matters more than volume &mdash; an express cargo service for time-critical shipments.</p>
           <div className="cards">
             <article className="svc">
               <div className="num">01</div>

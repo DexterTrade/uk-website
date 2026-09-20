@@ -2,12 +2,32 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import ProcessDiagram from "../components/ProcessDiagram";
 import { pageMeta } from "@/lib/seo";
+
+const STEPS = [
+  {
+    title: "Tell us your travel date",
+    body: "Let us know when you’re flying and roughly how much extra weight you’re sending. We quote a fixed price per kg.",
+  },
+  {
+    title: "Drop off or collection",
+    body: "Bring your boxes and bags to our warehouse, or book a UK collection, any time before your flight.",
+  },
+  {
+    title: "Flies as air cargo",
+    body: "Your excess baggage joins our next consolidated air cargo departure to Pakistan.",
+  },
+  {
+    title: "Delivered to your door",
+    body: "Cleared through customs and delivered to the consignee address in Pakistan, usually arriving around the same time as you or shortly after.",
+  },
+];
 
 export const metadata = pageMeta({
   title: "Excess Baggage to Pakistan",
   description:
-    "Flying to Pakistan and taking more than your airline allowance? Send the extra boxes and bags separately by air cargo, usually for less than airline excess fees.",
+    "Flying to Pakistan and taking more than your airline allowance? Send the extra boxes and bags separately as excess baggage to Pakistan by air cargo, usually for less than airline excess fees.",
   path: "/excess-baggage",
 });
 
@@ -19,7 +39,7 @@ export default function ExcessBaggagePage() {
         <PageHero
           eyebrow="Excess baggage · UK to Pakistan"
           title="Flying with more than your allowance? Send it separately."
-          intro="If you're travelling to Pakistan and packing more than your airline lets you check in, our excess baggage service collects the extra boxes and bags and flies them as air cargo &mdash; usually for less than the airline would charge, and without turning up at check-in overweight."
+          intro="If you're travelling to Pakistan and packing more than your airline lets you check in, our excess baggage to Pakistan service collects the extra boxes and bags and flies them as air cargo &mdash; usually for less than the airline would charge, and without turning up at check-in overweight."
           stats={[
             { n: "5–7 days", l: "Typical delivery" },
             { n: "Per kg", l: "Priced like air cargo" },
@@ -83,28 +103,8 @@ export default function ExcessBaggagePage() {
         <section className="band-soft">
           <div className="section wrap">
             <h2 className="h-sec">How it works</h2>
-            <div className="cards">
-              <div className="step">
-                <span className="k">STEP 1</span>
-                <h3>Tell us your travel date</h3>
-                <p>Let us know when you&rsquo;re flying and roughly how much extra weight you&rsquo;re sending. We quote a fixed price per kg.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 2</span>
-                <h3>Drop off or collection</h3>
-                <p>Bring your boxes and bags to our warehouse, or book a UK collection, any time before your flight.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 3</span>
-                <h3>Flies as air cargo</h3>
-                <p>Your excess baggage joins our next consolidated air cargo departure to Pakistan.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 4</span>
-                <h3>Delivered to your door</h3>
-                <p>Cleared through customs and delivered to the consignee address in Pakistan, usually arriving around the same time as you or shortly after.</p>
-              </div>
-            </div>
+            <p className="lede">From drop-off in the UK to door delivery in Pakistan &mdash; four steps.</p>
+            <ProcessDiagram steps={STEPS} />
           </div>
         </section>
 

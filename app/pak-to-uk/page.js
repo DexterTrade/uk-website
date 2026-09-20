@@ -2,12 +2,32 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import ProcessDiagram from "../components/ProcessDiagram";
 import { pageMeta } from "@/lib/seo";
+
+const STEPS = [
+  {
+    title: "Get a quote",
+    body: "Send us weight or volume, and the collection and delivery addresses. We quote a fixed all-in price, air or sea.",
+  },
+  {
+    title: "Collected in Pakistan",
+    body: "Our agents collect from the shipper in Pakistan, or accept drop-off at a local depot.",
+  },
+  {
+    title: "Export & transit",
+    body: "Export paperwork is filed, and the consignment travels by air or sea to the UK.",
+  },
+  {
+    title: "Cleared & delivered",
+    body: "UK import clearance, then door delivery to the consignee.",
+  },
+];
 
 export const metadata = pageMeta({
   title: "Pakistan to UK Freight",
   description:
-    "Air and sea freight from Pakistan to the UK, with collection in Pakistan, UK customs clearance and door delivery across the UK.",
+    "Pakistan to UK cargo by air and sea freight, with collection in Pakistan, UK customs clearance and door delivery across the UK from a trusted cargo service.",
   path: "/pak-to-uk",
 });
 
@@ -19,7 +39,7 @@ export default function PakToUkPage() {
         <PageHero
           eyebrow="Air & sea freight · Pakistan to UK"
           title="The reverse route, just as handled end to end."
-          intro="Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door delivery anywhere in the UK."
+          intro="Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door to door cargo delivery anywhere in the UK &mdash; a reliable cargo service connecting Pakistan back to the UK."
           stats={[
             { n: "5–7 days", l: "Air, door to door" },
             { n: "30–40 days", l: "Sea, port to door" },
@@ -71,28 +91,8 @@ export default function PakToUkPage() {
         <section className="band-soft">
           <div className="section wrap">
             <h2 className="h-sec">How it works</h2>
-            <div className="cards">
-              <div className="step">
-                <span className="k">STEP 1</span>
-                <h3>Get a quote</h3>
-                <p>Send us weight or volume, and the collection and delivery addresses. We quote a fixed all-in price, air or sea.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 2</span>
-                <h3>Collected in Pakistan</h3>
-                <p>Our agents collect from the shipper in Pakistan, or accept drop-off at a local depot.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 3</span>
-                <h3>Export &amp; transit</h3>
-                <p>Export paperwork is filed, and the consignment travels by air or sea to the UK.</p>
-              </div>
-              <div className="step">
-                <span className="k">STEP 4</span>
-                <h3>Cleared &amp; delivered</h3>
-                <p>UK import clearance, then door delivery to the consignee.</p>
-              </div>
-            </div>
+            <p className="lede">Collection in Pakistan to door delivery in the UK &mdash; four steps.</p>
+            <ProcessDiagram steps={STEPS} />
           </div>
         </section>
 
