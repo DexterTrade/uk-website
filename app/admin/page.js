@@ -30,7 +30,7 @@ export default async function AdminPage() {
       .order("issued_date", { ascending: false }),
     supabase
       .from("rates")
-      .select("mode, headline_rate, rate_note, pickup_charge, next_dispatch_date, next_dispatch_note")
+      .select("mode, headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note")
       .order("mode"),
   ]);
 
@@ -60,6 +60,7 @@ export default async function AdminPage() {
     mode: r.mode,
     headline_rate: r.headline_rate,
     rate_note: r.rate_note || "",
+    estimated_time: r.estimated_time || "",
     pickup_charge: Number(r.pickup_charge),
     next_dispatch_date: r.next_dispatch_date || "",
     next_dispatch_note: r.next_dispatch_note || "",

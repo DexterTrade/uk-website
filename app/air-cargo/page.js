@@ -9,7 +9,7 @@ import { pageMeta } from "@/lib/seo";
 export const metadata = pageMeta({
   title: "Air Cargo, UK to Pakistan & Kashmir",
   description:
-    "Fast, express air cargo Pakistan service from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door cargo collection, customs clearance and 5-7 day delivery.",
+    "Fast, express air cargo Pakistan service from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door cargo collection, customs clearance and fast delivery.",
   path: "/air-cargo",
 });
 
@@ -17,22 +17,28 @@ export default async function AirCargoPage() {
   const supabase = await createClient();
   const { data: airRate } = await supabase
     .from("rates")
-    .select("next_dispatch_date, next_dispatch_note, pickup_charge")
+    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge")
     .eq("mode", "air")
     .maybeSingle();
+  const estimatedTime = airRate?.estimated_time || "8–10 days";
 
   return (
     <>
       <SiteHeader variant="service" />
       <main>
-        <NextDispatch mode="air" date={airRate?.next_dispatch_date} note={airRate?.next_dispatch_note} />
+        <NextDispatch
+          mode="air"
+          date={airRate?.next_dispatch_date}
+          note={airRate?.next_dispatch_note}
+          estimatedTime={estimatedTime}
+        />
 
         <PageHero
           eyebrow="Cargo by air · UK to Pakistan & Kashmir"
-          title="Fast, express cargo by air — door to door in 5-7 days."
+          title="Fast, express cargo by air — door to door."
           intro="A speedy cargo service connecting the UK to Pakistan by air: weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."
           stats={[
-            { n: "5–7 days", l: "Collection to door delivery" },
+            { n: estimatedTime, l: "Collection to door delivery" },
             { n: "Weekly", l: "Consolidated departures" },
             { n: "3 cities", l: "Direct to KHI, LHE, ISB" },
           ]}
@@ -93,9 +99,9 @@ export default async function AirCargoPage() {
                   <tr><th>Weight</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">1&ndash;29 kg</td><td className="rate">&pound;4.20 / kg</td><td>5&ndash;7 days</td></tr>
-                  <tr><td className="key">30&ndash;99 kg</td><td className="rate">&pound;3.60 / kg</td><td>5&ndash;7 days</td></tr>
-                  <tr><td className="key">100 kg +</td><td className="rate">&pound;3.10 / kg</td><td>5&ndash;7 days</td></tr>
+                  <tr><td className="key">1&ndash;29 kg</td><td className="rate">&pound;4.20 / kg</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">30&ndash;99 kg</td><td className="rate">&pound;3.60 / kg</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">100 kg +</td><td className="rate">{(airRate?.headline_rate || "From £3.10/kg").replace(/^From\s*/i, "")}</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>

@@ -3,6 +3,7 @@ import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import ProcessDiagram from "../components/ProcessDiagram";
+import { createClient } from "@/lib/supabase/server";
 import { pageMeta } from "@/lib/seo";
 
 const STEPS = [
@@ -31,7 +32,13 @@ export const metadata = pageMeta({
   path: "/pak-to-uk",
 });
 
-export default function PakToUkPage() {
+export default async function PakToUkPage() {
+  const supabase = await createClient();
+  const { data: ratesRaw } = await supabase.from("rates").select("mode, estimated_time");
+  const rateByMode = Object.fromEntries((ratesRaw || []).map((r) => [r.mode, r]));
+  const airTime = rateByMode.air?.estimated_time || "8–10 days";
+  const seaTime = rateByMode.sea?.estimated_time || "8–10 weeks";
+
   return (
     <>
       <SiteHeader variant="service" />
@@ -41,8 +48,8 @@ export default function PakToUkPage() {
           title="The reverse route, just as handled end to end."
           intro="Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door to door cargo delivery anywhere in the UK &mdash; a reliable cargo service connecting Pakistan back to the UK."
           stats={[
-            { n: "5–7 days", l: "Air, door to door" },
-            { n: "30–40 days", l: "Sea, port to door" },
+            { n: airTime, l: "Air, door to door" },
+            { n: seaTime, l: "Sea, port to door" },
             { n: "UK-wide", l: "Delivery on arrival" },
           ]}
           ctas={[

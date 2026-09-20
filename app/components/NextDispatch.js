@@ -5,17 +5,17 @@ const MODE_COPY = {
     label: "Next sea cargo departure",
     photo: "/assets/photos/sea-cargo.jpg",
     alt: "Container ship at port",
-    transit: "8–10 weeks",
+    fallbackTransit: "8–10 weeks",
   },
   air: {
     label: "Next air cargo departure",
     photo: "/assets/photos/air-cargo.jpg",
     alt: "Cargo aircraft on the tarmac",
-    transit: "8–10 days",
+    fallbackTransit: "8–10 days",
   },
 };
 
-export default function NextDispatch({ mode = "sea", date, note }) {
+export default function NextDispatch({ mode = "sea", date, note, estimatedTime }) {
   if (!date) return null;
 
   const target = new Date(`${date}T00:00:00`);
@@ -53,7 +53,7 @@ export default function NextDispatch({ mode = "sea", date, note }) {
           <div className="flex flex-wrap items-center gap-6">
             <div>
               <div className="text-[11px] font-semibold tracking-[0.08em] text-faint uppercase">Estimated time</div>
-              <div className="font-head text-lg font-bold text-green">{copy.transit}</div>
+              <div className="font-head text-lg font-bold text-green">{estimatedTime || copy.fallbackTransit}</div>
             </div>
             <Link className="btn btn-green" href="/contact-us">
               Book your space

@@ -14,13 +14,15 @@ export const metadata = {
 };
 
 const RATE_DEFAULTS = {
-  sea: { headline_rate: "From £1.20/kg", rate_note: "Shared container (LCL) · 8–10 week delivery", pickup_charge: 35 },
-  air: { headline_rate: "From £3.10/kg", rate_note: "Tiered by weight · 5–7 day delivery", pickup_charge: 35 },
+  sea: { headline_rate: "From £1.20/kg", rate_note: "Shared container (LCL)", estimated_time: "8–10 weeks", pickup_charge: 35 },
+  air: { headline_rate: "From £3.10/kg", rate_note: "Tiered by weight", estimated_time: "8–10 days", pickup_charge: 35 },
 };
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data: ratesRaw } = await supabase.from("rates").select("mode, headline_rate, rate_note, pickup_charge");
+  const { data: ratesRaw } = await supabase
+    .from("rates")
+    .select("mode, headline_rate, rate_note, estimated_time, pickup_charge");
   const rateByMode = Object.fromEntries((ratesRaw || []).map((r) => [r.mode, r]));
   const seaRate = rateByMode.sea || RATE_DEFAULTS.sea;
   const airRate = rateByMode.air || RATE_DEFAULTS.air;
@@ -147,11 +149,12 @@ export default async function Home() {
               <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Economical cargo by sea</h2>
               <div className="mt-[22px] flex items-baseline gap-2">
                 <span className="font-head text-[30px] font-extrabold text-green">{seaRate.headline_rate}</span>
-                <span className="text-[13px] text-faint">{seaRate.rate_note}</span>
+                <span className="text-[13px] text-faint">{seaRate.rate_note} &middot; {seaRate.estimated_time}</span>
               </div>
               <div className="mt-[14px] flex max-w-[320px] flex-col gap-2 border-t border-line pt-[14px]">
                 <div className="flex justify-between gap-3 text-sm text-muted"><span>Freight rate</span><strong className="font-semibold text-ink">{seaRate.headline_rate}</strong></div>
                 <div className="flex justify-between gap-3 text-sm text-muted"><span>UK pickup</span><strong className="font-semibold text-ink">&pound;{Number(seaRate.pickup_charge).toFixed(0)}</strong></div>
+                <div className="flex justify-between gap-3 text-sm text-muted"><span>Estimated time</span><strong className="font-semibold text-ink">{seaRate.estimated_time}</strong></div>
               </div>
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
               <Link className="btn btn-navy mt-6" href="/sea-cargo">See sea cargo &rarr;</Link>
@@ -166,11 +169,12 @@ export default async function Home() {
               <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Fast cargo by air</h2>
               <div className="mt-[22px] flex items-baseline gap-2">
                 <span className="font-head text-[30px] font-extrabold text-green">{airRate.headline_rate}</span>
-                <span className="text-[13px] text-faint">{airRate.rate_note}</span>
+                <span className="text-[13px] text-faint">{airRate.rate_note} &middot; {airRate.estimated_time}</span>
               </div>
               <div className="mt-[14px] flex max-w-[320px] flex-col gap-2 border-t border-line pt-[14px]">
                 <div className="flex justify-between gap-3 text-sm text-muted"><span>Freight rate</span><strong className="font-semibold text-ink">{airRate.headline_rate}</strong></div>
                 <div className="flex justify-between gap-3 text-sm text-muted"><span>UK pickup</span><strong className="font-semibold text-ink">&pound;{Number(airRate.pickup_charge).toFixed(0)}</strong></div>
+                <div className="flex justify-between gap-3 text-sm text-muted"><span>Estimated time</span><strong className="font-semibold text-ink">{airRate.estimated_time}</strong></div>
               </div>
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
               <Link className="btn btn-navy mt-6" href="/air-cargo">See air cargo &rarr;</Link>

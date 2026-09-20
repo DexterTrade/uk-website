@@ -3,6 +3,7 @@ import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import ProcessDiagram from "../components/ProcessDiagram";
+import { createClient } from "@/lib/supabase/server";
 import { pageMeta } from "@/lib/seo";
 
 const STEPS = [
@@ -31,7 +32,15 @@ export const metadata = pageMeta({
   path: "/excess-baggage",
 });
 
-export default function ExcessBaggagePage() {
+export default async function ExcessBaggagePage() {
+  const supabase = await createClient();
+  const { data: airRate } = await supabase
+    .from("rates")
+    .select("estimated_time")
+    .eq("mode", "air")
+    .maybeSingle();
+  const estimatedTime = airRate?.estimated_time || "8–10 days";
+
   return (
     <>
       <SiteHeader variant="service" />
@@ -41,7 +50,7 @@ export default function ExcessBaggagePage() {
           title="Flying with more than your allowance? Send it separately."
           intro="If you're travelling to Pakistan and packing more than your airline lets you check in, our excess baggage to Pakistan service collects the extra boxes and bags and flies them as air cargo &mdash; usually for less than the airline would charge, and without turning up at check-in overweight."
           stats={[
-            { n: "5–7 days", l: "Typical delivery" },
+            { n: estimatedTime, l: "Typical delivery" },
             { n: "Per kg", l: "Priced like air cargo" },
             { n: "No stress", l: "Skip the check-in scales" },
           ]}

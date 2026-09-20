@@ -41,6 +41,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
         {
           headline_rate: r.headline_rate,
           rate_note: r.rate_note,
+          estimated_time: r.estimated_time || "",
           pickup_charge: String(r.pickup_charge),
           next_dispatch_date: r.next_dispatch_date || "",
           next_dispatch_note: r.next_dispatch_note || "",
@@ -453,7 +454,7 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     Headline rate
                     <input
                       className="input"
-                      placeholder="From £195/m³"
+                      placeholder={mode === "sea" ? "From £1.20/kg" : "From £3.10/kg"}
                       value={rateForm[mode]?.headline_rate || ""}
                       onChange={(e) => updateRateField(mode, "headline_rate", e.target.value)}
                     />
@@ -468,15 +469,31 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                     />
                   </label>
                 </div>
-                <label className="field mt-4">
-                  Note
-                  <input
-                    className="input"
-                    placeholder="Shared container (LCL) · 30–40 day delivery"
-                    value={rateForm[mode]?.rate_note || ""}
-                    onChange={(e) => updateRateField(mode, "rate_note", e.target.value)}
-                  />
-                </label>
+                <div className="grid-fields mt-4">
+                  <label className="field">
+                    Note
+                    <input
+                      className="input"
+                      placeholder={mode === "sea" ? "Shared container (LCL)" : "Tiered by weight"}
+                      value={rateForm[mode]?.rate_note || ""}
+                      onChange={(e) => updateRateField(mode, "rate_note", e.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    Estimated time
+                    <input
+                      className="input"
+                      placeholder={mode === "sea" ? "8–10 weeks" : "8–10 days"}
+                      value={rateForm[mode]?.estimated_time || ""}
+                      onChange={(e) => updateRateField(mode, "estimated_time", e.target.value)}
+                    />
+                  </label>
+                </div>
+                <p className="fine mt-2 mb-1">
+                  Estimated time is shown everywhere this mode&rsquo;s delivery time appears &mdash; the homepage,
+                  the {mode === "sea" ? "Sea" : "Air"} Cargo page and its departure poster, and any page that quotes
+                  it. Change it once here and it updates everywhere.
+                </p>
                 <p className="fine mt-5 mb-1">
                   Next departure &mdash; shown as a poster banner on the {mode === "sea" ? "Sea" : "Air"} Cargo page.
                   Leave the date blank to hide it.
@@ -505,7 +522,9 @@ export default function AdminClient({ shipments, invoices, rates, staffEmail }) 
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save
                   </button>
-                  {rateSaved[mode] && <span className="text-[13.5px] text-green-ink">Saved &mdash; live on the homepage now.</span>}
+                  {rateSaved[mode] && (
+                    <span className="text-[13.5px] text-green-ink">Saved &mdash; live everywhere it&rsquo;s shown now.</span>
+                  )}
                 </div>
               </div>
             ))}

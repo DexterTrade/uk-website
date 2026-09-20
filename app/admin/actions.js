@@ -42,7 +42,10 @@ export async function markInvoicePaid(invoiceId) {
   return { ok: true };
 }
 
-export async function updateRate(mode, { headline_rate, rate_note, pickup_charge, next_dispatch_date, next_dispatch_note }) {
+export async function updateRate(
+  mode,
+  { headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note }
+) {
   if (mode !== "air" && mode !== "sea") {
     return { error: "Unknown rate mode." };
   }
@@ -52,6 +55,7 @@ export async function updateRate(mode, { headline_rate, rate_note, pickup_charge
     .update({
       headline_rate: String(headline_rate || "").trim(),
       rate_note: String(rate_note || "").trim() || null,
+      estimated_time: String(estimated_time || "").trim() || null,
       pickup_charge: Number.parseFloat(pickup_charge) || 0,
       next_dispatch_date: next_dispatch_date || null,
       next_dispatch_note: String(next_dispatch_note || "").trim() || null,
@@ -61,6 +65,9 @@ export async function updateRate(mode, { headline_rate, rate_note, pickup_charge
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/sea-cargo");
+  revalidatePath("/air-cargo");
+  revalidatePath("/excess-baggage");
+  revalidatePath("/pak-to-uk");
   return { ok: true };
 }
 

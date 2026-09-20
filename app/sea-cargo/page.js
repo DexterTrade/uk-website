@@ -9,7 +9,7 @@ import { pageMeta } from "@/lib/seo";
 export const metadata = pageMeta({
   title: "Sea Cargo, UK to Pakistan & Kashmir",
   description:
-    "Direct cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 30-40 day transit.",
+    "Direct cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 8-10 week transit.",
   path: "/sea-cargo",
 });
 
@@ -17,22 +17,28 @@ export default async function SeaCargoPage() {
   const supabase = await createClient();
   const { data: seaRate } = await supabase
     .from("rates")
-    .select("next_dispatch_date, next_dispatch_note, pickup_charge")
+    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge")
     .eq("mode", "sea")
     .maybeSingle();
+  const estimatedTime = seaRate?.estimated_time || "8–10 weeks";
 
   return (
     <>
       <SiteHeader variant="service" />
       <main>
-        <NextDispatch mode="sea" date={seaRate?.next_dispatch_date} note={seaRate?.next_dispatch_note} />
+        <NextDispatch
+          mode="sea"
+          date={seaRate?.next_dispatch_date}
+          note={seaRate?.next_dispatch_note}
+          estimatedTime={estimatedTime}
+        />
 
         <PageHero
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
           title="Direct cargo by sea — the economical route for volume and household goods."
           intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, direct cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
           stats={[
-            { n: "30–40 days", l: "Port to door" },
+            { n: estimatedTime, l: "Port to door" },
             { n: "LCL or FCL", l: "Shared or full container" },
             { n: "Karachi", l: "Primary destination port" },
           ]}
@@ -72,15 +78,15 @@ export default async function SeaCargoPage() {
         <section className="band-soft">
           <div className="section wrap">
             <h2 className="h-sec">Rates</h2>
-            <p className="lede">Indicative per-cubic-metre rates for shared-container sea freight.</p>
+            <p className="lede">Indicative per-kg rates for shared-container sea freight.</p>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr><th>Service</th><th>Weight / volume</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">Sea freight (LCL)</td><td>Per m&sup3;, min 1 m&sup3;</td><td className="rate">&pound;195 / m&sup3;</td><td>30&ndash;40 days</td></tr>
-                  <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>30&ndash;40 days</td></tr>
+                  <tr><td className="key">Sea freight (LCL)</td><td>Per kg</td><td className="rate">{seaRate?.headline_rate || "From £1.20/kg"}</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>
