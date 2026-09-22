@@ -115,10 +115,25 @@ migration plus matching edits in two code files**.
 | `position` | int | Sort order for filters and dropdowns |
 | `tone` | text | CHECK `grey` / `amber` / `navy` / `green` — the badge colour. A tone name, not a CSS class, so the database isn't describing Tailwind; `statusBadgeClass()` in `lib/data.js` maps it |
 
-Seeded with the original eight: Booked, Collected, At warehouse, In transit,
-At sea, Customs clearance, Out for delivery, Delivered. `shipments.status` is
-a foreign key onto it with `ON UPDATE CASCADE`, so renaming a status carries
-through to existing shipments instead of orphaning them.
+The workflow, in order: **Collected → Dispatched from warehouse → Dispatched
+from UK → In transit → Arrived in Karachi → Cleared from customs → Out for
+delivery → Delivered.**
+
+`shipments.status` is a foreign key onto this table with `ON UPDATE CASCADE`,
+so renaming a status carries through to existing shipments instead of
+orphaning them. Two things to remember when changing the list:
+
+- **`shipments.status` has a column default** (currently `'Collected'`), and
+  `create_booking()` relies on it rather than setting a status itself. Remove
+  or rename the status the default points at without updating the default and
+  every new booking fails the foreign key.
+- **Nothing may still reference a status being deleted** — migrate those rows
+  first, or the foreign key will refuse the delete.
+
+The admin panel never names a status in code. The dashboard treats
+`position` 1 as the earliest stage and the highest `position` as the terminal
+one, so reordering the table doesn't silently zero the "Awaiting dispatch" and
+"Active shipments" figures.
 
 ### `shipment_stages`
 Timeline entries for a shipment (one shipment → many stages).

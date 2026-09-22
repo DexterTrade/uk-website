@@ -56,7 +56,16 @@ export default function AdminClient({
   );
   const [rateSaved, setRateSaved] = useState({});
 
-  const active = useMemo(() => shipments.filter((s) => s.status !== "Delivered"), [shipments]);
+  // Derived from the statuses table rather than naming a status in code: the
+  // first is the earliest stage and the last is the terminal one, so renaming
+  // or reordering statuses in the database doesn't silently zero these.
+  const firstStatus = statuses[0]?.value ?? "";
+  const finalStatus = statuses[statuses.length - 1]?.value ?? "";
+
+  const active = useMemo(
+    () => shipments.filter((s) => s.status !== finalStatus),
+    [shipments, finalStatus]
+  );
   const attention = useMemo(() => shipments.filter((s) => s.flag), [shipments]);
 
   // monthKey ("2026-09") comes from the server so this follows the calendar
@@ -221,9 +230,9 @@ export default function AdminClient({
                 </div>
               </div>
               <div className="kpi">
-                <div className="k">Awaiting collection</div>
-                <div className="v">{shipments.filter((s) => s.status === "Booked").length}</div>
-                <div className="n">Booked, not yet picked up</div>
+                <div className="k">Awaiting dispatch</div>
+                <div className="v">{shipments.filter((s) => s.status === firstStatus).length}</div>
+                <div className="n">{firstStatus}, not yet moved on</div>
               </div>
               <div className="kpi">
                 <div className="k">Bookings this month</div>
