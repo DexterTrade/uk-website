@@ -46,6 +46,27 @@ function toWhatsAppNumber(phone) {
   return "";
 }
 
+// Desktop and laptop are the same case — a computer — and both get WhatsApp
+// Web, which reuses the session the browser is already signed in to.
+// web.whatsapp.com does not work on a phone or tablet, though: it tells you to
+// use the app instead. So handheld devices get the wa.me link, which opens the
+// installed app directly.
+function isHandheld() {
+  if (typeof navigator === "undefined") return false;
+  if (navigator.userAgentData) return Boolean(navigator.userAgentData.mobile);
+  const ua = navigator.userAgent || "";
+  // iPadOS reports a desktop UA, so it is identified by being a touch "Mac".
+  const iPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  return /Android|iPhone|iPod|iPad|Mobile|Tablet|Silk|Kindle|Opera Mini|IEMobile/i.test(ua) || iPadOS;
+}
+
+function whatsAppSendUrl(number, message) {
+  const text = encodeURIComponent(message);
+  return isHandheld()
+    ? `https://wa.me/${number}?text=${text}`
+    : `https://web.whatsapp.com/send?phone=${number}&text=${text}`;
+}
+
 // A range the user hasn't touched spans the whole of the data; one they have
 // is still clamped, because reloading can move the bounds underneath it.
 const clampRange = (range, [min, max]) =>
@@ -264,15 +285,11 @@ export default function AdminClient({
         `Hello ${shipment.customer}, your PAK Cargo invoice for shipment ${shipment.ref} is ready.\n\n` +
         `View or download it here: ${result.url}\n\n` +
         `You can track this shipment at ${SITE_URL}/tracking using reference ${shipment.ref} and this mobile number.`;
-      // web.whatsapp.com/send, not wa.me: wa.me shows a "Continue to Chat"
-      // interstitial and then tries to hand off to the desktop app. This goes
-      // straight into the chat in the WhatsApp Web session the browser is
-      // already signed in to, with the message composed and ready to send.
-      const waUrl = `https://web.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(message)}`;
+      const waUrl = whatsAppSendUrl(number, message);
 
       if (tab) tab.location.href = waUrl;
       else window.open(waUrl, "_blank", "noopener");
-      showToast(`WhatsApp Web opened for ${shipment.customer}.`);
+      showToast(`WhatsApp opened for ${shipment.customer} — review and send.`);
     });
   }
 
@@ -685,7 +702,7 @@ export default function AdminClient({
                             </button>
                             <button
                               className="btn btn-ghost btn-sm flex items-center gap-[6px] whitespace-nowrap"
-                              title={`Send the invoice link to ${s.customer} on WhatsApp Web`}
+                              title={`Send the invoice link to ${s.customer} on WhatsApp`}
                               disabled={isPending}
                               onClick={() => handleWhatsApp(s)}
                             >

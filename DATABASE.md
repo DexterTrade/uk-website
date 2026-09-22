@@ -409,12 +409,17 @@ Each row also carries three actions: **View** (the shipment detail page),
 **Invoice** (the preview modal) and **Send**, which opens WhatsApp Web with
 the customer's invoice link composed and ready to send. Three details:
 
-- It targets **`web.whatsapp.com/send`, not `wa.me`**. `wa.me` shows a
-  "Continue to Chat" interstitial and then tries to hand off to the desktop
-  app; this goes straight into the chat in the WhatsApp Web session the
-  browser is already signed in to. Don't "simplify" it back to `wa.me`. (The
-  public site's own WhatsApp links stay on `wa.me` — those are for customers
-  on phones, who do want the app.)
+- **The destination depends on the device.** On a computer — desktop and
+  laptop are the same case — it targets `web.whatsapp.com/send`, which drops
+  straight into the chat in the WhatsApp Web session the browser is already
+  signed in to, with no "Continue to Chat" interstitial and no attempt to hand
+  off to the desktop app. On a phone or tablet it falls back to `wa.me`,
+  because `web.whatsapp.com` refuses to run on handhelds and just tells you to
+  use the app. `isHandheld()` prefers `navigator.userAgentData.mobile` and
+  falls back to a UA test; iPadOS reports a desktop UA, so it is caught by
+  being a touch-capable "Macintosh". Don't collapse this back to one URL.
+  (The public site's own WhatsApp links stay on `wa.me` throughout — those are
+  for customers, mostly on phones, who do want the app.)
 - It creates the share link first if the invoice has never been shared, so
   staff don't have to visit the preview to generate one.
 - The new tab is opened **synchronously, before the `await`**, and pointed at
