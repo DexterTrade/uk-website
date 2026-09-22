@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
 import { signOutAction, updateRate, updateShipmentStatus, updateShipmentStatuses } from "./actions";
+import RangeSlider from "./RangeSlider";
 
 // No Invoices tab: an invoice is 1:1 with its shipment and is shown in full on
 // the shipment detail page, so a separate list would be the same rows twice.
@@ -16,6 +17,20 @@ const NAV = [
 ];
 
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
+
+// Dates are sliders too, so they travel as whole days since the epoch —
+// an integer the range input can step through, converted back for display.
+const DAY_MS = 86400000;
+const toDay = (iso) => (iso ? Math.round(Date.parse(`${iso}T00:00:00Z`) / DAY_MS) : NaN);
+const dayLabel = (day) =>
+  new Date(day * DAY_MS).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
+
+// A range the user hasn't touched spans the whole of the data; one they have
+// is still clamped, because reloading can move the bounds underneath it.
+const clampRange = (range, [min, max]) =>
+  range === null
+    ? [min, max]
+    : [Math.max(Math.min(range[0], max), min), Math.min(Math.max(range[1], min), max)];
 
 export default function AdminClient({
   shipments,
@@ -33,8 +48,16 @@ export default function AdminClient({
   const [view, setView] = useState("dash");
   const [search, setSearch] = useState("");
 
-  // Multi-select: an empty set means no filter, i.e. show everything.
-  const [statusFilter, setStatusFilter] = useState(() => new Set());
+  // "" means no filter on that field.
+  const [statusFilter, setStatusFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
+  // Ranges are null until touched, meaning "the full span". Storing it that
+  // way rather than seeding with the bounds avoids having to resync state
+  // every time the shipment list reloads and the bounds move.
+  const [dateRange, setDateRange] = useState(null);
+  const [priceRange, setPriceRange] = useState(null);
+  const [weightRange, setWeightRange] = useState(null);
+
   const [selected, setSelected] = useState(() => new Set());
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkNote, setBulkNote] = useState("");
@@ -75,12 +98,43 @@ export default function AdminClient({
     [invoices, monthKey]
   );
 
+  // Slider bounds come from the data itself, so the handles always span
+  // exactly what exists rather than an arbitrary hardcoded ceiling.
+  const bounds = useMemo(() => {
+    const days = shipments.map((s) => toDay(s.collectionISO)).filter((n) => Number.isFinite(n));
+    const prices = shipments.map((s) => s.total);
+    const weights = shipments.map((s) => s.weightKg);
+    return {
+      date: [days.length ? Math.min(...days) : 0, days.length ? Math.max(...days) : 0],
+      price: [0, prices.length ? Math.ceil(Math.max(...prices)) : 0],
+      weight: [0, weights.length ? Math.ceil(Math.max(...weights)) : 0],
+    };
+  }, [shipments]);
+
+  const dateValue = clampRange(dateRange, bounds.date);
+  const priceValue = clampRange(priceRange, bounds.price);
+  const weightValue = clampRange(weightRange, bounds.weight);
+
+  const filtersActive =
+    Boolean(statusFilter) ||
+    Boolean(serviceFilter) ||
+    dateRange !== null ||
+    priceRange !== null ||
+    weightRange !== null;
+
   const shipmentRows = useMemo(
     () =>
       shipments
-        .filter((s) => statusFilter.size === 0 || statusFilter.has(s.status))
+        .filter((s) => !statusFilter || s.status === statusFilter)
+        .filter((s) => !serviceFilter || s.mode === serviceFilter)
+        .filter((s) => {
+          const day = toDay(s.collectionISO);
+          return !Number.isFinite(day) || (day >= dateValue[0] && day <= dateValue[1]);
+        })
+        .filter((s) => s.total >= priceValue[0] && s.total <= priceValue[1])
+        .filter((s) => s.weightKg >= weightValue[0] && s.weightKg <= weightValue[1])
         .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service}`, search)),
-    [shipments, statusFilter, search]
+    [shipments, statusFilter, serviceFilter, dateValue, priceValue, weightValue, search]
   );
 
   // Selection is intersected with what's actually on screen, so narrowing the
@@ -103,13 +157,12 @@ export default function AdminClient({
     });
   }
 
-  function toggleStatusFilter(value) {
-    setStatusFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
+  function resetFilters() {
+    setStatusFilter("");
+    setServiceFilter("");
+    setDateRange(null);
+    setPriceRange(null);
+    setWeightRange(null);
     setBulkNote("");
   }
 
@@ -284,30 +337,81 @@ export default function AdminClient({
               {shipmentRows.length} of {shipments.length} records. Change a status and customer tracking updates.
             </p>
 
-            {/* Statuses come from the shipment_statuses table, so this list
-                follows the database rather than a hardcoded subset. Filtering
-                is additive: no chip pressed means no filter. */}
-            <div className="chips">
-              <button
-                className="chip"
-                aria-pressed={statusFilter.size === 0}
-                onClick={() => {
-                  setStatusFilter(new Set());
-                  setBulkNote("");
-                }}
-              >
-                All
-              </button>
-              {statuses.map((s) => (
-                <button
-                  key={s.value}
-                  className="chip"
-                  aria-pressed={statusFilter.has(s.value)}
-                  onClick={() => toggleStatusFilter(s.value)}
-                >
-                  {s.value}
+            <div className="mt-5 rounded-[10px] border border-[#e2e7f0] bg-white px-5 py-[18px]">
+              <div className="grid-fields">
+                {/* Statuses come from the shipment_statuses table, so this
+                    follows the database rather than a hardcoded list. */}
+                <label className="field">
+                  Status
+                  <select
+                    className="select"
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setBulkNote("");
+                    }}
+                  >
+                    <option value="">All statuses</option>
+                    {statuses.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.value}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  Service
+                  <select
+                    className="select"
+                    value={serviceFilter}
+                    onChange={(e) => {
+                      setServiceFilter(e.target.value);
+                      setBulkNote("");
+                    }}
+                  >
+                    <option value="">Air and sea</option>
+                    <option value="air">Air cargo</option>
+                    <option value="sea">Sea cargo</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-x-8 gap-y-6">
+                <RangeSlider
+                  label="Collection date"
+                  min={bounds.date[0]}
+                  max={bounds.date[1]}
+                  value={dateValue}
+                  onChange={setDateRange}
+                  format={dayLabel}
+                  disabled={bounds.date[0] === bounds.date[1]}
+                />
+                <RangeSlider
+                  label="Price charged"
+                  min={bounds.price[0]}
+                  max={bounds.price[1]}
+                  value={priceValue}
+                  onChange={setPriceRange}
+                  format={(v) => `£${money(v)}`}
+                  disabled={bounds.price[0] === bounds.price[1]}
+                />
+                <RangeSlider
+                  label="Parcel weight"
+                  min={bounds.weight[0]}
+                  max={bounds.weight[1]}
+                  value={weightValue}
+                  onChange={setWeightRange}
+                  format={(v) => `${v} kg`}
+                  disabled={bounds.weight[0] === bounds.weight[1]}
+                />
+              </div>
+
+              {filtersActive && (
+                <button className="btn btn-ghost btn-sm mt-5" onClick={resetFilters}>
+                  Reset filters
                 </button>
-              ))}
+              )}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-[#e2e7f0] bg-white px-4 py-3">
@@ -315,7 +419,7 @@ export default function AdminClient({
                 {visibleSelected.length} selected
               </span>
               <span className="text-[13px] text-soft">
-                {statusFilter.size > 0 ? "within the current filter" : "across all shipments"}
+                {filtersActive ? "within the current filter" : "across all shipments"}
               </span>
               <select
                 className="status-select"

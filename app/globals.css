@@ -615,6 +615,63 @@
   .num-right {
     @apply text-right;
   }
+
+  /* Two-handle range slider (app/admin/RangeSlider.js). The inputs are laid
+     over one another, so they pass pointer events through and only the thumbs
+     take them back — otherwise the upper input would swallow every click
+     meant for the lower one. Thumb pseudo-elements can't be written with
+     @apply, hence the raw declarations. */
+  .range-slider {
+    @apply relative h-9 w-full;
+  }
+  .range-slider .rail {
+    @apply absolute top-1/2 left-0 h-[5px] w-full -translate-y-1/2 rounded-full bg-[#e2e7f0];
+  }
+  .range-slider .fill {
+    @apply absolute top-1/2 h-[5px] -translate-y-1/2 rounded-full bg-green;
+  }
+  .range-slider input[type="range"] {
+    @apply pointer-events-none absolute top-1/2 left-0 m-0 h-9 w-full -translate-y-1/2 appearance-none bg-transparent;
+  }
+  .range-slider input[type="range"]:focus-visible {
+    @apply outline-none;
+  }
+  .range-slider input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid var(--color-green);
+    box-shadow: 0 1px 4px rgba(22, 35, 60, 0.28);
+    cursor: grab;
+  }
+  .range-slider input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    height: 20px;
+    width: 20px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid var(--color-green);
+    box-shadow: 0 1px 4px rgba(22, 35, 60, 0.28);
+    cursor: grab;
+  }
+  .range-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px var(--color-green-soft);
+  }
+  .range-slider input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px var(--color-green-soft);
+  }
+  .range-slider input[type="range"]:disabled::-webkit-slider-thumb {
+    border-color: #c3cbd9;
+    cursor: not-allowed;
+  }
+  .range-slider input[type="range"]:disabled::-moz-range-thumb {
+    border-color: #c3cbd9;
+    cursor: not-allowed;
+  }
 }
 
 @layer utilities {

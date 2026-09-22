@@ -70,7 +70,12 @@ export default async function AdminPage() {
     route: `${embedded(s.customers)?.town || "UK"} → ${s.receiver_city}`,
     receiver: s.receiver_name,
     weight: weightLabel(s.parcels, s.weight_kg),
+    // Raw values alongside the display strings: the filter sliders need
+    // numbers, not "3 parcels · 24.5 kg".
+    weightKg: Number(s.weight_kg),
+    parcels: s.parcels,
     collection: formatDate(s.collection_date),
+    collectionISO: s.collection_date,
     status: s.status,
     tone: toneOf[s.status] || "grey",
     flag: s.flag || "",

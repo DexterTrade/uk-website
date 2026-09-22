@@ -349,12 +349,39 @@ rate, note, **estimated time**, UK pickup charge, and the next-dispatch
 date/note — all per mode). Every reference and customer name in those tables
 links through to the matching detail page.
 
-**Shipments: status filters and bulk edit.** The filter chips are built from
-`shipment_statuses` (all of them, in `position` order) rather than the old
-hardcoded six-value subset, and they are **additive** — press several to see
-several, press All to clear. Each row has a checkbox, with a header checkbox
-that selects everything currently shown, and a bar above the table applies one
-status to the selection in a single `UPDATE ... IN (...)`.
+**Shipments: filter panel and bulk edit.** Five filters above the table, all
+combining (AND) with the search box:
+
+| Filter | Control | Source |
+|---|---|---|
+| Status | dropdown | `shipment_statuses`, in `position` order |
+| Service | dropdown | air / sea |
+| Collection date | two-handle slider | min/max of the loaded shipments |
+| Price charged | two-handle slider | 0 to the highest total |
+| Parcel weight | two-handle slider | 0 to the heaviest |
+
+The sliders (`app/admin/RangeSlider.js`) are two overlaid
+`<input type="range">` elements rather than hand-rolled drag maths, so
+keyboard, touch and screen-reader support come for free. The one trick that
+makes it work: stacked inputs would have the top one swallowing every click,
+so both get `pointer-events: none` and only their thumbs take pointer events
+back — see `.range-slider` in `globals.css`, where the thumb pseudo-elements
+are written as raw CSS because `@apply` can't target them.
+
+Two details worth keeping:
+
+- **Slider bounds are derived from the data**, so the handles always span
+  exactly what exists rather than an invented ceiling. A range the user hasn't
+  touched is stored as `null` meaning "the whole span", which avoids having to
+  resync state every time the list reloads and the bounds shift; a range they
+  have touched is clamped on read for the same reason.
+- **Dates travel as whole days since the epoch** (`toDay`/`dayLabel`), because
+  a range input needs an integer to step through. Parsing is pinned to UTC
+  midnight so the conversion is stable either side of the BST/GMT switch.
+
+Each row has a checkbox, with a header checkbox that selects everything
+currently shown, and a bar above the table applies one status to the selection
+in a single `UPDATE ... IN (...)`.
 
 The selection is always intersected with the visible rows before anything is
 applied. Without that, narrowing the filter would leave rows selected that the
