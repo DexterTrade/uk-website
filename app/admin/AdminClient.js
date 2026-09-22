@@ -4,7 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
-import { signOutAction, updateRate, updateShipmentStatus, updateShipmentStatuses } from "./actions";
+import {
+  getInvoicePreview,
+  signOutAction,
+  updateRate,
+  updateShipmentStatus,
+  updateShipmentStatuses,
+} from "./actions";
+import InvoiceDocument from "./InvoiceDocument";
 import RangeSlider from "./RangeSlider";
 import Toast from "./Toast";
 
@@ -62,6 +69,9 @@ export default function AdminClient({
   const [selected, setSelected] = useState(() => new Set());
   const [bulkStatus, setBulkStatus] = useState("");
 
+  // { reference, data } — data is null while the invoice is being fetched.
+  const [preview, setPreview] = useState(null);
+
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -79,6 +89,15 @@ export default function AdminClient({
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  useEffect(() => {
+    if (!preview) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setPreview(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [preview]);
 
   const [rateForm, setRateForm] = useState(() =>
     Object.fromEntries(
@@ -180,6 +199,19 @@ export default function AdminClient({
       }
       showToast(`${reference} updated to ${status}.`);
       router.refresh();
+    });
+  }
+
+  function openPreview(reference) {
+    setPreview({ reference, data: null });
+    startTransition(async () => {
+      const result = await getInvoicePreview(reference);
+      if (result?.error) {
+        setPreview(null);
+        showToast(result.error, "error");
+        return;
+      }
+      setPreview({ reference, data: result.data });
     });
   }
 
@@ -484,7 +516,7 @@ export default function AdminClient({
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[1090px]">
+                <table className="min-w-[1240px]">
                   <thead>
                     <tr>
                       <th className="w-10">
@@ -497,7 +529,7 @@ export default function AdminClient({
                         />
                       </th>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
-                      <th>Weight</th><th>Collection</th><th>Status</th>
+                      <th>Receiver</th><th>Weight</th><th>Collection</th><th>Status</th>
                       <th className="num-right">Charged</th><th></th>
                     </tr>
                   </thead>
@@ -529,6 +561,7 @@ export default function AdminClient({
                         </td>
                         <td>{s.service}</td>
                         <td>{s.route}</td>
+                        <td>{s.receiver}</td>
                         <td>{s.weight}</td>
                         <td>{s.collection}</td>
                         <td>
@@ -545,9 +578,20 @@ export default function AdminClient({
                         </td>
                         <td className="num-right font-semibold">£{money(s.total)}</td>
                         <td>
-                          <Link className="btn btn-ghost btn-sm whitespace-nowrap" href={`/admin/shipments/${s.ref}`}>
-                            View
-                          </Link>
+                          <div className="flex gap-2">
+                            <Link
+                              className="btn btn-ghost btn-sm whitespace-nowrap"
+                              href={`/admin/shipments/${s.ref}`}
+                            >
+                              View
+                            </Link>
+                            <button
+                              className="btn btn-ghost btn-sm whitespace-nowrap"
+                              onClick={() => openPreview(s.ref)}
+                            >
+                              Invoice
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -693,6 +737,48 @@ export default function AdminClient({
           </section>
         )}
       </main>
+
+      {preview && (
+        <div
+          className="invoice-overlay fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-ink/50 px-5 py-8 backdrop-blur-[2px]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreview(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Invoice ${preview.reference}`}
+            className="w-full max-w-[860px] overflow-hidden rounded-xl bg-white shadow-[0_30px_70px_-30px_rgba(22,35,60,0.6)]"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-[13px] print:hidden-force">
+              <span className="font-head text-[15px] font-bold text-ink">
+                Invoice preview &middot; {preview.reference}
+              </span>
+              <div className="flex flex-wrap gap-[10px]">
+                <Link className="btn btn-ghost btn-sm" href={`/admin/invoices/${preview.reference}`}>
+                  Open full page
+                </Link>
+                <button
+                  className="btn btn-green btn-sm"
+                  disabled={!preview.data}
+                  onClick={() => window.print()}
+                >
+                  Download PDF
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setPreview(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+            {preview.data ? (
+              <InvoiceDocument {...preview.data} />
+            ) : (
+              <p className="px-6 py-16 text-center text-[15px] text-soft">Loading invoice…</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <Toast toast={toast} onDismiss={dismissToast} />
     </div>

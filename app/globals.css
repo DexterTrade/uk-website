@@ -702,6 +702,11 @@
   }
 }
 
+@page {
+  size: A4;
+  margin: 11mm;
+}
+
 @media print {
   .print\:hidden-force {
     display: none !important;
@@ -709,7 +714,9 @@
 
   /* The invoice document is the only thing that should reach paper: strip the
      admin chrome's background, card border and page padding so it prints as a
-     plain A4 sheet rather than a screenshot of a web page. */
+     plain A4 sheet rather than a screenshot of a web page. The colour-adjust
+     rules keep the header bar, total row and watermark from being dropped by
+     the browser's "background graphics off" default. */
   .invoice-doc {
     max-width: none;
     padding: 0;
@@ -722,6 +729,9 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  .invoice-doc .invoice-watermark {
+    width: 120mm;
+  }
   main:has(.invoice-doc) {
     min-height: 0;
     padding: 0;
@@ -730,5 +740,29 @@
   main:has(.invoice-doc) > div {
     max-width: none;
     padding: 0;
+  }
+
+  /* Printing straight from the preview modal: drop the admin panel around it
+     and let the overlay collapse into a plain page, so the same button works
+     from the shipments list and from the invoice page. */
+  .invoice-overlay {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: none !important;
+    backdrop-filter: none !important;
+  }
+  .invoice-overlay > div {
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .admin:has(.invoice-overlay) .admin-side,
+  .admin:has(.invoice-overlay) .admin-main {
+    display: none !important;
   }
 }

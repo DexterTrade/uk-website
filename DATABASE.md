@@ -429,14 +429,7 @@ proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
   freight subtotal, charges, any adjustment, total, and the `bill_to_*`
   snapshot as printed) and the tracking timeline. This is why there is no
   invoices list. "Edit booking" leads to the edit form.
-- **`/admin/invoices/[reference]`** — the invoice document itself: business
-  header with the company number, the `bill_to_*` snapshot, the delivery
-  address, and the pricing as lines. Because staff can overwrite the suggested
-  total, the lines don't always sum to it; the difference renders as its own
-  **Adjustment** line rather than printing a document whose arithmetic looks
-  wrong. Printing is plain `window.print()` plus an `@media print` block in
-  `globals.css` that strips the admin chrome — no PDF library, no new
-  dependency.
+- **`/admin/invoices/[reference]`** — the invoice document, full page.
 - **`/admin/customers/[id]`** — **the customer record only**: contact details,
   booking count and lifetime value. No shipment or invoice tables; it answers
   "who is this person", and the shipment page answers "what happened on this
@@ -446,6 +439,43 @@ proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
 Keyed by `reference`, not `id`, for shipments and invoices: the reference is
 what staff and customers actually quote, and since invoices are 1:1 with
 shipments it identifies both.
+
+### The invoice document (`app/admin/InvoiceDocument.js`)
+
+The invoice as the customer receives it, modelled on the layout supplied as a
+reference: letterhead with the logo and watermark, office address and all
+three branch numbers, sender and receiver blocks side by side, a fact strip
+(freight type, parcels, weight, collection date, operator), then pricing in a
+table, then the footer with tracking instructions and the company number.
+
+**One component, two renderers.** It is a plain presentational component with
+no server-only imports, so the printable page (a Server Component) and the
+preview modal in the shipments list (a client component) render the *same*
+markup. Keep it that way — two copies would drift.
+
+- **Preview modal**: the "Invoice" button on each shipment row calls
+  `getInvoicePreview(reference)`, a staff-gated Server Action, so the
+  shipments list doesn't carry an invoice body for every row it renders.
+- **"Download PDF" is the browser's print dialogue**, not a PDF library. That
+  keeps text vector-sharp and the output identical to the design, with no
+  dependency; the trade-off is that staff pick "Save as PDF" as the
+  destination themselves. A one-click download would need a PDF library and a
+  second implementation of this layout.
+- Printing works **from the modal as well as the page**: `.invoice-overlay` in
+  the print block flattens the overlay and hides `.admin-side` / `.admin-main`
+  around it.
+- `@page { size: A4 }` and `print-color-adjust: exact` are set, because
+  browsers drop background graphics by default and the header bar, total row
+  and watermark are exactly that. The page tells staff to enable background
+  graphics.
+- **`operator` is a placeholder** — currently the signed-in staff account's
+  email, pending the roles work.
+- Because staff can overwrite the suggested total, the rows don't always sum
+  to it; the difference prints as its own **Adjustment** line rather than
+  leaving a document whose arithmetic appears wrong.
+- There are **no terms and conditions on it yet**. The reference document had
+  a block of them; inventing liability, refund or credit-note terms for a real
+  business would be wrong, so that space is left for real copy.
 
 ### Editing a booking
 

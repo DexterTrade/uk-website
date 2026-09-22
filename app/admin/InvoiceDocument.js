@@ -1,0 +1,240 @@
+import { money } from "@/lib/data";
+import { BUSINESS, SITE_URL } from "@/lib/seo";
+
+// The invoice as the customer receives it. A plain presentational component
+// with no server-only imports, so the same markup backs both the preview
+// modal (client) and the printable page (server) — one design, not two that
+// drift apart.
+//
+// Laid out for A4: `@page` and the print rules live in globals.css under
+// `.invoice-doc`.
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function Party({ title, lines }) {
+  return (
+    <div className="flex-1">
+      <p className="mb-[7px] border-b-2 border-green pb-[5px] text-[10.5px] font-bold tracking-[0.1em] text-green-ink uppercase">
+        {title}
+      </p>
+      <dl className="text-[11.5px] leading-[1.55] text-ink">
+        {lines.map(([label, value]) => (
+          <div key={label} className="flex gap-[6px] py-[1px]">
+            <dt className="w-[62px] flex-none text-soft">{label}</dt>
+            <dd className="font-medium break-words">{value || "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function Fact({ label, value }) {
+  return (
+    <div className="flex-1 px-[10px] py-[8px] text-center">
+      <p className="text-[8.5px] font-bold tracking-[0.09em] text-soft uppercase">{label}</p>
+      <p className="mt-[3px] text-[12px] font-bold text-ink">{value}</p>
+    </div>
+  );
+}
+
+export default function InvoiceDocument({ shipment, customer, invoice, operator }) {
+  const weight = Number(shipment.weight_kg);
+  const rate = Number(invoice.rate_per_kg);
+  const other = Number(invoice.other_charges);
+  const total = Number(invoice.total_charges);
+  const freight = Math.round(rate * weight * 100) / 100;
+  // Staff can overwrite the suggested total, so the rows don't always sum to
+  // it. The gap is printed as its own line rather than leaving a document
+  // whose arithmetic appears wrong.
+  const adjustment = Math.round((total - freight - other) * 100) / 100;
+
+  const isPakistan = (shipment.receiver_country || "PK") === "PK";
+
+  return (
+    <article className="invoice-doc relative mx-auto w-full max-w-[820px] overflow-hidden bg-white px-[42px] py-[38px] text-ink max-[560px]:px-5 max-[560px]:py-6">
+      {/* Watermark. aria-hidden and behind everything — decoration only. */}
+      <img
+        src="/assets/logo-mark.svg"
+        alt=""
+        aria-hidden="true"
+        className="invoice-watermark pointer-events-none absolute top-1/2 left-1/2 w-[440px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[0.045]"
+      />
+
+      <div className="relative">
+        {/* ---------------------------------------------------- letterhead */}
+        <header className="flex items-start justify-between gap-6 border-b-[3px] border-green pb-[18px]">
+          <div className="flex items-center gap-[11px]">
+            <img src="/assets/logo-mark.svg" alt="" className="h-[52px] w-[52px] flex-none object-contain" />
+            <div>
+              <p className="font-head text-[23px] leading-none font-extrabold tracking-[0.01em] text-ink">
+                PAK CARGO
+              </p>
+              <p className="mt-[4px] text-[9.5px] font-semibold tracking-[0.16em] text-green-ink uppercase">
+                UK &harr; Pakistan Cargo
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-head text-[26px] leading-none font-extrabold tracking-[0.06em] text-green uppercase">
+              Invoice
+            </p>
+            <p className="mt-[8px] text-[10px] font-bold tracking-[0.08em] text-soft uppercase">Tracking no.</p>
+            <p className="font-head text-[17px] leading-tight font-extrabold text-ink">{shipment.reference}</p>
+            <p className="mt-[5px] text-[11px] text-muted">
+              Issued <strong className="text-ink">{formatDate(invoice.issued_date)}</strong>
+            </p>
+          </div>
+        </header>
+
+        {/* Office details: address with postcode, all three branch numbers. */}
+        <section className="flex flex-wrap items-start justify-between gap-x-8 gap-y-2 border-b border-line py-[12px] text-[10.5px] leading-[1.5] text-muted">
+          <address className="not-italic">
+            <strong className="text-ink">{BUSINESS.legalName}</strong>
+            <br />
+            {BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}
+            <br />
+            {BUSINESS.email} &middot; {SITE_URL.replace(/^https?:\/\//, "")}
+          </address>
+          <div className="text-right">
+            {BUSINESS.phones.map((p) => (
+              <span key={p.city} className="block">
+                <span className="text-soft">{p.city}</span>{" "}
+                <strong className="text-ink">{p.display}</strong>
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* --------------------------------------------- sender / receiver */}
+        <section className="flex gap-9 pt-[16px] pb-[14px] max-[560px]:flex-col max-[560px]:gap-5">
+          <Party
+            title="Sender details"
+            lines={[
+              ["Name", customer.name],
+              ["Address", customer.address],
+              ["Town", `${customer.town} ${customer.postcode}`],
+              ["Phone", customer.phone],
+              ["Email", customer.email],
+            ]}
+          />
+          <Party
+            title="Receiver details"
+            lines={[
+              ["Name", shipment.receiver_name],
+              ["Address", shipment.receiver_address],
+              ["City", `${shipment.receiver_city}${isPakistan ? ", Pakistan" : `, ${shipment.receiver_country}`}`],
+              ["Phone", shipment.receiver_phone],
+              ...(shipment.receiver_phone_alt ? [["Alt. phone", shipment.receiver_phone_alt]] : []),
+              ["Email", shipment.receiver_email],
+            ]}
+          />
+        </section>
+
+        {/* ---------------------------------------------------- fact strip */}
+        <section className="flex divide-x divide-[#dbe4f0] rounded-[6px] border border-[#dbe4f0] bg-[#f7faff] max-[560px]:flex-wrap max-[560px]:divide-x-0">
+          <Fact label="Freight type" value={shipment.mode === "air" ? "Air freight" : "Sea freight"} />
+          <Fact label="No. of parcels" value={shipment.parcels} />
+          <Fact label="Total weight" value={`${weight} kg`} />
+          <Fact label="Collection date" value={formatDate(shipment.collection_date)} />
+          <Fact label="Booked by" value={operator || "—"} />
+        </section>
+
+        {/* -------------------------------------------------- pricing table */}
+        <table className="mt-[18px] w-full border-collapse text-[11.5px]">
+          <thead>
+            <tr className="bg-ink text-white">
+              <th className="px-[10px] py-[8px] text-left font-head text-[9.5px] font-bold tracking-[0.09em] uppercase">
+                Description of goods
+              </th>
+              <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
+                Weight
+              </th>
+              <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
+                Rate / kg
+              </th>
+              <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
+                Amount
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-[#e6ebf3]">
+              <td className="px-[10px] py-[11px] align-top">
+                <span className="font-semibold">{shipment.goods_description}</span>
+                <span className="mt-[3px] block text-[10.5px] text-soft">
+                  {shipment.parcels} {shipment.parcels === 1 ? "parcel" : "parcels"} &middot; declared value £
+                  {money(shipment.goods_value_gbp)} &middot; charged on actual weight
+                </span>
+              </td>
+              <td className="px-[10px] py-[11px] text-right align-top whitespace-nowrap">{weight} kg</td>
+              <td className="px-[10px] py-[11px] text-right align-top whitespace-nowrap">£{money(rate)}</td>
+              <td className="px-[10px] py-[11px] text-right align-top font-semibold whitespace-nowrap">
+                £{money(freight)}
+              </td>
+            </tr>
+
+            <tr className="border-b border-[#e6ebf3]">
+              <td className="px-[10px] py-[8px]" colSpan={3}>
+                Sub total
+              </td>
+              <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(freight)}</td>
+            </tr>
+            <tr className="border-b border-[#e6ebf3]">
+              <td className="px-[10px] py-[8px]" colSpan={3}>
+                Customs duty, handling and packing
+              </td>
+              <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(other)}</td>
+            </tr>
+            {adjustment !== 0 && (
+              <tr className="border-b border-[#e6ebf3]">
+                <td className="px-[10px] py-[8px]" colSpan={3}>
+                  Adjustment &mdash; agreed price difference
+                </td>
+                <td className="px-[10px] py-[8px] text-right whitespace-nowrap">
+                  {adjustment < 0 ? "−" : ""}£{money(Math.abs(adjustment))}
+                </td>
+              </tr>
+            )}
+            <tr className="bg-green-soft">
+              <td
+                className="px-[10px] py-[11px] font-head text-[13px] font-extrabold text-green-ink"
+                colSpan={3}
+              >
+                Total charges
+              </td>
+              <td className="px-[10px] py-[11px] text-right font-head text-[16px] font-extrabold whitespace-nowrap text-green-ink">
+                £{money(total)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p className="mt-[10px] text-[10.5px] text-soft">
+          Paid in full at the time of booking. No balance outstanding.
+        </p>
+
+        {/* ------------------------------------------------------- footer */}
+        <footer className="mt-[22px] border-t border-line pt-[12px] text-[9.5px] leading-[1.55] text-soft">
+          <p>
+            <strong className="text-ink">Track this shipment</strong> at{" "}
+            {SITE_URL.replace(/^https?:\/\//, "")}/tracking using tracking number{" "}
+            <strong className="text-ink">{shipment.reference}</strong> and the sender&rsquo;s mobile number shown
+            above.
+          </p>
+          <p className="mt-[5px]">
+            {BUSINESS.legalName} &middot; Registered in England &amp; Wales no. {BUSINESS.companyNumber} &middot;
+            Registered office {BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}
+          </p>
+        </footer>
+      </div>
+    </article>
+  );
+}

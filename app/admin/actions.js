@@ -97,6 +97,44 @@ export async function updateRate(
   return { ok: true };
 }
 
+// Everything the invoice document needs for one booking, fetched on demand so
+// the shipments list doesn't carry invoice bodies for every row it renders.
+export async function getInvoicePreview(reference) {
+  const supabase = await requireStaff();
+
+  const [{ data: shipment }, { data: userData }] = await Promise.all([
+    supabase
+      .from("shipments")
+      .select(
+        "reference, mode, parcels, weight_kg, goods_description, goods_value_gbp, collection_date, " +
+          "receiver_name, receiver_phone, receiver_phone_alt, receiver_email, receiver_address, " +
+          "receiver_city, receiver_country, customers(name, phone, email, address, postcode, town), " +
+          "invoices(rate_per_kg, other_charges, total_charges, issued_date)"
+      )
+      .ilike("reference", reference)
+      .maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
+
+  if (!shipment) return { error: "That booking no longer exists." };
+
+  const embedded = (value) => (Array.isArray(value) ? value[0] : value);
+  const invoice = embedded(shipment.invoices);
+  if (!invoice) return { error: "That booking has no invoice." };
+
+  return {
+    ok: true,
+    data: {
+      shipment,
+      customer: embedded(shipment.customers) || {},
+      invoice,
+      // Placeholder for the operator/role work to come: the signed-in staff
+      // account is the closest thing to "who booked this" we currently store.
+      operator: userData?.user?.email || "",
+    },
+  };
+}
+
 // Prefill for a returning customer. Returns null rather than an error for a
 // number that isn't a valid UK mobile — staff are still mid-typing.
 export async function lookupCustomer(phone) {
