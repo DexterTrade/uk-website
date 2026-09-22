@@ -702,9 +702,13 @@
   }
 }
 
+/* Zero margins so the browser drops its own header and footer — the page
+   title ("Admin panel | PAK CARGO") and the print timestamp are drawn in that
+   margin, and there is no other way to suppress them from CSS. The document
+   supplies its own padding for print instead. */
 @page {
   size: A4;
-  margin: 11mm;
+  margin: 0;
 }
 
 @media print {
@@ -719,10 +723,15 @@
      the browser's "background graphics off" default. */
   .invoice-doc {
     max-width: none;
-    padding: 0;
+    /* @page has no margin so the browser omits its header/footer; the sheet's
+       margin is supplied here instead. */
+    padding: 9mm 10mm;
     border: 0;
     border-radius: 0;
     box-shadow: none;
+    /* Printed smaller and tighter than the on-screen copy so the whole
+       invoice, terms included, stays compact. */
+    zoom: 0.82;
   }
   .invoice-doc,
   .invoice-doc * {
@@ -731,6 +740,26 @@
   }
   .invoice-doc .invoice-watermark {
     width: 120mm;
+  }
+
+  /* On screen the terms are full size at the bottom of the page; on paper
+     they compress into two columns of small print. */
+  .invoice-doc .invoice-terms {
+    margin-top: 14px;
+    padding: 9px 11px;
+  }
+  .invoice-doc .invoice-terms h2 {
+    font-size: 9.5px;
+    margin-bottom: 5px;
+  }
+  .invoice-doc .terms-list {
+    columns: 2;
+    column-gap: 22px;
+    font-size: 7.8px;
+    line-height: 1.45;
+  }
+  .invoice-doc .terms-list li {
+    margin-bottom: 3px;
   }
   main:has(.invoice-doc) {
     min-height: 0;

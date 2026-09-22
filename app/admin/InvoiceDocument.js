@@ -111,7 +111,9 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
               Invoice
             </p>
             <p className="mt-[8px] text-[10px] font-bold tracking-[0.08em] text-soft uppercase">Tracking no.</p>
-            <p className="font-head text-[17px] leading-tight font-extrabold text-ink">{shipment.reference}</p>
+            {/* The tracking number is the one thing a customer has to read off
+                this document, so it is the only thing printed in red. */}
+            <p className="font-head text-[17px] leading-tight font-extrabold text-red">{shipment.reference}</p>
             <p className="mt-[5px] text-[11px] text-muted">
               Issued <strong className="text-ink">{formatDate(invoice.issued_date)}</strong>
             </p>
@@ -172,7 +174,11 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
           <Fact label="No. of parcels" value={shipment.parcels} />
           <Fact label="Total weight" value={`${weight} kg`} />
           <Fact label="Collection date" value={formatDate(shipment.collection_date)} />
-          <Fact label="Booked by" value={operator || "—"} />
+          {/* Omitted on the customer's copy: "operator" is currently the
+              signed-in staff account's email address, which is an internal
+              identifier and shouldn't be handed out. It returns once real
+              operator names exist. */}
+          {operator && <Fact label="Booked by" value={operator} />}
         </section>
 
         {/* -------------------------------------------------- pricing table */}
@@ -249,21 +255,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
           Paid in full at the time of booking. No balance outstanding.
         </p>
 
-        {/* ------------------------------------------ terms and conditions */}
-        <section className="invoice-terms mt-[20px] rounded-[6px] border border-[#dbe4f0] bg-[#f9fbfe] px-[14px] py-[12px]">
-          <h2 className="mb-[7px] text-[10.5px] font-bold tracking-[0.07em] text-ink uppercase">
-            Please read Terms &amp; Conditions before signing the shipment
-          </h2>
-          <ol className="columns-2 gap-7 text-[8.4px] leading-[1.5] text-muted max-[560px]:columns-1">
-            {termsList(seaEstimate || "8–10 weeks").map((term, i) => (
-              <li key={i} className="mb-[4px] flex break-inside-avoid gap-[5px]">
-                <span className="flex-none font-semibold text-ink">{i + 1}.</span>
-                <span>{term}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
         {/* ------------------------------------------------------- footer */}
         <footer className="mt-[22px] border-t border-line pt-[12px] text-[9.5px] leading-[1.55] text-soft">
           <p>
@@ -277,6 +268,24 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             Registered office {BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}
           </p>
         </footer>
+
+        {/* Terms sit after the footer, at the very bottom, so on screen the
+            invoice itself is what's visible and the customer scrolls to reach
+            them. In print they shrink into two tight columns — see
+            .invoice-terms in globals.css. */}
+        <section className="invoice-terms mt-[26px] rounded-[6px] border border-[#dbe4f0] bg-[#f9fbfe] px-[16px] py-[14px]">
+          <h2 className="mb-[9px] text-[11px] font-bold tracking-[0.07em] text-ink uppercase">
+            Please read Terms &amp; Conditions before signing the shipment
+          </h2>
+          <ol className="terms-list text-[11px] leading-[1.55] text-muted">
+            {termsList(seaEstimate || "8–10 weeks").map((term, i) => (
+              <li key={i} className="mb-[6px] flex break-inside-avoid gap-[6px]">
+                <span className="flex-none font-semibold text-ink">{i + 1}.</span>
+                <span>{term}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
       </div>
     </article>
   );

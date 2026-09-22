@@ -6,7 +6,9 @@ export default function robots() {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin"],
+        // /invoice/* are private, per-customer links. They carry a noindex
+        // header of their own; this is the second line of defence.
+        disallow: ["/admin", "/invoice"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

@@ -1,10 +1,12 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from "@/lib/validation/booking";
 import { getTodayISO } from "@/lib/server-time";
+import { SITE_URL } from "@/lib/seo";
 
 // Server Actions are public HTTP endpoints in their own right — the proxy
 // only guards page navigations, so every action re-checks the session
@@ -97,6 +99,40 @@ export async function updateRate(
   return { ok: true };
 }
 
+// Creates the customer-facing invoice link, or returns the existing one.
+// `regenerate` mints a fresh token, which silently kills the old link — that
+// is how a link sent to the wrong person is revoked.
+//
+// The token is deliberately not derived from the reference: PC0001, PC0002,
+// ... is sequential, so a reference-keyed URL would expose every invoice to
+// anyone who could count. Two random UUIDs give ~244 bits from the platform
+// CSPRNG.
+export async function createInvoiceShareLink(reference, regenerate = false) {
+  const supabase = await requireStaff();
+
+  const { data: shipment } = await supabase
+    .from("shipments")
+    .select("id, invoices(id, share_token)")
+    .ilike("reference", reference)
+    .maybeSingle();
+
+  const invoice = Array.isArray(shipment?.invoices) ? shipment.invoices[0] : shipment?.invoices;
+  if (!invoice) return { error: "That booking has no invoice." };
+
+  let token = invoice.share_token;
+  if (!token || regenerate) {
+    token = `${randomUUID()}${randomUUID()}`.replace(/-/g, "");
+    const { error } = await supabase
+      .from("invoices")
+      .update({ share_token: token, share_created_at: new Date().toISOString() })
+      .eq("id", invoice.id);
+    if (error) return { error: error.message };
+    revalidatePath(`/admin/invoices/${reference}`);
+  }
+
+  return { ok: true, url: `${SITE_URL}/invoice/${token}`, regenerated: Boolean(regenerate) };
+}
+
 // Everything the invoice document needs for one booking, fetched on demand so
 // the shipments list doesn't carry invoice bodies for every row it renders.
 export async function getInvoicePreview(reference) {
@@ -109,7 +145,7 @@ export async function getInvoicePreview(reference) {
         "reference, mode, parcels, weight_kg, goods_description, goods_value_gbp, collection_date, " +
           "receiver_name, receiver_phone, receiver_phone_alt, receiver_email, receiver_address, " +
           "receiver_city, receiver_country, customers(name, phone, email, address, postcode, town), " +
-          "invoices(rate_per_kg, other_charges, total_charges, issued_date)"
+          "invoices(rate_per_kg, other_charges, total_charges, issued_date, share_token)"
       )
       .ilike("reference", reference)
       .maybeSingle(),
@@ -135,6 +171,7 @@ export async function getInvoicePreview(reference) {
       // account is the closest thing to "who booked this" we currently store.
       operator: userData?.user?.email || "",
       seaEstimate: seaRate?.estimated_time || "",
+      shareUrl: invoice.share_token ? `${SITE_URL}/invoice/${invoice.share_token}` : "",
     },
   };
 }

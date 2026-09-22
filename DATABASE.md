@@ -37,6 +37,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/admin/shipments/[reference]/edit` | Edit an existing booking (same form component as new-booking) |
 | `/admin/invoices/[reference]` | The printable invoice document (A4 print stylesheet, print/save-as-PDF) |
 | `/admin/customers/[id]` | Customer record — details plus all their shipments and invoices |
+| `/invoice/[token]` | **Public** — the customer's own invoice, reached by an unguessable share link, with a download button. `noindex`, and disallowed in robots.txt |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
 Cargo, Excess Baggage, Pak to UK, Relocation, Track, FAQ.
@@ -165,6 +166,8 @@ only" below. Exactly one invoice per shipment.
 | `bill_to_phone` | text | |
 | `bill_to_email` | text, nullable | |
 | `issued_date` | date | Defaults to `CURRENT_DATE` |
+| `share_token` | text, unique, nullable | The customer link's secret. Null until staff create a link; regenerating it revokes the old one |
+| `share_created_at` | timestamptz, nullable | When the current token was minted |
 | `created_at`, `updated_at` | timestamptz | |
 
 Two things here are deliberate and shouldn't be "tidied up":
@@ -278,6 +281,13 @@ Two behaviours worth knowing:
   only happens when the row was a duplicate created by the typo being
   corrected), it is deleted.
 
+### `get_invoice_by_token(p_token text) → jsonb`
+`SECURITY DEFINER`, granted to `anon, authenticated`. The **only** public read
+path into invoice data — see rule 1 of the security model. One invoice, by
+exact `share_token`, with a hand-built field list; no operator identity, no
+internal flags, no listing, and a length guard so a blank or truncated token
+can't match. Called from `/invoice/[token]`.
+
 ### `find_customer_by_phone(p_phone text) → jsonb`
 `SECURITY INVOKER`, `authenticated` only. Prefill lookup for the booking form.
 Matching happens on the normalized number, which PostgREST can't express as a
@@ -302,12 +312,28 @@ Standard `updated_at = now()` trigger function, attached to tables with an
 
 ## Security model — the rules that must not regress
 
-1. **Invoicing is internal only.** There is no public invoice lookup, no
-   route, no RPC, no API that returns invoice data to an unauthenticated
-   visitor. This was deliberately built once (a public invoice-lookup RPC)
-   and then **removed** for security — do not re-add anything that lets the
-   public read `invoices` by any identifier. The same applies to `customers`:
-   sender names, addresses and phone numbers are staff-only.
+1. **Invoices are public only through an unguessable share token.** This rule
+   changed deliberately: the site previously had *no* public invoice access at
+   all, and now staff can generate a customer-facing link. What must not
+   regress is *how*:
+   - The link is keyed on `invoices.share_token`, **never on the reference**.
+     `PC0001`, `PC0002`, … is sequential, so a reference-keyed URL would let
+     anyone walk the entire invoice book by counting.
+   - The token is 64 hex characters from two random UUIDs (~244 bits),
+     generated from the platform CSPRNG in `createInvoiceShareLink()`.
+   - `get_invoice_by_token()` is the **only** public read path, returns one
+     invoice by exact token, builds its own field list by hand, and cannot
+     list anything. It deliberately omits the operator/staff identity.
+   - `/invoice/[token]` sends `noindex, nofollow, nocache` and is disallowed
+     in `robots.txt`.
+   - Regenerating a token invalidates the previous link — that is the
+     revocation mechanism for a link sent to the wrong person.
+
+   Anyone holding a link can view that one invoice; that is inherent to
+   sending a customer a link, and is why the token must never be derived from
+   anything guessable. There is still no public listing, and `customers`
+   remains staff-only — sender names, addresses and phone numbers are never
+   readable by `anon` except as part of that customer's own invoice.
 2. **Tracking requires reference + sender phone**, not reference alone (see
    `get_shipment_by_reference` above). Don't loosen this back to a single
    parameter.
@@ -469,7 +495,19 @@ markup. Keep it that way — two copies would drift.
   and watermark are exactly that. The page tells staff to enable background
   graphics.
 - **`operator` is a placeholder** — currently the signed-in staff account's
-  email, pending the roles work.
+  email, pending the roles work. It is passed as empty on the customer's copy
+  and the "Booked by" cell then disappears, because an internal email address
+  shouldn't be handed to customers.
+- **Terms sit after the footer, at the very bottom.** On screen that means the
+  invoice is what's visible and the customer scrolls to reach them; in print
+  they compress into two columns of small type, and the whole document is
+  scaled to `zoom: 0.82` so it stays compact on paper.
+- **`@page` has `margin: 0`.** That is what suppresses the browser's own print
+  header and footer — the page title ("Admin panel | PAK CARGO") and the
+  timestamp are drawn in that margin and cannot be removed any other way. The
+  sheet's margin is supplied by the document's own print padding instead.
+- The tracking number is the only thing printed in **red**, since it is the
+  one value a customer has to read off the document.
 - Because staff can overwrite the suggested total, the rows don't always sum
   to it; the difference prints as its own **Adjustment** line rather than
   leaving a document whose arithmetic appears wrong.

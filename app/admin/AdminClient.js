@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
 import {
+  createInvoiceShareLink,
   getInvoicePreview,
   signOutAction,
   updateRate,
@@ -199,6 +200,48 @@ export default function AdminClient({
       }
       showToast(`${reference} updated to ${status}.`);
       router.refresh();
+    });
+  }
+
+  async function copyText(text, note) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(note);
+    } catch {
+      // navigator.clipboard needs a secure context, which an office machine on
+      // plain http won't have — fall back to the selection-based copy.
+      try {
+        const field = document.createElement("textarea");
+        field.value = text;
+        field.setAttribute("readonly", "");
+        field.style.position = "fixed";
+        field.style.opacity = "0";
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand("copy");
+        document.body.removeChild(field);
+        showToast(note);
+      } catch {
+        showToast("Couldn't copy — select the link and copy it manually.", "error");
+      }
+    }
+  }
+
+  function handleShareLink(regenerate = false) {
+    const reference = preview?.reference;
+    if (!reference) return;
+    startTransition(async () => {
+      const result = await createInvoiceShareLink(reference, regenerate);
+      if (result?.error) {
+        showToast(result.error, "error");
+        return;
+      }
+      setPreview((prev) => (prev ? { ...prev, data: { ...prev.data, shareUrl: result.url } } : prev));
+      showToast(
+        regenerate
+          ? "New customer link created — the previous link no longer works."
+          : "Customer link created."
+      );
     });
   }
 
@@ -768,6 +811,51 @@ export default function AdminClient({
                 </button>
               </div>
             </div>
+            {/* Customer link. A random token, not the reference — PC0001,
+                PC0002 … is sequential, and a reference-keyed URL would let
+                anyone walk the whole invoice book. */}
+            {preview.data && (
+              <div className="flex flex-wrap items-center gap-3 border-b border-line bg-bg-soft px-5 py-3 print:hidden-force">
+                {preview.data.shareUrl ? (
+                  <>
+                    <input
+                      className="input min-h-[38px] flex-1 py-2 text-[13px]"
+                      readOnly
+                      value={preview.data.shareUrl}
+                      onFocus={(e) => e.target.select()}
+                      aria-label="Customer invoice link"
+                    />
+                    <button
+                      className="btn btn-green btn-sm"
+                      onClick={() => copyText(preview.data.shareUrl, "Customer link copied.")}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      disabled={isPending}
+                      onClick={() => handleShareLink(true)}
+                    >
+                      Regenerate
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-[13px] text-soft">
+                      No customer link yet. Create one to let this customer view and download their invoice.
+                    </span>
+                    <button
+                      className="btn btn-green btn-sm"
+                      disabled={isPending}
+                      onClick={() => handleShareLink(false)}
+                    >
+                      Create customer link
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {preview.data ? (
               <InvoiceDocument {...preview.data} />
             ) : (
