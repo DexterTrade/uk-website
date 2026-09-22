@@ -36,9 +36,9 @@ const toDay = (iso) => (iso ? Math.round(Date.parse(`${iso}T00:00:00Z`) / DAY_MS
 const dayLabel = (day) =>
   new Date(day * DAY_MS).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
 
-// wa.me wants a bare international number: no plus, no spaces, no leading
-// zero. Sender numbers are stored in UK national form (07…), so the trunk 0
-// becomes the 44 country code.
+// WhatsApp Web wants a bare international number: no plus, no spaces, no
+// leading zero. Sender numbers are stored in UK national form (07…), so the
+// trunk 0 becomes the 44 country code.
 function toWhatsAppNumber(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   if (/^07\d{9}$/.test(digits)) return `44${digits.slice(1)}`;
@@ -248,9 +248,9 @@ export default function AdminClient({
       return;
     }
 
-    // The tab is opened now, synchronously, and pointed at wa.me once the
-    // link comes back. Opening it after the await instead would be treated as
-    // an unrequested popup and blocked.
+    // The tab is opened now, synchronously, and pointed at WhatsApp Web once
+    // the link comes back. Opening it after the await instead would be treated
+    // as an unrequested popup and blocked.
     const tab = window.open("", "_blank");
 
     startTransition(async () => {
@@ -264,11 +264,15 @@ export default function AdminClient({
         `Hello ${shipment.customer}, your PAK Cargo invoice for shipment ${shipment.ref} is ready.\n\n` +
         `View or download it here: ${result.url}\n\n` +
         `You can track this shipment at ${SITE_URL}/tracking using reference ${shipment.ref} and this mobile number.`;
-      const waUrl = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+      // web.whatsapp.com/send, not wa.me: wa.me shows a "Continue to Chat"
+      // interstitial and then tries to hand off to the desktop app. This goes
+      // straight into the chat in the WhatsApp Web session the browser is
+      // already signed in to, with the message composed and ready to send.
+      const waUrl = `https://web.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(message)}`;
 
       if (tab) tab.location.href = waUrl;
       else window.open(waUrl, "_blank", "noopener");
-      showToast(`WhatsApp opened for ${shipment.customer}.`);
+      showToast(`WhatsApp Web opened for ${shipment.customer}.`);
     });
   }
 
@@ -681,7 +685,7 @@ export default function AdminClient({
                             </button>
                             <button
                               className="btn btn-ghost btn-sm flex items-center gap-[6px] whitespace-nowrap"
-                              title={`Send the invoice link to ${s.customer} on WhatsApp`}
+                              title={`Send the invoice link to ${s.customer} on WhatsApp Web`}
                               disabled={isPending}
                               onClick={() => handleWhatsApp(s)}
                             >
