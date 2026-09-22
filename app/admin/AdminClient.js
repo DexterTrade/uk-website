@@ -29,6 +29,49 @@ const NAV = [
 
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
+const Icon = ({ path, ...props }) => (
+  <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" {...props}>
+    <path d={path} />
+  </svg>
+);
+const CopyIcon = (p) => (
+  <Icon
+    {...p}
+    path="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"
+  />
+);
+const RefreshIcon = (p) => (
+  <Icon
+    {...p}
+    path="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+  />
+);
+const DownloadIcon = (p) => <Icon {...p} path="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />;
+const CloseIcon = (p) => (
+  <Icon
+    {...p}
+    path="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+  />
+);
+
+// Icon-only control. `label` is both the tooltip and the accessible name —
+// an icon with neither is a guess for sighted users and invisible to everyone
+// else.
+function IconButton({ label, onClick, disabled, children }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex h-9 w-9 items-center justify-center rounded-md text-soft hover:bg-bg-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
 // Dates are sliders too, so they travel as whole days since the epoch —
 // an integer the range input can step through, converted back for display.
 const DAY_MS = 86400000;
@@ -79,6 +122,8 @@ export default function AdminClient({
   invoices,
   customers,
   statuses,
+  activity,
+  initialTab,
   rates,
   monthKey,
   monthLabel,
@@ -87,7 +132,10 @@ export default function AdminClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [view, setView] = useState("dash");
+  const [view, setView] = useState(() =>
+    NAV.some((n) => n.key === initialTab) ? initialTab : "dash"
+  );
+
   const [search, setSearch] = useState("");
 
   // "" means no filter on that field.
@@ -224,6 +272,15 @@ export default function AdminClient({
     [customers, search]
   );
 
+  // The tab lives in the URL as well as in state, so a detail page can link
+  // back to the tab the user was on instead of dumping them on the dashboard.
+  // replace, not push, so switching tabs doesn't fill the back button with
+  // every panel visited.
+  function changeView(key) {
+    setView(key);
+    router.replace(key === "dash" ? "/admin" : `/admin?tab=${key}`, { scroll: false });
+  }
+
   function handleStatusChange(shipmentId, reference, status) {
     startTransition(async () => {
       const result = await updateShipmentStatus(shipmentId, status);
@@ -316,6 +373,25 @@ export default function AdminClient({
         return;
       }
       await copyText(result.url, `Invoice link for ${shipment.ref} created and copied.`);
+      router.refresh();
+    });
+  }
+
+  // Copy from the preview: uses the existing link, or creates one first.
+  function handleCopyPreviewLink() {
+    const existing = preview?.data?.shareUrl;
+    if (existing) {
+      copyText(existing, "Customer link copied.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await createInvoiceShareLink(preview.reference, false);
+      if (result?.error) {
+        showToast(result.error, "error");
+        return;
+      }
+      setPreview((prev) => (prev ? { ...prev, data: { ...prev.data, shareUrl: result.url } } : prev));
+      await copyText(result.url, "Customer link created and copied.");
       router.refresh();
     });
   }
@@ -427,7 +503,7 @@ export default function AdminClient({
             <button
               key={n.key}
               aria-current={view === n.key ? "page" : undefined}
-              onClick={() => setView(n.key)}
+              onClick={() => changeView(n.key)}
             >
               {n.label}
             </button>
@@ -491,7 +567,7 @@ export default function AdminClient({
             <div className="pane">
               <div className="pane-head">
                 <h2>Shipments needing attention</h2>
-                <button className="btn btn-ghost btn-sm" onClick={() => setView("ship")}>All shipments</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => changeView("ship")}>All shipments</button>
               </div>
               <div className="scroll">
                 <table className="min-w-[640px]">
@@ -502,7 +578,7 @@ export default function AdminClient({
                     {attention.map((s) => (
                       <tr key={s.id}>
                         <td className="key">
-                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}`}>
+                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}?from=${view}`}>
                             {s.ref}
                           </Link>
                         </td>
@@ -516,6 +592,31 @@ export default function AdminClient({
                 </table>
               </div>
               {attention.length === 0 && <p className="empty">Nothing flagged right now.</p>}
+            </div>
+
+            <div className="pane">
+              <div className="pane-head">
+                <h2>Activity log</h2>
+                <span className="text-[13px] text-soft">Last {activity.length} actions</span>
+              </div>
+              <div className="scroll">
+                <table className="min-w-[680px]">
+                  <thead>
+                    <tr><th>When</th><th>Who</th><th>What</th><th>Reference</th></tr>
+                  </thead>
+                  <tbody>
+                    {activity.map((a) => (
+                      <tr key={a.id}>
+                        <td className="whitespace-nowrap">{a.when}</td>
+                        <td>{a.who}</td>
+                        <td className="text-ink">{a.summary}</td>
+                        <td className="key">{a.subject || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {activity.length === 0 && <p className="empty">Nothing recorded yet.</p>}
             </div>
           </section>
         )}
@@ -682,13 +783,13 @@ export default function AdminClient({
                           />
                         </td>
                         <td className="key">
-                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}`}>
+                          <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}?from=${view}`}>
                             {s.ref}
                           </Link>
                         </td>
                         <td>
                           {s.customerId ? (
-                            <Link className="hover:text-ink hover:underline" href={`/admin/customers/${s.customerId}`}>
+                            <Link className="hover:text-ink hover:underline" href={`/admin/customers/${s.customerId}?from=${view}`}>
                               {s.customer}
                             </Link>
                           ) : (
@@ -717,7 +818,7 @@ export default function AdminClient({
                           <div className="flex gap-2">
                             <Link
                               className="btn btn-ghost btn-sm whitespace-nowrap"
-                              href={`/admin/shipments/${s.ref}`}
+                              href={`/admin/shipments/${s.ref}?from=${view}`}
                             >
                               View
                             </Link>
@@ -782,7 +883,7 @@ export default function AdminClient({
                     {customerRows.map((c) => (
                       <tr key={c.id}>
                         <td className="key">
-                          <Link className="text-green hover:underline" href={`/admin/customers/${c.id}`}>
+                          <Link className="text-green hover:underline" href={`/admin/customers/${c.id}?from=${view}`}>
                             {c.name}
                           </Link>
                         </td>
@@ -792,7 +893,7 @@ export default function AdminClient({
                         <td className="num-right">{c.bookings}</td>
                         <td className="num-right font-semibold">£{money(c.spend)}</td>
                         <td>
-                          <Link className="btn btn-ghost btn-sm" href={`/admin/customers/${c.id}`}>
+                          <Link className="btn btn-ghost btn-sm" href={`/admin/customers/${c.id}?from=${view}`}>
                             View
                           </Link>
                         </td>
@@ -910,66 +1011,39 @@ export default function AdminClient({
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-[13px] print:hidden-force">
               <span className="font-head text-[15px] font-bold text-ink">
-                Invoice preview &middot; {preview.reference}
+                Invoice {preview.reference}
               </span>
-              <div className="flex flex-wrap gap-[10px]">
-                <button
-                  className="btn btn-green btn-sm"
+              <div className="flex items-center gap-[2px]">
+                <IconButton
+                  label={
+                    preview.data?.shareUrl
+                      ? "Copy the customer link"
+                      : "Create the customer link and copy it"
+                  }
+                  disabled={!preview.data || isPending}
+                  onClick={handleCopyPreviewLink}
+                >
+                  <CopyIcon />
+                </IconButton>
+                <IconButton
+                  label="Regenerate the customer link — the current one stops working"
+                  disabled={!preview.data?.shareUrl || isPending}
+                  onClick={() => handleShareLink(true)}
+                >
+                  <RefreshIcon />
+                </IconButton>
+                <IconButton
+                  label="Download this invoice as a PDF"
                   disabled={!preview.data}
                   onClick={() => window.print()}
                 >
-                  Download PDF
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setPreview(null)}>
-                  Close
-                </button>
+                  <DownloadIcon />
+                </IconButton>
+                <IconButton label="Close preview" onClick={() => setPreview(null)}>
+                  <CloseIcon />
+                </IconButton>
               </div>
             </div>
-            {/* Customer link. A random token, not the reference — PC0001,
-                PC0002 … is sequential, and a reference-keyed URL would let
-                anyone walk the whole invoice book. */}
-            {preview.data && (
-              <div className="flex flex-wrap items-center gap-3 border-b border-line bg-bg-soft px-5 py-3 print:hidden-force">
-                {preview.data.shareUrl ? (
-                  <>
-                    <input
-                      className="input min-h-[38px] flex-1 py-2 text-[13px]"
-                      readOnly
-                      value={preview.data.shareUrl}
-                      onFocus={(e) => e.target.select()}
-                      aria-label="Customer invoice link"
-                    />
-                    <button
-                      className="btn btn-green btn-sm"
-                      onClick={() => copyText(preview.data.shareUrl, "Customer link copied.")}
-                    >
-                      Copy link
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      disabled={isPending}
-                      onClick={() => handleShareLink(true)}
-                    >
-                      Regenerate
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex-1 text-[13px] text-soft">
-                      No customer link yet. Create one to let this customer view and download their invoice.
-                    </span>
-                    <button
-                      className="btn btn-green btn-sm"
-                      disabled={isPending}
-                      onClick={() => handleShareLink(false)}
-                    >
-                      Create customer link
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
             {preview.data ? (
               <InvoiceDocument {...preview.data} />
             ) : (

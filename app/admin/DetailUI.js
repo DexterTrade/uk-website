@@ -3,6 +3,16 @@
 
 import Link from "next/link";
 
+// Turns the ?from= carried by links out of the admin panel into the tab to
+// return to, so Back lands on the panel the user left rather than resetting
+// them to the dashboard. Anything unrecognised falls back to the caller's
+// default.
+const TABS = ["dash", "ship", "cust", "rates"];
+export function backToTab(from, fallback = "ship") {
+  const tab = TABS.includes(from) ? from : fallback;
+  return tab === "dash" ? "/admin" : `/admin?tab=${tab}`;
+}
+
 // `back` is an href. The link always reads "← Back" rather than naming the
 // destination: where it goes depends on how the page was reached, and a label
 // that says "PC0001" on a page titled PC0001 reads as though it goes nowhere.

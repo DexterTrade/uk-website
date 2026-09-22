@@ -278,7 +278,7 @@ export default function BookingForm({ today, initial = null, reference = null })
           <div>
             <Link
               className="text-[13px] font-semibold text-soft hover:text-ink"
-              href={isEdit ? `/admin/shipments/${reference}` : "/admin"}
+              href={isEdit ? `/admin/shipments/${reference}` : "/admin?tab=ship"}
             >
               &larr; Back
             </Link>
@@ -647,7 +647,7 @@ export default function BookingForm({ today, initial = null, reference = null })
             <div className="flex flex-wrap gap-3 max-[520px]:w-full max-[520px]:flex-col-reverse">
               <Link
                 className="btn btn-ghost max-[520px]:w-full"
-                href={isEdit ? `/admin/shipments/${reference}` : "/admin"}
+                href={isEdit ? `/admin/shipments/${reference}` : "/admin?tab=ship"}
               >
                 Cancel
               </Link>

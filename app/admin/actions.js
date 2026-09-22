@@ -20,6 +20,23 @@ async function requireStaff() {
   return supabase;
 }
 
+// Appends to the audit trail. Deliberately swallows its own failures: a log
+// write that errors must never roll back or block the work it is recording.
+async function logActivity(supabase, { action, summary, subject = null }) {
+  try {
+    const { data } = await supabase.auth.getClaims();
+    await supabase.from("activity_log").insert({
+      actor_email: data?.claims?.email || null,
+      created_by: data?.claims?.sub || null,
+      action,
+      summary,
+      subject,
+    });
+  } catch {
+    // Ignored on purpose — see above.
+  }
+}
+
 export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -43,8 +60,19 @@ export async function updateShipmentStatus(shipmentId, status) {
   const supabase = await requireStaff();
   if (!(await assertKnownStatus(supabase, status))) return { error: "Unknown status." };
 
-  const { error } = await supabase.from("shipments").update({ status }).eq("id", shipmentId);
+  const { data: updated, error } = await supabase
+    .from("shipments")
+    .update({ status })
+    .eq("id", shipmentId)
+    .select("reference")
+    .maybeSingle();
   if (error) return { error: error.message };
+
+  await logActivity(supabase, {
+    action: "shipment.status",
+    subject: updated?.reference || null,
+    summary: `Set ${updated?.reference || "a shipment"} to ${status}`,
+  });
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -63,9 +91,15 @@ export async function updateShipmentStatuses(shipmentIds, status) {
     .from("shipments")
     .update({ status })
     .in("id", ids)
-    .select("id");
+    .select("id, reference");
   if (error) return { error: error.message };
 
+  const references = (data || []).map((r) => r.reference).sort();
+  await logActivity(supabase, {
+    action: "shipment.status.bulk",
+    subject: references.join(", ") || null,
+    summary: `Set ${references.length} shipments to ${status}`,
+  });
   revalidatePath("/admin");
   return { ok: true, updated: data?.length ?? 0 };
 }
@@ -90,6 +124,12 @@ export async function updateRate(
     })
     .eq("mode", mode);
   if (error) return { error: error.message };
+
+  await logActivity(supabase, {
+    action: "rates.updated",
+    subject: mode,
+    summary: `Updated ${mode} cargo rates`,
+  });
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/sea-cargo");
@@ -127,6 +167,14 @@ export async function createInvoiceShareLink(reference, regenerate = false) {
       .update({ share_token: token, share_created_at: new Date().toISOString() })
       .eq("id", invoice.id);
     if (error) return { error: error.message };
+    await logActivity(supabase, {
+      action: regenerate ? "invoice.link.regenerated" : "invoice.link.created",
+      subject: reference,
+      summary: regenerate
+        ? `Regenerated the customer invoice link for ${reference} — the previous link stopped working`
+        : `Created the customer invoice link for ${reference}`,
+    });
+    revalidatePath("/admin");
     revalidatePath(`/admin/invoices/${reference}`);
   }
 
@@ -216,6 +264,11 @@ export async function createBooking(values) {
   });
   if (error) return { error: error.message };
 
+  await logActivity(supabase, {
+    action: "booking.created",
+    subject: data?.reference || null,
+    summary: `Created booking ${data?.reference} for ${clean.sender_name} — £${clean.total_charges.toFixed(2)}`,
+  });
   revalidatePath("/admin");
   return { ok: true, booking: data };
 }
@@ -253,6 +306,11 @@ export async function updateBooking(reference, values) {
   });
   if (error) return { error: error.message };
 
+  await logActivity(supabase, {
+    action: "booking.updated",
+    subject: reference,
+    summary: `Edited booking ${reference} for ${clean.sender_name} — £${clean.total_charges.toFixed(2)}`,
+  });
   revalidatePath("/admin");
   revalidatePath(`/admin/shipments/${reference}`);
   revalidatePath(`/admin/invoices/${reference}`);

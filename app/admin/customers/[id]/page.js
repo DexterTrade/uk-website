@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { money } from "@/lib/data";
-import { DataList, DetailShell, Panel, formatDate } from "../../DetailUI";
+import { DataList, DetailShell, Panel, backToTab, formatDate } from "../../DetailUI";
 
 export const metadata = {
   title: "Customer",
@@ -13,8 +13,9 @@ export const metadata = {
 // Those belong to the shipment detail page; this answers "who is this person".
 // The booking count and lifetime value are still shown because they are facts
 // about the customer rather than a listing.
-export default async function CustomerDetailPage({ params }) {
+export default async function CustomerDetailPage({ params, searchParams }) {
   const { id } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   const { data: customer } = await supabase
@@ -33,7 +34,7 @@ export default async function CustomerDetailPage({ params }) {
 
   return (
     <DetailShell
-      back="/admin"
+      back={backToTab(from, "cust")}
       eyebrow="Customer"
       title={customer.name}
       actions={

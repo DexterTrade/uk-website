@@ -22,7 +22,10 @@ function weightLabel(parcels, weightKg) {
   return `${parcels} ${parcels === 1 ? "parcel" : "parcels"} · ${Number(weightKg)} kg`;
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }) {
+  // ?tab= keeps the active panel in the URL, so coming back from a detail
+  // page returns to the tab you left rather than resetting to the dashboard.
+  const { tab } = await searchParams;
   const supabase = await createClient();
 
   const [
@@ -32,6 +35,7 @@ export default async function AdminPage() {
     { data: ratesRaw },
     { data: customersRaw },
     { data: statusesRaw },
+    { data: activityRaw },
   ] = await Promise.all([
     supabase.auth.getUser(),
     supabase
@@ -52,7 +56,26 @@ export default async function AdminPage() {
       .order("mode"),
     supabase.from("customers").select("id, name, phone, email, town, postcode").order("name"),
     supabase.from("shipment_statuses").select("value, position, tone").order("position"),
+    supabase
+      .from("activity_log")
+      .select("id, created_at, actor_email, action, summary, subject")
+      .order("created_at", { ascending: false })
+      .limit(40),
   ]);
+
+  const activity = (activityRaw || []).map((a) => ({
+    id: a.id,
+    when: new Date(a.created_at).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    who: a.actor_email || "—",
+    action: a.action,
+    summary: a.summary,
+    subject: a.subject || "",
+  }));
 
   const statuses = (statusesRaw || []).map((s) => ({ value: s.value, tone: s.tone }));
   const toneOf = Object.fromEntries(statuses.map((s) => [s.value, s.tone]));
@@ -144,6 +167,8 @@ export default async function AdminPage() {
       invoices={invoices}
       customers={customers}
       statuses={statuses}
+      activity={activity}
+      initialTab={tab || "dash"}
       rates={rates}
       monthKey={monthKey}
       monthLabel={monthLabel}

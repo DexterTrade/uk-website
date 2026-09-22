@@ -2,16 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { money, statusBadgeClass } from "@/lib/data";
-import { DataList, DetailShell, Panel, formatDate, modeLabel, weightLabel } from "../../DetailUI";
+import { DataList, DetailShell, Panel, backToTab, formatDate, modeLabel, weightLabel } from "../../DetailUI";
 
 export const metadata = {
   title: "Shipment",
   robots: { index: false, follow: false },
 };
 
-export default async function ShipmentDetailPage({ params }) {
-  // Next.js 16: params is a promise and must be awaited.
+export default async function ShipmentDetailPage({ params, searchParams }) {
+  // Next.js 16: params and searchParams are promises and must be awaited.
   const { reference } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   const { data: shipment } = await supabase
@@ -45,7 +46,7 @@ export default async function ShipmentDetailPage({ params }) {
 
   return (
     <DetailShell
-      back="/admin"
+      back={backToTab(from, "ship")}
       eyebrow="Shipment"
       title={shipment.reference}
       badge={

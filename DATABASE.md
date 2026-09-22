@@ -136,6 +136,28 @@ The admin panel never names a status in code. The dashboard treats
 one, so reordering the table doesn't silently zero the "Awaiting dispatch" and
 "Active shipments" figures.
 
+### `activity_log`
+Who did what, shown on the dashboard. Written from the Server Actions rather
+than by database triggers, because the useful record is the intent ("set 4
+shipments to In transit") rather than a row diff, and only the action layer
+knows which account is signed in.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `created_at` | timestamptz | Indexed descending — the log is only ever read newest-first |
+| `actor_email` | text, nullable | **Text, not a FK to `auth.users`**: the trail must survive a staff account being deleted, and the answer to "who did this" is the email at the time |
+| `created_by` | uuid, nullable | The account id, for later correlation |
+| `action` | text | Machine-readable, e.g. `booking.created`, `shipment.status.bulk` |
+| `summary` | text | The human sentence shown in the panel |
+| `subject` | text, nullable | Reference(s) the action touched |
+
+RLS gives staff **select and insert only — there is no update or delete
+policy at all**, so an audit trail cannot be quietly rewritten from the
+application. `logActivity()` in `app/admin/actions.js` also swallows its own
+errors on purpose: a failed log write must never roll back or block the work
+it is recording.
+
 ### `shipment_stages`
 Timeline entries for a shipment (one shipment → many stages).
 
@@ -220,6 +242,7 @@ RLS is **enabled on every table**. Policies:
 | `shipments` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipment_statuses` | `staff read statuses` | `authenticated` | `SELECT` only — the list is edited in Supabase, not from the app |
+| `activity_log` | `staff read activity`, `staff append activity` | `authenticated` | `SELECT` and `INSERT` only — deliberately no update or delete, so the audit trail can't be rewritten from the app |
 | `invoices` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `rates` | `public read rates` | `anon`, `authenticated` | Public `SELECT` only |
 | `rates` | `staff update rates` | `authenticated` | Staff can `UPDATE` |
@@ -516,7 +539,11 @@ markup. Keep it that way — two copies would drift.
 
 - **Preview modal**: the "Invoice" button on each shipment row calls
   `getInvoicePreview(reference)`, a staff-gated Server Action, so the
-  shipments list doesn't carry an invoice body for every row it renders.
+  shipments list doesn't carry an invoice body for every row it renders. Its
+  header is an icon toolbar — copy the customer link, regenerate it, download
+  the PDF, and a cross to close. Every one goes through `IconButton`, whose
+  `label` is both the `title` tooltip and the accessible name: an icon with
+  neither is a guess for sighted users and invisible to everyone else.
 - **"Download PDF" is the browser's print dialogue**, not a PDF library. That
   keeps text vector-sharp and the output identical to the design, with no
   dependency; the trade-off is that staff pick "Save as PDF" as the
@@ -570,7 +597,17 @@ the booking form can't be forgotten on the edit form. It lives at
 The dashboard's "this month" figures take a `monthKey` (`"2026-09"`) computed
 on the server in `page.js`, rather than string-matching a hardcoded month name
 the way they used to — that quietly read zero the moment the month rolled
-over.
+over. The dashboard also shows the **activity log**: the last 40 entries from
+`activity_log`, with who did each one.
+
+**The active tab lives in the URL** (`/admin?tab=ship`), set by `changeView()`
+with `router.replace`, and links out to detail pages carry `?from=<tab>`.
+`backToTab()` in `DetailUI.js` turns that back into a destination, so Back
+returns to the panel the user left instead of resetting them to the
+dashboard. The proxy also keeps the query string in its `next=` parameter, so
+signing in from `/admin?tab=ship` still lands on Shipments — and `signIn()`
+only accepts a same-site path for `next`, since an unchecked value taken from
+the query string is an open redirect off the login page.
 
 ### New booking (`/admin/new-booking`)
 
