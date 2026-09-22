@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
+import { SITE_URL } from "@/lib/seo";
+import { WhatsAppIcon } from "@/app/components/contact-icons";
 import {
   createInvoiceShareLink,
   getInvoicePreview,
@@ -33,6 +35,16 @@ const DAY_MS = 86400000;
 const toDay = (iso) => (iso ? Math.round(Date.parse(`${iso}T00:00:00Z`) / DAY_MS) : NaN);
 const dayLabel = (day) =>
   new Date(day * DAY_MS).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
+
+// wa.me wants a bare international number: no plus, no spaces, no leading
+// zero. Sender numbers are stored in UK national form (07…), so the trunk 0
+// becomes the 44 country code.
+function toWhatsAppNumber(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (/^07\d{9}$/.test(digits)) return `44${digits.slice(1)}`;
+  if (/^447\d{9}$/.test(digits)) return digits;
+  return "";
+}
 
 // A range the user hasn't touched spans the whole of the data; one they have
 // is still clamped, because reloading can move the bounds underneath it.
@@ -225,6 +237,39 @@ export default function AdminClient({
         showToast("Couldn't copy — select the link and copy it manually.", "error");
       }
     }
+  }
+
+  // Sends the customer their invoice link over WhatsApp, creating the link
+  // first if the invoice hasn't been shared before.
+  function handleWhatsApp(shipment) {
+    const number = toWhatsAppNumber(shipment.customerPhone);
+    if (!number) {
+      showToast(`No valid UK mobile on file for ${shipment.customer}.`, "error");
+      return;
+    }
+
+    // The tab is opened now, synchronously, and pointed at wa.me once the
+    // link comes back. Opening it after the await instead would be treated as
+    // an unrequested popup and blocked.
+    const tab = window.open("", "_blank");
+
+    startTransition(async () => {
+      const result = await createInvoiceShareLink(shipment.ref, false);
+      if (result?.error) {
+        tab?.close();
+        showToast(result.error, "error");
+        return;
+      }
+      const message =
+        `Hello ${shipment.customer}, your PAK Cargo invoice for shipment ${shipment.ref} is ready.\n\n` +
+        `View or download it here: ${result.url}\n\n` +
+        `You can track this shipment at ${SITE_URL}/tracking using reference ${shipment.ref} and this mobile number.`;
+      const waUrl = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+
+      if (tab) tab.location.href = waUrl;
+      else window.open(waUrl, "_blank", "noopener");
+      showToast(`WhatsApp opened for ${shipment.customer}.`);
+    });
   }
 
   function handleShareLink(regenerate = false) {
@@ -559,7 +604,7 @@ export default function AdminClient({
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[1240px]">
+                <table className="min-w-[1380px]">
                   <thead>
                     <tr>
                       <th className="w-10">
@@ -633,6 +678,15 @@ export default function AdminClient({
                               onClick={() => openPreview(s.ref)}
                             >
                               Invoice
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm flex items-center gap-[6px] whitespace-nowrap"
+                              title={`Send the invoice link to ${s.customer} on WhatsApp`}
+                              disabled={isPending}
+                              onClick={() => handleWhatsApp(s)}
+                            >
+                              <WhatsAppIcon width="15" height="15" />
+                              Send
                             </button>
                           </div>
                         </td>

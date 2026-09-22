@@ -65,6 +65,8 @@ export default async function AdminPage() {
     ref: s.reference,
     customerId: embedded(s.customers)?.id || null,
     customer: embedded(s.customers)?.name || "—",
+    // Needed to build the wa.me link for sending the customer their invoice.
+    customerPhone: embedded(s.customers)?.phone || "",
     service: s.mode === "air" ? "Air cargo" : "Sea cargo",
     mode: s.mode,
     route: `${embedded(s.customers)?.town || "UK"} → ${s.receiver_city}`,

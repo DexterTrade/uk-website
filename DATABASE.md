@@ -405,6 +405,21 @@ Two details worth keeping:
   a range input needs an integer to step through. Parsing is pinned to UTC
   midnight so the conversion is stable either side of the BST/GMT switch.
 
+Each row also carries three actions: **View** (the shipment detail page),
+**Invoice** (the preview modal) and **Send**, which opens WhatsApp with the
+customer's invoice link ready to send. Two details in that last one:
+
+- It creates the share link first if the invoice has never been shared, so
+  staff don't have to visit the preview to generate one.
+- The new tab is opened **synchronously, before the `await`**, and pointed at
+  `wa.me` once the link comes back. Opening it after the await instead would
+  count as an unrequested popup and be blocked.
+
+`wa.me` needs a bare international number, so `toWhatsAppNumber()` turns the
+stored UK national form (`07…`) into `447…`, and returns empty for anything
+that isn't a UK mobile — a landline on file raises an error toast rather than
+opening a broken chat.
+
 Each row has a checkbox, with a header checkbox that selects everything
 currently shown, and a bar above the table applies one status to the selection
 in a single `UPDATE ... IN (...)`.
