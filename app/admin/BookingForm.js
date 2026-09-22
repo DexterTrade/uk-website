@@ -258,7 +258,7 @@ export default function BookingForm({ today, initial = null, reference = null })
   }
 
   return (
-    <main className="min-h-screen bg-bg-soft pb-[120px]">
+    <main className="min-h-screen bg-bg-soft pb-10">
       <div className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[980px] flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div>
@@ -619,28 +619,32 @@ export default function BookingForm({ today, initial = null, reference = null })
               />
             </Field>
           </div>
-        </div>
 
-        {formError && <p className="alert alert-error">{formError}</p>}
-
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur">
-          <div className="mx-auto flex max-w-[980px] flex-wrap items-center justify-between gap-3 px-5 py-[14px]">
+          {/* In normal flow at the end of the form, not pinned to the
+              viewport: the actions belong after the last field, and a fixed
+              bar covers content on short screens. */}
+          <div className="mt-[26px] flex flex-wrap items-center justify-between gap-4 border-t border-[#eef1f7] pt-[22px]">
             <div className="flex items-baseline gap-[14px]">
               <span className="text-[13.5px] text-soft">Invoice total</span>
               <span className="font-head text-[24px] font-bold text-green">
                 £{money(values.total_charges || 0)}
               </span>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link className="btn btn-ghost btn-sm" href={isEdit ? `/admin/shipments/${reference}` : "/admin"}>
+            <div className="flex flex-wrap gap-3 max-[520px]:w-full max-[520px]:flex-col-reverse">
+              <Link
+                className="btn btn-ghost max-[520px]:w-full"
+                href={isEdit ? `/admin/shipments/${reference}` : "/admin"}
+              >
                 Cancel
               </Link>
-              <button className="btn btn-green" type="submit" disabled={isPending}>
+              <button className="btn btn-green max-[520px]:w-full" type="submit" disabled={isPending}>
                 {isPending ? "Saving…" : isEdit ? "Save changes" : "Create booking"}
               </button>
             </div>
           </div>
         </div>
+
+        {formError && <p className="alert alert-error">{formError}</p>}
       </form>
     </main>
   );
