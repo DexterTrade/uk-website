@@ -30,6 +30,7 @@ export default async function AdminPage() {
     { data: invoicesRaw },
     { data: ratesRaw },
     { data: customersRaw },
+    { data: statusesRaw },
   ] = await Promise.all([
     supabase.auth.getUser(),
     supabase
@@ -49,7 +50,11 @@ export default async function AdminPage() {
       .select("mode, headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note")
       .order("mode"),
     supabase.from("customers").select("id, name, phone, email, town, postcode").order("name"),
+    supabase.from("shipment_statuses").select("value, position, tone").order("position"),
   ]);
+
+  const statuses = (statusesRaw || []).map((s) => ({ value: s.value, tone: s.tone }));
+  const toneOf = Object.fromEntries(statuses.map((s) => [s.value, s.tone]));
 
   // invoices.shipment_id is UNIQUE, so PostgREST embeds the invoice as an
   // object rather than an array — but tolerate both shapes.
@@ -67,6 +72,7 @@ export default async function AdminPage() {
     weight: weightLabel(s.parcels, s.weight_kg),
     collection: formatDate(s.collection_date),
     status: s.status,
+    tone: toneOf[s.status] || "grey",
     flag: s.flag || "",
     total: Number(embedded(s.invoices)?.total_charges ?? 0),
     createdAt: s.created_at,
@@ -123,6 +129,7 @@ export default async function AdminPage() {
       shipments={shipments}
       invoices={invoices}
       customers={customers}
+      statuses={statuses}
       rates={rates}
       monthKey={monthKey}
       monthLabel={monthLabel}

@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { STATUSES } from "@/lib/data";
 import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from "@/lib/validation/booking";
 import { getTodayISO } from "@/lib/server-time";
 
@@ -25,15 +24,48 @@ export async function signOutAction() {
   redirect("/admin/login");
 }
 
+// The status list lives in shipment_statuses, so validity is checked against
+// the table rather than a constant that could drift away from it. The FK on
+// shipments.status would reject an unknown value anyway; this is just a
+// clearer error than a constraint violation.
+async function assertKnownStatus(supabase, status) {
+  const { data } = await supabase
+    .from("shipment_statuses")
+    .select("value")
+    .eq("value", status)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 export async function updateShipmentStatus(shipmentId, status) {
-  if (!STATUSES.includes(status)) {
-    return { error: "Unknown status." };
-  }
   const supabase = await requireStaff();
+  if (!(await assertKnownStatus(supabase, status))) return { error: "Unknown status." };
+
   const { error } = await supabase.from("shipments").update({ status }).eq("id", shipmentId);
   if (error) return { error: error.message };
   revalidatePath("/admin");
   return { ok: true };
+}
+
+// Bulk status change. Works on whatever set of rows the panel passes up —
+// the current filtered selection or everything — in one statement rather
+// than a request per row.
+export async function updateShipmentStatuses(shipmentIds, status) {
+  const supabase = await requireStaff();
+
+  const ids = [...new Set((shipmentIds || []).filter(Boolean))];
+  if (ids.length === 0) return { error: "Select at least one shipment." };
+  if (!(await assertKnownStatus(supabase, status))) return { error: "Unknown status." };
+
+  const { data, error } = await supabase
+    .from("shipments")
+    .update({ status })
+    .in("id", ids)
+    .select("id");
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  return { ok: true, updated: data?.length ?? 0 };
 }
 
 export async function updateRate(

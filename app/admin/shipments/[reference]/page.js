@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { money, STATUS_CLASS } from "@/lib/data";
+import { money, statusBadgeClass } from "@/lib/data";
 import { DataList, DetailShell, Panel, formatDate, modeLabel, weightLabel } from "../../DetailUI";
 
 export const metadata = {
   title: "Shipment",
   robots: { index: false, follow: false },
 };
-
-const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 
 export default async function ShipmentDetailPage({ params }) {
   // Next.js 16: params is a promise and must be awaited.
@@ -22,6 +20,7 @@ export default async function ShipmentDetailPage({ params }) {
       "id, reference, status, mode, parcels, weight_kg, goods_description, goods_value_gbp, collection_date, " +
         "receiver_name, receiver_phone, receiver_phone_alt, receiver_email, receiver_address, receiver_city, " +
         "receiver_country, eta_label, summary, flag, created_at, " +
+        "shipment_statuses(tone), " +
         "customers(id, name, phone, email, address, postcode, town), " +
         "invoices(id, rate_per_kg, other_charges, total_charges, issued_date, bill_to_name, " +
         "bill_to_address, bill_to_postcode, bill_to_town, bill_to_phone, bill_to_email), " +
@@ -32,8 +31,9 @@ export default async function ShipmentDetailPage({ params }) {
 
   if (!shipment) notFound();
 
-  const customer = Array.isArray(shipment.customers) ? shipment.customers[0] : shipment.customers;
-  const invoice = Array.isArray(shipment.invoices) ? shipment.invoices[0] : shipment.invoices;
+  const embedded = (value) => (Array.isArray(value) ? value[0] : value);
+  const customer = embedded(shipment.customers);
+  const invoice = embedded(shipment.invoices);
   const stages = [...(shipment.shipment_stages || [])].sort((a, b) => a.position - b.position);
 
   // Staff can overwrite the suggested total, so the parts don't always add up
@@ -48,7 +48,9 @@ export default async function ShipmentDetailPage({ params }) {
       back={{ href: "/admin", label: "Admin" }}
       eyebrow="Shipment"
       title={shipment.reference}
-      badge={<span className={statusBadgeClass(shipment.status)}>{shipment.status}</span>}
+      badge={
+        <span className={statusBadgeClass(embedded(shipment.shipment_statuses)?.tone)}>{shipment.status}</span>
+      }
       actions={
         <>
           <Link className="btn btn-ghost btn-sm" href={`/admin/customers/${customer?.id}`}>

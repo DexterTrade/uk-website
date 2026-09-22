@@ -3,8 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { money, STATUS_CLASS, STATUSES, FILTERS } from "@/lib/data";
-import { signOutAction, updateRate, updateShipmentStatus } from "./actions";
+import { money, statusBadgeClass } from "@/lib/data";
+import { signOutAction, updateRate, updateShipmentStatus, updateShipmentStatuses } from "./actions";
 
 // No Invoices tab: an invoice is 1:1 with its shipment and is shown in full on
 // the shipment detail page, so a separate list would be the same rows twice.
@@ -15,13 +15,13 @@ const NAV = [
   { key: "rates", label: "Rates" },
 ];
 
-const statusBadgeClass = (s) => (STATUS_CLASS[s] === "badge" ? "badge" : `badge ${STATUS_CLASS[s]}`);
 const matches = (text, q) => !q.trim() || text.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1;
 
 export default function AdminClient({
   shipments,
   invoices,
   customers,
+  statuses,
   rates,
   monthKey,
   monthLabel,
@@ -32,7 +32,12 @@ export default function AdminClient({
 
   const [view, setView] = useState("dash");
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
+
+  // Multi-select: an empty set means no filter, i.e. show everything.
+  const [statusFilter, setStatusFilter] = useState(() => new Set());
+  const [selected, setSelected] = useState(() => new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
+  const [bulkNote, setBulkNote] = useState("");
 
   const [rateForm, setRateForm] = useState(() =>
     Object.fromEntries(
@@ -64,10 +69,19 @@ export default function AdminClient({
   const shipmentRows = useMemo(
     () =>
       shipments
-        .filter((s) => filter === "All" || s.status === filter)
+        .filter((s) => statusFilter.size === 0 || statusFilter.has(s.status))
         .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service}`, search)),
-    [shipments, filter, search]
+    [shipments, statusFilter, search]
   );
+
+  // Selection is intersected with what's actually on screen, so narrowing the
+  // filter can't leave rows selected that the user can no longer see — and
+  // "apply to N selected" always means the N in front of them.
+  const visibleSelected = useMemo(
+    () => shipmentRows.filter((s) => selected.has(s.id)).map((s) => s.id),
+    [shipmentRows, selected]
+  );
+  const allVisibleSelected = shipmentRows.length > 0 && visibleSelected.length === shipmentRows.length;
   const customerRows = useMemo(
     () => customers.filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.town} ${c.postcode}`, search)),
     [customers, search]
@@ -76,6 +90,53 @@ export default function AdminClient({
   function handleStatusChange(shipmentId, status) {
     startTransition(async () => {
       await updateShipmentStatus(shipmentId, status);
+      router.refresh();
+    });
+  }
+
+  function toggleStatusFilter(value) {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+    setBulkNote("");
+  }
+
+  function toggleRow(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setBulkNote("");
+  }
+
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) shipmentRows.forEach((s) => next.delete(s.id));
+      else shipmentRows.forEach((s) => next.add(s.id));
+      return next;
+    });
+    setBulkNote("");
+  }
+
+  function handleBulkApply() {
+    if (!bulkStatus || visibleSelected.length === 0) return;
+    startTransition(async () => {
+      const result = await updateShipmentStatuses(visibleSelected, bulkStatus);
+      if (result?.error) {
+        setBulkNote(result.error);
+        return;
+      }
+      setBulkNote(
+        `${result.updated} ${result.updated === 1 ? "shipment" : "shipments"} set to ${bulkStatus}.`
+      );
+      setSelected(new Set());
+      setBulkStatus("");
       router.refresh();
     });
   }
@@ -195,7 +256,7 @@ export default function AdminClient({
                         </td>
                         <td>{s.customer}</td>
                         <td>{s.route}</td>
-                        <td><span className={statusBadgeClass(s.status)}>{s.status}</span></td>
+                        <td><span className={statusBadgeClass(s.tone)}>{s.status}</span></td>
                         <td className="text-red">{s.flag}</td>
                       </tr>
                     ))}
@@ -210,19 +271,91 @@ export default function AdminClient({
         {view === "ship" && (
           <section className="admin-view">
             <h1>Shipments</h1>
-            <p className="sub">{shipmentRows.length} records. Change a status and customer tracking updates.</p>
+            <p className="sub">
+              {shipmentRows.length} of {shipments.length} records. Change a status and customer tracking updates.
+            </p>
+
+            {/* Statuses come from the shipment_statuses table, so this list
+                follows the database rather than a hardcoded subset. Filtering
+                is additive: no chip pressed means no filter. */}
             <div className="chips">
-              {FILTERS.map((f) => (
-                <button key={f} className="chip" aria-pressed={f === filter} onClick={() => setFilter(f)}>
-                  {f}
+              <button
+                className="chip"
+                aria-pressed={statusFilter.size === 0}
+                onClick={() => {
+                  setStatusFilter(new Set());
+                  setBulkNote("");
+                }}
+              >
+                All
+              </button>
+              {statuses.map((s) => (
+                <button
+                  key={s.value}
+                  className="chip"
+                  aria-pressed={statusFilter.has(s.value)}
+                  onClick={() => toggleStatusFilter(s.value)}
+                >
+                  {s.value}
                 </button>
               ))}
             </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-[#e2e7f0] bg-white px-4 py-3">
+              <span className="text-[13.5px] font-semibold text-ink">
+                {visibleSelected.length} selected
+              </span>
+              <span className="text-[13px] text-soft">
+                {statusFilter.size > 0 ? "within the current filter" : "across all shipments"}
+              </span>
+              <select
+                className="status-select"
+                aria-label="Bulk status"
+                value={bulkStatus}
+                disabled={isPending || visibleSelected.length === 0}
+                onChange={(e) => setBulkStatus(e.target.value)}
+              >
+                <option value="">Set status to…</option>
+                {statuses.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.value}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn btn-green btn-sm"
+                disabled={isPending || !bulkStatus || visibleSelected.length === 0}
+                onClick={handleBulkApply}
+              >
+                {isPending ? "Applying…" : "Apply"}
+              </button>
+              {visibleSelected.length > 0 && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setSelected(new Set());
+                    setBulkNote("");
+                  }}
+                >
+                  Clear selection
+                </button>
+              )}
+              {bulkNote && <span className="text-[13px] font-medium text-green-ink">{bulkNote}</span>}
+            </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[1030px]">
+                <table className="min-w-[1090px]">
                   <thead>
                     <tr>
+                      <th className="w-10">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer align-middle accent-green"
+                          aria-label="Select all shown shipments"
+                          checked={allVisibleSelected}
+                          onChange={toggleAllVisible}
+                        />
+                      </th>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
                       <th>Weight</th><th>Collection</th><th>Status</th>
                       <th className="num-right">Charged</th><th></th>
@@ -231,6 +364,15 @@ export default function AdminClient({
                   <tbody>
                     {shipmentRows.map((s) => (
                       <tr key={s.id}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer align-middle accent-green"
+                            aria-label={`Select ${s.ref}`}
+                            checked={selected.has(s.id)}
+                            onChange={() => toggleRow(s.id)}
+                          />
+                        </td>
                         <td className="key">
                           <Link className="text-green hover:underline" href={`/admin/shipments/${s.ref}`}>
                             {s.ref}
@@ -256,8 +398,8 @@ export default function AdminClient({
                             disabled={isPending}
                             onChange={(e) => handleStatusChange(s.id, e.target.value)}
                           >
-                            {STATUSES.map((o) => (
-                              <option key={o} value={o}>{o}</option>
+                            {statuses.map((o) => (
+                              <option key={o.value} value={o.value}>{o.value}</option>
                             ))}
                           </select>
                         </td>

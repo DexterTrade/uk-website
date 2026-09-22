@@ -90,7 +90,7 @@ its invoice by `create_booking()` — never on its own.
 | `receiver_address` | text | |
 | `receiver_city` | text | Also the destination half of the derived tracking route |
 | `receiver_country` | text | 2-letter code, defaults `'PK'` |
-| `status` | text | One of `STATUSES` in `lib/data.js` (Booked → Delivered) |
+| `status` | text | FK → `shipment_statuses.value` (`ON UPDATE CASCADE`), **not** a CHECK constraint and **not** a constant in `lib/data.js` |
 | `eta_label` | text, nullable | Human-readable ETA |
 | `summary` | text | Short status blurb shown on the tracking page; seeded by `create_booking()` |
 | `flag` | text, nullable | Free-text internal flag shown in admin only |
@@ -102,6 +102,23 @@ frozen at write time; they're now derived at read time — `route` from
 `customers.town → receiver_city`, `weight_label` from `parcels` + `weight_kg`
 — inside `get_shipment_by_reference()` and in `app/admin/page.js`. If you need
 a new display string, derive it too rather than adding a column.
+
+### `shipment_statuses`
+The set of statuses a shipment can have. A table rather than a CHECK
+constraint or a JS array, so the admin panel's filters and dropdowns read the
+list from the database and **adding or reordering a status is an INSERT, not a
+migration plus matching edits in two code files**.
+
+| Column | Type | Notes |
+|---|---|---|
+| `value` | text PK | The status itself, e.g. `In transit`. Referenced by `shipments.status` |
+| `position` | int | Sort order for filters and dropdowns |
+| `tone` | text | CHECK `grey` / `amber` / `navy` / `green` — the badge colour. A tone name, not a CSS class, so the database isn't describing Tailwind; `statusBadgeClass()` in `lib/data.js` maps it |
+
+Seeded with the original eight: Booked, Collected, At warehouse, In transit,
+At sea, Customs clearance, Out for delivery, Delivered. `shipments.status` is
+a foreign key onto it with `ON UPDATE CASCADE`, so renaming a status carries
+through to existing shipments instead of orphaning them.
 
 ### `shipment_stages`
 Timeline entries for a shipment (one shipment → many stages).
@@ -184,6 +201,7 @@ RLS is **enabled on every table**. Policies:
 | `customers` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipments` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
+| `shipment_statuses` | `staff read statuses` | `authenticated` | `SELECT` only — the list is edited in Supabase, not from the app |
 | `invoices` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `rates` | `public read rates` | `anon`, `authenticated` | Public `SELECT` only |
 | `rates` | `staff update rates` | `authenticated` | Staff can `UPDATE` |
@@ -315,6 +333,20 @@ Rates**. Key actions: change shipment status, and edit sea/air rates (headline
 rate, note, **estimated time**, UK pickup charge, and the next-dispatch
 date/note — all per mode). Every reference and customer name in those tables
 links through to the matching detail page.
+
+**Shipments: status filters and bulk edit.** The filter chips are built from
+`shipment_statuses` (all of them, in `position` order) rather than the old
+hardcoded six-value subset, and they are **additive** — press several to see
+several, press All to clear. Each row has a checkbox, with a header checkbox
+that selects everything currently shown, and a bar above the table applies one
+status to the selection in a single `UPDATE ... IN (...)`.
+
+The selection is always intersected with the visible rows before anything is
+applied. Without that, narrowing the filter would leave rows selected that the
+user can't see, and "apply to N selected" would silently change more than what
+is in front of them. It also means the same control covers both cases asked
+for: with no filter, select-all is every shipment; with a filter, it is
+exactly the filtered set.
 
 **There is deliberately no Invoices tab.** An invoice is 1:1 with its shipment
 and is shown in full on the shipment detail page, so a separate list would be
