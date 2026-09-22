@@ -110,9 +110,8 @@ export default function TrackingClient() {
     <main className="wrap-narrow px-5 pt-11 pb-[72px]">
       <h1 className="text-[clamp(28px,4vw,40px)] font-extrabold">Track a shipment</h1>
       <p className="lede">
-        Enter your AWB / tracking number or booking reference, plus the sender&rsquo;s phone number used
-        for the booking. Demo: <strong>PC-4471</strong> with phone <strong>07700 900001</strong> (air), or{" "}
-        <strong>BK-20931</strong> with phone <strong>07700 900002</strong> (sea).
+        Enter your tracking number and the sender&rsquo;s phone number used for the booking &mdash; both are
+        printed on your invoice.
       </p>
 
       <section className="panel">

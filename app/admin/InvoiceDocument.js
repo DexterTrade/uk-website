@@ -1,5 +1,6 @@
 import { money } from "@/lib/data";
-import { BUSINESS, SITE_URL } from "@/lib/seo";
+import { BUSINESS } from "@/lib/seo";
+import { EmailIcon } from "@/app/components/contact-icons";
 
 // The invoice as the customer receives it. A plain presentational component
 // with no server-only imports, so the same markup backs both the preview
@@ -75,10 +76,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
   const other = Number(invoice.other_charges);
   const total = Number(invoice.total_charges);
   const freight = Math.round(rate * weight * 100) / 100;
-  // Staff can overwrite the suggested total, so the rows don't always sum to
-  // it. The gap is printed as its own line rather than leaving a document
-  // whose arithmetic appears wrong.
-  const adjustment = Math.round((total - freight - other) * 100) / 100;
 
   const isPakistan = (shipment.receiver_country || "PK") === "PK";
 
@@ -127,7 +124,10 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             <br />
             {BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}
             <br />
-            {BUSINESS.email} &middot; {SITE_URL.replace(/^https?:\/\//, "")}
+            {/* Every domain the business trades under, not just the canonical
+                one — a customer who reached us on the other address should see
+                it here too. */}
+            {BUSINESS.domains.join(" · ")}
           </address>
           <div className="text-right">
             {BUSINESS.phones.map((p) => (
@@ -141,6 +141,19 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
               <strong className="text-ink">{BUSINESS.whatsappDisplay}</strong>
             </span>
           </div>
+        </section>
+
+        {/* Email gets its own band rather than a line in the address block:
+            it is the channel customers are most likely to reply on. */}
+        <section className="flex items-center justify-center gap-[7px] border-b border-line bg-green-soft px-3 py-[9px] text-center">
+          <EmailIcon width="13" height="13" className="flex-none text-green-ink" />
+          <span className="text-[9px] font-bold tracking-[0.1em] text-green-ink uppercase">Email</span>
+          <a
+            href={`mailto:${BUSINESS.email}`}
+            className="font-head text-[14px] font-extrabold tracking-[0.01em] text-green-ink"
+          >
+            {BUSINESS.email}
+          </a>
         </section>
 
         {/* --------------------------------------------- sender / receiver */}
@@ -227,16 +240,8 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
               </td>
               <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(other)}</td>
             </tr>
-            {adjustment !== 0 && (
-              <tr className="border-b border-[#e6ebf3]">
-                <td className="px-[10px] py-[8px]" colSpan={3}>
-                  Adjustment &mdash; agreed price difference
-                </td>
-                <td className="px-[10px] py-[8px] text-right whitespace-nowrap">
-                  {adjustment < 0 ? "−" : ""}£{money(Math.abs(adjustment))}
-                </td>
-              </tr>
-            )}
+            {/* No reconciling line: the total is whatever was agreed and
+                stored, shown directly. */}
             <tr className="bg-green-soft">
               <td
                 className="px-[10px] py-[11px] font-head text-[13px] font-extrabold text-green-ink"
@@ -259,7 +264,7 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
         <footer className="mt-[22px] border-t border-line pt-[12px] text-[9.5px] leading-[1.55] text-soft">
           <p>
             <strong className="text-ink">Track this shipment</strong> at{" "}
-            {SITE_URL.replace(/^https?:\/\//, "")}/tracking using tracking number{" "}
+            {BUSINESS.domains[0]}/tracking using tracking number{" "}
             <strong className="text-ink">{shipment.reference}</strong> and the sender&rsquo;s mobile number shown
             above.
           </p>

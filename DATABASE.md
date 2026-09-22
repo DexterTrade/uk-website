@@ -37,7 +37,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/admin/shipments/[reference]/edit` | Edit an existing booking (same form component as new-booking) |
 | `/admin/invoices/[reference]` | The printable invoice document (A4 print stylesheet, print/save-as-PDF) |
 | `/admin/customers/[id]` | Customer record — details plus all their shipments and invoices |
-| `/invoice/[token]` | **Public** — the customer's own invoice, reached by an unguessable share link, with a download button. `noindex`, and disallowed in robots.txt |
+| `/invoice/[token]` | **Public** — the customer's own invoice, reached by an unguessable share link, with a **Track shipment** button. `noindex`, and disallowed in robots.txt |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
 Cargo, Excess Baggage, Pak to UK, Relocation, Track, FAQ.
@@ -510,7 +510,7 @@ proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
 
 - **`/admin/shipments/[reference]`** — **everything about one booking in one
   place**: shipment specs, sender, receiver, the invoice in full (rate,
-  freight subtotal, charges, any adjustment, total, and the `bill_to_*`
+  freight subtotal, charges, total, and the `bill_to_*`
   snapshot as printed) and the tracking timeline. This is why there is no
   invoices list. "Edit booking" leads to the edit form.
 - **`/admin/invoices/[reference]`** — the invoice document, full page.
@@ -572,9 +572,16 @@ markup. Keep it that way — two copies would drift.
   sheet's margin is supplied by the document's own print padding instead.
 - The tracking number is the only thing printed in **red**, since it is the
   one value a customer has to read off the document.
-- Because staff can overwrite the suggested total, the rows don't always sum
-  to it; the difference prints as its own **Adjustment** line rather than
-  leaving a document whose arithmetic appears wrong.
+- **No reconciling line.** Staff can overwrite the suggested total, so the
+  rows above it do not always sum to it, and that is accepted on purpose —
+  `total_charges` is whatever was agreed and is printed directly. An earlier
+  version carried an "Adjustment" row for the difference; it was removed by
+  request. Don't reintroduce one.
+- **Email is given its own band** under the letterhead rather than a line in
+  the address block: it is the channel customers are most likely to reply on.
+- **Every domain is listed** (`BUSINESS.domains`), not just the canonical
+  `SITE_URL` — a customer who reached the business on the other address should
+  see it on the invoice too.
 - **The terms and conditions are the business's own**, supplied verbatim and
   reproduced as given in `termsList()` — only two plain spelling slips were
   corrected. Treat that text as contractual: don't reword, renumber or
@@ -734,6 +741,12 @@ setState-in-effect lint violation and to allow re-submitting the same
 values). On submit it calls the `trackShipment` Server Action
 (`app/tracking/actions.js`), which passes both values straight to the
 `get_shipment_by_reference` RPC and returns `null` on any mismatch.
+
+**`?ref=` and `?phone=` prefill the form and look the shipment up on load.**
+That is what the "Track shipment" button on a customer's invoice uses, so they
+land on the result rather than on an empty form. Putting the phone in that URL
+is not a widening: it is the phone printed on the invoice the link came from,
+so anyone able to build the URL could already read it.
 
 **There is no seeded demo data any more.** The old `PC-4471` / `07700 900001`
 and `BK-20931` / `07700 900002` pairs were removed along with the old

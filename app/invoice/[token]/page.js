@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import InvoiceDocument from "@/app/admin/InvoiceDocument";
-import DownloadButton from "./DownloadButton";
 
 // Never indexed and never in the sitemap: the link is a secret handed to one
 // customer, and a search engine that found one would publish it.
@@ -31,7 +31,17 @@ export default async function PublicInvoicePage({ params }) {
               Invoice <span className="text-red">{data.shipment.reference}</span>
             </h1>
           </div>
-          <DownloadButton />
+          {/* The tracking page reads ?ref and ?phone and looks the shipment up
+              on load, so this lands on the result rather than on an empty
+              form the customer has to fill in again. */}
+          <Link
+            className="btn btn-green"
+            href={`/tracking?ref=${encodeURIComponent(data.shipment.reference)}&phone=${encodeURIComponent(
+              data.customer.phone || ""
+            )}`}
+          >
+            Track shipment
+          </Link>
         </div>
       </div>
 

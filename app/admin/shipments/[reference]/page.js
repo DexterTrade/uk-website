@@ -37,12 +37,7 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
   const invoice = embedded(shipment.invoices);
   const stages = [...(shipment.shipment_stages || [])].sort((a, b) => a.position - b.position);
 
-  // Staff can overwrite the suggested total, so the parts don't always add up
-  // to it — the difference is shown as its own figure rather than left to look
-  // like an arithmetic error.
   const freight = Math.round(Number(invoice?.rate_per_kg ?? 0) * Number(shipment.weight_kg) * 100) / 100;
-  const adjustment =
-    Math.round((Number(invoice?.total_charges ?? 0) - freight - Number(invoice?.other_charges ?? 0)) * 100) / 100;
 
   return (
     <DetailShell
@@ -133,9 +128,6 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
             ["Rate per kg", `£${money(invoice?.rate_per_kg ?? 0)}`],
             ["Freight", `${Number(shipment.weight_kg)} kg × £${money(invoice?.rate_per_kg ?? 0)} = £${money(freight)}`],
             ["Duty + handling + packing", `£${money(invoice?.other_charges ?? 0)}`],
-            ...(adjustment !== 0
-              ? [["Adjustment", `${adjustment < 0 ? "−" : ""}£${money(Math.abs(adjustment))}`]]
-              : []),
             ["Total charged", `£${money(invoice?.total_charges ?? 0)}`],
           ]}
         />
