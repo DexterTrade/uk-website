@@ -1,14 +1,18 @@
 import BookingForm from "../BookingForm";
+import { getTodayISO } from "@/lib/server-time";
 
 export const metadata = {
   title: "New booking",
   robots: { index: false, follow: false },
 };
 
-export default function NewBookingPage() {
-  // Passed down rather than computed inside the client component: the server
-  // renders in UTC and the browser in local time, so a useState initializer
-  // calling new Date() can disagree across midnight and trip hydration.
-  const today = new Date().toISOString().slice(0, 10);
+// Rendered per request so the displayed collection date can't be a stale
+// "today" served from a cache the morning after it was built.
+export const dynamic = "force-dynamic";
+
+export default async function NewBookingPage() {
+  // Resolved on the server, from a network time source, in Europe/London —
+  // never from the browser's clock. See lib/server-time.js.
+  const today = await getTodayISO();
   return <BookingForm today={today} />;
 }

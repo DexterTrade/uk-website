@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BookingForm from "../../../BookingForm";
+import { getTodayISO } from "@/lib/server-time";
 
 export const metadata = {
   title: "Edit booking",
@@ -57,7 +58,9 @@ export default async function EditBookingPage({ params }) {
     receiver_city: shipment.receiver_city,
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Only used as the form's fallback "today"; the collection date shown is the
+  // one already stored on the booking, and it is not editable.
+  const today = await getTodayISO();
 
   return <BookingForm today={today} initial={initial} reference={shipment.reference} />;
 }

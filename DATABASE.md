@@ -82,7 +82,7 @@ its invoice by `create_booking()` — never on its own.
 | `weight_kg` | numeric(10,2) | CHECK > 0 |
 | `goods_description` | text | |
 | `goods_value_gbp` | numeric(12,2) | CHECK ≥ 1 |
-| `collection_date` | date | **Cannot be back-dated** when booking. One exception, handled in validation: editing a booking whose date has since passed must stay saveable, so the *unchanged* original value is allowed through |
+| `collection_date` | date | Always the day the booking was taken. Not typed and not editable — set server-side from a network time source in `Europe/London`; see "Collection date and server time" below |
 | `receiver_name` | text | |
 | `receiver_phone` | text | Overseas; `+92…` for Pakistan, E.164 otherwise |
 | `receiver_phone_alt` | text, nullable | The one optional contact field on the receiver |
@@ -364,9 +364,13 @@ from a real URL. `page.js` is a thin Server Component that passes down
 would render UTC on the server and local time in the browser, which can
 disagree across midnight and trip hydration); `BookingForm.js` is the form.
 
-Three sections: **Shipment details** (mode, parcels, weight, description,
-worth, collection date) → **Invoicing and payment** (rate per kg, duty +
-handling + packing, total) → **Customer** (UK sender, overseas receiver).
+**One flat form — no sections, no headings.** The field order was specified
+directly and is deliberate, so keep it if you add anything: shipping → number
+of parcels → the whole customer block (sender, then the "not in Pakistan"
+toggle, then receiver) → total weight → rate per kg → duty + handling +
+packing → total charges → worth of goods → collection date → description of
+goods. Field labels carry the sender/receiver distinction on their own, which
+is why the group headings could go.
 
 - **Total charges is suggested, not computed.** It prefills with
   `(rate × weight) + other charges` and keeps in step with those inputs until
@@ -380,8 +384,43 @@ handling + packing, total) → **Customer** (UK sender, overseas receiver).
   E.164 and reveals a short country select (`OTHER_COUNTRIES` in the
   validation module — a dozen realistic destinations plus "Other", not all
   ~200 countries, since the dialling code carries the detail).
+- **The collection date is fixed to today and disabled.** See "Collection date
+  and server time" below — the disabled input is presentation only.
 - On success it shows the generated `PC0001` reference on its own, since that
   is what the customer needs to track with.
+
+### Collection date and server time (`lib/server-time.js`)
+
+The collection date is always today, is not typed, and is never taken from the
+request payload. Three things make that true, and all three are needed:
+
+1. **The value is resolved on the server**, so the staff machine's clock is
+   irrelevant to it.
+2. **`createBooking()` overwrites `collection_date` with that value** before
+   validating. A disabled input stops nobody — a Server Action is a public
+   HTTP endpoint — so the input being disabled is presentation, not the
+   control. `updateBooking()` likewise re-reads the stored date from the row
+   instead of trusting the payload, since collection dates aren't editable.
+3. **The instant comes from the network**, not the host clock: `timeapi.io`
+   and the `Date` header of a Cloudflare response, raced against each other,
+   falling back to the host clock if both fail.
+
+Details that matter if you touch this:
+
+- **It formats in `Europe/London`, not UTC.** For most of the year London is an
+  hour ahead, so between 23:00 and midnight BST the UTC date is still
+  yesterday — a booking taken at 23:30 would be dated the day before.
+- **The result is cached in module scope, not through `fetch`'s
+  `next: { revalidate }`.** `/admin/new-booking` is `force-dynamic`, and Next
+  turns that into `cache: 'no-store'` on every fetch in the segment, so the
+  fetch cache would be ignored and an external API would be called on every
+  page load. Five minutes on success, one minute on failure.
+- **The lookup is capped by a wall clock**, not only by `AbortSignal.timeout`,
+  which only bites if the request honours it. Worst case is ~1.75s and then
+  the host clock; a booking must never hang waiting for a clock.
+- `/admin/new-booking` must stay dynamic. As a static route it would be
+  prerendered at build time with that day's date baked in, and would still be
+  showing it weeks later.
 
 ### Validation (`lib/validation/booking.js`)
 
@@ -408,9 +447,10 @@ Rules worth knowing: sender must be a **UK mobile** (`07…`, landlines
 rejected — it's the number used to verify tracking); receiver must be a
 Pakistan mobile (`+923…`) unless the overseas toggle is on; both email fields
 and the second receiver mobile are the only optional inputs; `goods_value_gbp`
-has a minimum of £1 and no maximum; collection dates cannot be back-dated
-(with the editing exception described on the `collection_date` column above,
-implemented by passing `{ context: { originalDate } }` into `validate`).
+has a minimum of £1 and no maximum. The `collection_date` rule rejects past
+dates but allows the value passed as `{ context: { originalDate } }` through —
+that is what lets an existing booking, whose collection date has since passed,
+still be re-saved when editing an unrelated field.
 
 `updateRate(mode, {...})` in `app/admin/actions.js` revalidates `/admin`,
 `/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage` and `/pak-to-uk` — every

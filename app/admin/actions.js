@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES } from "@/lib/data";
 import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from "@/lib/validation/booking";
+import { getTodayISO } from "@/lib/server-time";
 
 // Server Actions are public HTTP endpoints in their own right — the proxy
 // only guards page navigations, so every action re-checks the session
@@ -82,9 +83,19 @@ export async function lookupCustomer(phone) {
 export async function createBooking(values) {
   const supabase = await requireStaff();
 
+  // The collection date is always today and is never taken from the payload.
+  // The form's input is disabled, but that is only presentation — this action
+  // is a public HTTP endpoint, so the date is resolved here, server-side.
+  const collection_date = await getTodayISO();
+  const submitted = { ...values, collection_date };
+
   let clean;
   try {
-    clean = await bookingSchema.validate(values, { abortEarly: false, stripUnknown: true });
+    clean = await bookingSchema.validate(submitted, {
+      abortEarly: false,
+      stripUnknown: true,
+      context: { originalDate: collection_date },
+    });
   } catch (err) {
     return { error: "Please correct the highlighted fields.", fields: fieldErrors(err) };
   }
@@ -98,19 +109,28 @@ export async function createBooking(values) {
   return { ok: true, booking: data };
 }
 
-// Editing an existing booking. `originalDate` is the collection date as
-// stored: passed through as yup context so a booking whose collection date
-// has since passed can still be re-saved, while changing that date still
-// requires today or later.
-export async function updateBooking(reference, values, originalDate) {
+// Editing an existing booking. The collection date is not editable, so it is
+// re-read from the row rather than trusted from the payload — and passed as
+// yup context so a booking whose collection date has since passed can still
+// be re-saved.
+export async function updateBooking(reference, values) {
   const supabase = await requireStaff();
+
+  const { data: existing } = await supabase
+    .from("shipments")
+    .select("collection_date")
+    .ilike("reference", reference)
+    .maybeSingle();
+  if (!existing) return { error: "That booking no longer exists." };
+
+  const submitted = { ...values, collection_date: existing.collection_date };
 
   let clean;
   try {
-    clean = await bookingSchema.validate(values, {
+    clean = await bookingSchema.validate(submitted, {
       abortEarly: false,
       stripUnknown: true,
-      context: { originalDate },
+      context: { originalDate: existing.collection_date },
     });
   } catch (err) {
     return { error: "Please correct the highlighted fields.", fields: fieldErrors(err) };

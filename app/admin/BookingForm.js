@@ -15,25 +15,14 @@ import {
 import { createBooking, lookupCustomer, updateBooking } from "./actions";
 
 const emptyValues = (today) => ({
-  // Shipment
   mode: "air",
   parcels: "1",
-  weight_kg: "",
-  goods_description: "",
-  goods_value_gbp: "",
-  collection_date: today,
-  // Invoicing
-  rate_per_kg: "",
-  other_charges: "0",
-  total_charges: "",
-  // Sender (UK)
   sender_name: "",
   sender_phone: "",
   sender_email: "",
   sender_address: "",
   sender_postcode: "",
   sender_town: "",
-  // Receiver (overseas)
   receiver_country: "PK",
   receiver_name: "",
   receiver_phone: "",
@@ -41,24 +30,14 @@ const emptyValues = (today) => ({
   receiver_email: "",
   receiver_address: "",
   receiver_city: "",
+  weight_kg: "",
+  rate_per_kg: "",
+  other_charges: "0",
+  total_charges: "",
+  goods_value_gbp: "",
+  collection_date: today,
+  goods_description: "",
 });
-
-function Section({ step, title, note, children }) {
-  return (
-    <section className="rounded-xl border border-line bg-white shadow-[0_18px_40px_-34px_rgba(22,35,60,0.45)]">
-      <header className="flex items-start gap-[14px] border-b border-[#eef1f7] px-[22px] py-[18px] max-[520px]:px-4">
-        <span className="mt-[2px] flex h-7 w-7 flex-none items-center justify-center rounded-full bg-green-soft font-head text-[13px] font-bold text-green-ink">
-          {step}
-        </span>
-        <span>
-          <h2 className="font-head text-[17px] font-bold text-ink">{title}</h2>
-          {note && <p className="mt-[3px] text-[13.5px] text-soft">{note}</p>}
-        </span>
-      </header>
-      <div className="px-[22px] py-[22px] max-[520px]:px-4">{children}</div>
-    </section>
-  );
-}
 
 // Defined at module scope, not inside BookingForm: a component declared
 // inside the render body is a brand-new type on every render, so React
@@ -73,15 +52,6 @@ function Field({ name, label, hint, error, children, wide }) {
       {children}
       {error && <span className="text-[12.5px] font-medium text-red">{error}</span>}
     </label>
-  );
-}
-
-function SubHead({ children, right }) {
-  return (
-    <div className="mb-[14px] flex flex-wrap items-center justify-between gap-3 border-b border-[#f1f4f9] pb-[10px]">
-      <h3 className="text-xs font-semibold tracking-[0.08em] text-faint uppercase">{children}</h3>
-      {right}
-    </div>
   );
 }
 
@@ -108,11 +78,7 @@ export default function BookingForm({ today, initial = null, reference = null })
   // as soon as you fix it, rather than waiting for a failed submit.
   const touched = useRef(new Set());
 
-  const validationContext = { originalDate };
-
-  // The collection date can't be back-dated, except that an existing booking
-  // whose date has since passed must stay re-savable.
-  const minCollectionDate = originalDate && originalDate < today ? originalDate : today;
+  const validationContext = { originalDate: values.collection_date };
 
   const suggestion = useMemo(
     () => suggestedTotal(values.weight_kg, values.rate_per_kg, values.other_charges),
@@ -224,9 +190,7 @@ export default function BookingForm({ today, initial = null, reference = null })
       .then(() => {
         setErrors({});
         startTransition(async () => {
-          const result = isEdit
-            ? await updateBooking(reference, values, originalDate)
-            : await createBooking(values);
+          const result = isEdit ? await updateBooking(reference, values) : await createBooking(values);
           if (result?.error) {
             setFormError(result.error);
             if (result.fields) setErrors(result.fields);
@@ -255,8 +219,7 @@ export default function BookingForm({ today, initial = null, reference = null })
     setCreated(null);
   }
 
-  const inputClass = (name, base = "input") =>
-    `${base} ${errors[name] ? "border-red" : ""}`.trim();
+  const inputClass = (name, base = "input") => `${base} ${errors[name] ? "border-red" : ""}`.trim();
 
   if (created) {
     return (
@@ -313,361 +276,344 @@ export default function BookingForm({ today, initial = null, reference = null })
       </div>
 
       <form className="mx-auto max-w-[980px] px-5 py-7" onSubmit={handleSubmit} noValidate>
-        <div className="flex flex-col gap-5">
-          <Section step="1" title="Shipment details" note="How the goods travel, and what is in them.">
-            <div className="grid-fields">
-              <Field name="mode" error={errors.mode} label="Shipping">
-                <select
-                  className={inputClass("mode", "select")}
-                  value={values.mode}
-                  onChange={(e) => setField("mode", e.target.value)}
-                  onBlur={() => handleBlur("mode")}
-                >
-                  {MODES.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field name="parcels" error={errors.parcels} label="Number of parcels">
-                <select
-                  className={inputClass("parcels", "select")}
-                  value={values.parcels}
-                  onChange={(e) => setField("parcels", e.target.value)}
-                  onBlur={() => handleBlur("parcels")}
-                >
-                  {PARCEL_OPTIONS.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field name="weight_kg" error={errors.weight_kg} label="Total weight (kg)">
-                <input
-                  className={inputClass("weight_kg")}
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  inputMode="decimal"
-                  placeholder="24.5"
-                  value={values.weight_kg}
-                  onChange={(e) => setField("weight_kg", e.target.value)}
-                  onBlur={() => handleBlur("weight_kg")}
-                />
-              </Field>
-
-              <Field name="goods_value_gbp" error={errors.goods_value_gbp} label="Worth of goods (£)">
-                <input
-                  className={inputClass("goods_value_gbp")}
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="250"
-                  value={values.goods_value_gbp}
-                  onChange={(e) => setField("goods_value_gbp", e.target.value)}
-                  onBlur={() => handleBlur("goods_value_gbp")}
-                />
-              </Field>
-
-              <Field name="collection_date" error={errors.collection_date} label="Collection date">
-                <input
-                  className={inputClass("collection_date")}
-                  type="date"
-                  min={minCollectionDate}
-                  value={values.collection_date}
-                  onChange={(e) => setField("collection_date", e.target.value)}
-                  onBlur={() => handleBlur("collection_date")}
-                />
-              </Field>
-
-              <Field name="goods_description" error={errors.goods_description} label="Description of goods" wide>
-                <textarea
-                  className={inputClass("goods_description", "textarea")}
-                  rows={3}
-                  placeholder="Clothes, dry food and household items"
-                  value={values.goods_description}
-                  onChange={(e) => setField("goods_description", e.target.value)}
-                  onBlur={() => handleBlur("goods_description")}
-                />
-              </Field>
-            </div>
-          </Section>
-
-          <Section
-            step="2"
-            title="Invoicing and payment"
-            note="Total is suggested as (rate × weight) + other charges — overwrite it if the customer agreed something different."
-          >
-            <div className="grid-fields">
-              <Field name="rate_per_kg" error={errors.rate_per_kg} label="Rate per kg (£)">
-                <input
-                  className={inputClass("rate_per_kg")}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="3.10"
-                  value={values.rate_per_kg}
-                  onChange={(e) => setField("rate_per_kg", e.target.value)}
-                  onBlur={() => handleBlur("rate_per_kg")}
-                />
-              </Field>
-
-              <Field name="other_charges" error={errors.other_charges} label="Custom duty + handling + packing (£)">
-                <input
-                  className={inputClass("other_charges")}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="30.00"
-                  value={values.other_charges}
-                  onChange={(e) => setField("other_charges", e.target.value)}
-                  onBlur={() => handleBlur("other_charges")}
-                />
-              </Field>
-
-              <Field name="total_charges" error={errors.total_charges} label="Total charges (£)">
-                <input
-                  className={inputClass("total_charges")}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="105.95"
-                  value={values.total_charges}
-                  onChange={(e) => {
-                    totalTouched.current = true;
-                    setField("total_charges", e.target.value);
-                  }}
-                  onBlur={() => handleBlur("total_charges")}
-                />
-              </Field>
-            </div>
-
-            {hasPricingInputs && (
-              <p className="fine mt-[14px]">
-                {values.weight_kg} kg × £{values.rate_per_kg || 0} + £{values.other_charges || 0} ={" "}
-                <strong className="text-ink">£{money(suggestion)}</strong>
-                {suggestionDiffers && (
-                  <>
-                    {" — "}
-                    <button
-                      type="button"
-                      className="font-semibold text-green underline underline-offset-2"
-                      onClick={applySuggestion}
-                    >
-                      use this total
-                    </button>
-                  </>
-                )}
-              </p>
-            )}
-          </Section>
-
-          <Section step="3" title="Customer" note="Sender in the UK, receiver overseas.">
-            <SubHead
-              right={
-                customerNote ? (
-                  <span className="text-[12.5px] font-medium text-green-ink">{customerNote}</span>
-                ) : (
-                  <span className="text-[12px] font-normal text-faint">
-                    Enter a mobile first to fill in a returning customer
-                  </span>
-                )
-              }
-            >
-              Sender (UK)
-            </SubHead>
-
-            <div className="grid-fields">
-              <Field name="sender_phone" error={errors.sender_phone} label="Sender mobile (UK)">
-                <input
-                  className={inputClass("sender_phone")}
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="off"
-                  placeholder="07700 900123"
-                  value={values.sender_phone}
-                  onChange={(e) => setField("sender_phone", e.target.value)}
-                  onBlur={handlePhoneBlur}
-                />
-              </Field>
-
-              <Field name="sender_name" error={errors.sender_name} label="Sender name">
-                <input
-                  className={inputClass("sender_name")}
-                  placeholder="Full name"
-                  value={values.sender_name}
-                  onChange={(e) => setField("sender_name", e.target.value)}
-                  onBlur={() => handleBlur("sender_name")}
-                />
-              </Field>
-
-              <Field name="sender_email" error={errors.sender_email} label="Sender email" hint="optional">
-                <input
-                  className={inputClass("sender_email")}
-                  type="email"
-                  placeholder="name@example.com"
-                  value={values.sender_email}
-                  onChange={(e) => setField("sender_email", e.target.value)}
-                  onBlur={() => handleBlur("sender_email")}
-                />
-              </Field>
-
-              <Field name="sender_address" error={errors.sender_address} label="Sender address (UK)" wide>
-                <input
-                  className={inputClass("sender_address")}
-                  placeholder="12 Example Road"
-                  value={values.sender_address}
-                  onChange={(e) => setField("sender_address", e.target.value)}
-                  onBlur={() => handleBlur("sender_address")}
-                />
-              </Field>
-
-              <Field name="sender_town" error={errors.sender_town} label="Town / city">
-                <input
-                  className={inputClass("sender_town")}
-                  placeholder="Birmingham"
-                  value={values.sender_town}
-                  onChange={(e) => setField("sender_town", e.target.value)}
-                  onBlur={() => handleBlur("sender_town")}
-                />
-              </Field>
-
-              <Field name="sender_postcode" error={errors.sender_postcode} label="Postcode (UK)">
-                <input
-                  className={inputClass("sender_postcode")}
-                  placeholder="B10 9AB"
-                  value={values.sender_postcode}
-                  onChange={(e) => setField("sender_postcode", e.target.value.toUpperCase())}
-                  onBlur={() => handleBlur("sender_postcode")}
-                />
-              </Field>
-            </div>
-
-            <div className="mt-8">
-              <SubHead
-                right={
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={overseas}
-                    onClick={toggleOverseas}
-                    className="flex items-center gap-[9px] text-[12.5px] font-semibold text-muted normal-case"
-                  >
-                    <span
-                      className={`relative h-[22px] w-[38px] flex-none rounded-full transition-colors ${
-                        overseas ? "bg-green" : "bg-[#d7deea]"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-[3px] h-4 w-4 rounded-full bg-white transition-all ${
-                          overseas ? "left-[19px]" : "left-[3px]"
-                        }`}
-                      />
-                    </span>
-                    Not in Pakistan
-                  </button>
-                }
+        <div className="rounded-xl border border-line bg-white px-[26px] py-[26px] shadow-[0_18px_40px_-34px_rgba(22,35,60,0.45)] max-[520px]:px-4">
+          <div className="grid-fields">
+            <Field name="mode" error={errors.mode} label="Shipping">
+              <select
+                className={inputClass("mode", "select")}
+                value={values.mode}
+                onChange={(e) => setField("mode", e.target.value)}
+                onBlur={() => handleBlur("mode")}
               >
-                Receiver ({overseas ? "overseas" : "Pakistan"})
-              </SubHead>
+                {MODES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-              <div className="grid-fields">
-                {overseas && (
-                  <Field name="receiver_country" error={errors.receiver_country} label="Receiver country">
-                    <select
-                      className={inputClass("receiver_country", "select")}
-                      value={values.receiver_country}
-                      onChange={(e) => setField("receiver_country", e.target.value)}
-                      onBlur={() => handleBlur("receiver_country")}
-                    >
-                      <option value="">Select a country…</option>
-                      {OTHER_COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
+            <Field name="parcels" error={errors.parcels} label="Number of parcels">
+              <select
+                className={inputClass("parcels", "select")}
+                value={values.parcels}
+                onChange={(e) => setField("parcels", e.target.value)}
+                onBlur={() => handleBlur("parcels")}
+              >
+                {PARCEL_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-                <Field name="receiver_name" error={errors.receiver_name} label="Receiver name">
-                  <input
-                    className={inputClass("receiver_name")}
-                    placeholder="Full name"
-                    value={values.receiver_name}
-                    onChange={(e) => setField("receiver_name", e.target.value)}
-                    onBlur={() => handleBlur("receiver_name")}
-                  />
-                </Field>
+            <Field
+              name="sender_phone"
+              error={errors.sender_phone}
+              label="Sender mobile (UK)"
+              hint={customerNote ? "returning customer" : undefined}
+            >
+              <input
+                className={inputClass("sender_phone")}
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                placeholder="07700 900123"
+                value={values.sender_phone}
+                onChange={(e) => setField("sender_phone", e.target.value)}
+                onBlur={handlePhoneBlur}
+              />
+              {customerNote && <span className="text-[12.5px] font-medium text-green-ink">{customerNote}</span>}
+            </Field>
 
-                <Field
-                  name="receiver_phone" error={errors.receiver_phone}
-                  label={overseas ? "Receiver mobile" : "Receiver mobile (Pakistan)"}
+            <Field name="sender_name" error={errors.sender_name} label="Sender name">
+              <input
+                className={inputClass("sender_name")}
+                placeholder="Full name"
+                value={values.sender_name}
+                onChange={(e) => setField("sender_name", e.target.value)}
+                onBlur={() => handleBlur("sender_name")}
+              />
+            </Field>
+
+            <Field name="sender_email" error={errors.sender_email} label="Sender email" hint="optional">
+              <input
+                className={inputClass("sender_email")}
+                type="email"
+                placeholder="name@example.com"
+                value={values.sender_email}
+                onChange={(e) => setField("sender_email", e.target.value)}
+                onBlur={() => handleBlur("sender_email")}
+              />
+            </Field>
+
+            <Field name="sender_address" error={errors.sender_address} label="Sender address (UK)" wide>
+              <input
+                className={inputClass("sender_address")}
+                placeholder="12 Example Road"
+                value={values.sender_address}
+                onChange={(e) => setField("sender_address", e.target.value)}
+                onBlur={() => handleBlur("sender_address")}
+              />
+            </Field>
+
+            <Field name="sender_town" error={errors.sender_town} label="Town / city">
+              <input
+                className={inputClass("sender_town")}
+                placeholder="Birmingham"
+                value={values.sender_town}
+                onChange={(e) => setField("sender_town", e.target.value)}
+                onBlur={() => handleBlur("sender_town")}
+              />
+            </Field>
+
+            <Field name="sender_postcode" error={errors.sender_postcode} label="Postcode (UK)">
+              <input
+                className={inputClass("sender_postcode")}
+                placeholder="B10 9AB"
+                value={values.sender_postcode}
+                onChange={(e) => setField("sender_postcode", e.target.value.toUpperCase())}
+                onBlur={() => handleBlur("sender_postcode")}
+              />
+            </Field>
+
+            <label className="field justify-end">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={overseas}
+                onClick={toggleOverseas}
+                className="flex min-h-[46px] items-center gap-[10px] text-[13.5px] font-semibold text-muted"
+              >
+                <span
+                  className={`relative h-[22px] w-[38px] flex-none rounded-full transition-colors ${
+                    overseas ? "bg-green" : "bg-[#d7deea]"
+                  }`}
                 >
-                  <input
-                    className={inputClass("receiver_phone")}
-                    type="tel"
-                    inputMode="tel"
-                    placeholder={overseas ? "+971 50 123 4567" : "0300 1234567"}
-                    value={values.receiver_phone}
-                    onChange={(e) => setField("receiver_phone", e.target.value)}
-                    onBlur={() => handleBlur("receiver_phone")}
+                  <span
+                    className={`absolute top-[3px] h-4 w-4 rounded-full bg-white transition-all ${
+                      overseas ? "left-[19px]" : "left-[3px]"
+                    }`}
                   />
-                </Field>
+                </span>
+                Receiver is not in Pakistan
+              </button>
+            </label>
 
-                <Field name="receiver_phone_alt" error={errors.receiver_phone_alt} label="Second receiver mobile" hint="optional">
-                  <input
-                    className={inputClass("receiver_phone_alt")}
-                    type="tel"
-                    inputMode="tel"
-                    placeholder={overseas ? "+971 55 765 4321" : "0321 7654321"}
-                    value={values.receiver_phone_alt}
-                    onChange={(e) => setField("receiver_phone_alt", e.target.value)}
-                    onBlur={() => handleBlur("receiver_phone_alt")}
-                  />
-                </Field>
+            {overseas && (
+              <Field name="receiver_country" error={errors.receiver_country} label="Receiver country">
+                <select
+                  className={inputClass("receiver_country", "select")}
+                  value={values.receiver_country}
+                  onChange={(e) => setField("receiver_country", e.target.value)}
+                  onBlur={() => handleBlur("receiver_country")}
+                >
+                  <option value="">Select a country…</option>
+                  {OTHER_COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
 
-                <Field name="receiver_email" error={errors.receiver_email} label="Receiver email" hint="optional">
-                  <input
-                    className={inputClass("receiver_email")}
-                    type="email"
-                    placeholder="name@example.com"
-                    value={values.receiver_email}
-                    onChange={(e) => setField("receiver_email", e.target.value)}
-                    onBlur={() => handleBlur("receiver_email")}
-                  />
-                </Field>
+            <Field name="receiver_name" error={errors.receiver_name} label="Receiver name">
+              <input
+                className={inputClass("receiver_name")}
+                placeholder="Full name"
+                value={values.receiver_name}
+                onChange={(e) => setField("receiver_name", e.target.value)}
+                onBlur={() => handleBlur("receiver_name")}
+              />
+            </Field>
 
-                <Field name="receiver_address" error={errors.receiver_address} label="Receiver address" wide>
-                  <input
-                    className={inputClass("receiver_address")}
-                    placeholder="House 5, Street 2, Model Town"
-                    value={values.receiver_address}
-                    onChange={(e) => setField("receiver_address", e.target.value)}
-                    onBlur={() => handleBlur("receiver_address")}
-                  />
-                </Field>
+            <Field
+              name="receiver_phone"
+              error={errors.receiver_phone}
+              label={overseas ? "Receiver mobile" : "Receiver mobile (Pakistan)"}
+            >
+              <input
+                className={inputClass("receiver_phone")}
+                type="tel"
+                inputMode="tel"
+                placeholder={overseas ? "+971 50 123 4567" : "0300 1234567"}
+                value={values.receiver_phone}
+                onChange={(e) => setField("receiver_phone", e.target.value)}
+                onBlur={() => handleBlur("receiver_phone")}
+              />
+            </Field>
 
-                <Field name="receiver_city" error={errors.receiver_city} label="City / district">
-                  <input
-                    className={inputClass("receiver_city")}
-                    placeholder="Lahore"
-                    value={values.receiver_city}
-                    onChange={(e) => setField("receiver_city", e.target.value)}
-                    onBlur={() => handleBlur("receiver_city")}
-                  />
-                </Field>
-              </div>
-            </div>
-          </Section>
+            <Field
+              name="receiver_phone_alt"
+              error={errors.receiver_phone_alt}
+              label="Second receiver mobile"
+              hint="optional"
+            >
+              <input
+                className={inputClass("receiver_phone_alt")}
+                type="tel"
+                inputMode="tel"
+                placeholder={overseas ? "+971 55 765 4321" : "0321 7654321"}
+                value={values.receiver_phone_alt}
+                onChange={(e) => setField("receiver_phone_alt", e.target.value)}
+                onBlur={() => handleBlur("receiver_phone_alt")}
+              />
+            </Field>
+
+            <Field name="receiver_email" error={errors.receiver_email} label="Receiver email" hint="optional">
+              <input
+                className={inputClass("receiver_email")}
+                type="email"
+                placeholder="name@example.com"
+                value={values.receiver_email}
+                onChange={(e) => setField("receiver_email", e.target.value)}
+                onBlur={() => handleBlur("receiver_email")}
+              />
+            </Field>
+
+            <Field name="receiver_address" error={errors.receiver_address} label="Receiver address" wide>
+              <input
+                className={inputClass("receiver_address")}
+                placeholder="House 5, Street 2, Model Town"
+                value={values.receiver_address}
+                onChange={(e) => setField("receiver_address", e.target.value)}
+                onBlur={() => handleBlur("receiver_address")}
+              />
+            </Field>
+
+            <Field name="receiver_city" error={errors.receiver_city} label="City / district">
+              <input
+                className={inputClass("receiver_city")}
+                placeholder="Lahore"
+                value={values.receiver_city}
+                onChange={(e) => setField("receiver_city", e.target.value)}
+                onBlur={() => handleBlur("receiver_city")}
+              />
+            </Field>
+
+            <Field name="weight_kg" error={errors.weight_kg} label="Total weight (kg)">
+              <input
+                className={inputClass("weight_kg")}
+                type="number"
+                min="0"
+                step="0.1"
+                inputMode="decimal"
+                placeholder="24.5"
+                value={values.weight_kg}
+                onChange={(e) => setField("weight_kg", e.target.value)}
+                onBlur={() => handleBlur("weight_kg")}
+              />
+            </Field>
+
+            <Field name="rate_per_kg" error={errors.rate_per_kg} label="Rate per kg (£)">
+              <input
+                className={inputClass("rate_per_kg")}
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="3.10"
+                value={values.rate_per_kg}
+                onChange={(e) => setField("rate_per_kg", e.target.value)}
+                onBlur={() => handleBlur("rate_per_kg")}
+              />
+            </Field>
+
+            <Field
+              name="other_charges"
+              error={errors.other_charges}
+              label="Custom duty + handling + packing (£)"
+            >
+              <input
+                className={inputClass("other_charges")}
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="30.00"
+                value={values.other_charges}
+                onChange={(e) => setField("other_charges", e.target.value)}
+                onBlur={() => handleBlur("other_charges")}
+              />
+            </Field>
+
+            <Field
+              name="total_charges"
+              error={errors.total_charges}
+              label="Total charges (£)"
+              hint={hasPricingInputs ? `suggested £${money(suggestion)}` : undefined}
+            >
+              <input
+                className={inputClass("total_charges")}
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="105.95"
+                value={values.total_charges}
+                onChange={(e) => {
+                  totalTouched.current = true;
+                  setField("total_charges", e.target.value);
+                }}
+                onBlur={() => handleBlur("total_charges")}
+              />
+              {suggestionDiffers && (
+                <button
+                  type="button"
+                  className="self-start text-[12.5px] font-semibold text-green underline underline-offset-2"
+                  onClick={applySuggestion}
+                >
+                  Use £{money(suggestion)} ({values.weight_kg} kg × £{values.rate_per_kg} + £{values.other_charges})
+                </button>
+              )}
+            </Field>
+
+            <Field name="goods_value_gbp" error={errors.goods_value_gbp} label="Worth of goods (£)">
+              <input
+                className={inputClass("goods_value_gbp")}
+                type="number"
+                min="1"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="250"
+                value={values.goods_value_gbp}
+                onChange={(e) => setField("goods_value_gbp", e.target.value)}
+                onBlur={() => handleBlur("goods_value_gbp")}
+              />
+            </Field>
+
+            {/* Fixed, never typed. The value shown comes from the server (see
+                lib/server-time.js) and the Server Action sets it again from the
+                same source, so a disabled input here is presentation, not the
+                control that actually enforces it. */}
+            <Field
+              name="collection_date"
+              error={errors.collection_date}
+              label="Collection date"
+              hint={isEdit ? "as booked" : "today"}
+            >
+              <input
+                className="input cursor-not-allowed bg-[#f4f7fb] text-muted"
+                type="date"
+                value={values.collection_date}
+                disabled
+                readOnly
+              />
+            </Field>
+
+            <Field name="goods_description" error={errors.goods_description} label="Description of goods" wide>
+              <textarea
+                className={inputClass("goods_description", "textarea")}
+                rows={3}
+                placeholder="Clothes, dry food and household items"
+                value={values.goods_description}
+                onChange={(e) => setField("goods_description", e.target.value)}
+                onBlur={() => handleBlur("goods_description")}
+              />
+            </Field>
+          </div>
         </div>
 
         {formError && <p className="alert alert-error">{formError}</p>}
