@@ -405,9 +405,18 @@ Two details worth keeping:
   a range input needs an integer to step through. Parsing is pinned to UTC
   midnight so the conversion is stable either side of the BST/GMT switch.
 
-Each row also carries three actions: **View** (the shipment detail page),
-**Invoice** (the preview modal) and **Send**, which opens WhatsApp Web with
-the customer's invoice link composed and ready to send. Three details:
+Each row also carries four actions: **View** (the shipment detail page),
+**Invoice** (the preview modal), **Send** (WhatsApp) and **Copy link**. Send
+and Copy link both create the customer share link on the spot if the invoice
+has never been shared, so neither needs a trip through the preview first.
+
+The row already carries `shareUrl` when the invoice has been shared, fetched
+with the list. That is not just a saved round trip: it means Copy link writes
+to the clipboard **inside the click**, rather than after an `await`, which
+browsers increasingly refuse — and Send opens its tab with nothing in between
+that could look like a popup.
+
+Details on Send:
 
 - **The destination depends on the device.** On a computer — desktop and
   laptop are the same case — it targets `web.whatsapp.com/send`, which drops
@@ -524,10 +533,12 @@ markup. Keep it that way — two copies would drift.
   email, pending the roles work. It is passed as empty on the customer's copy
   and the "Booked by" cell then disappears, because an internal email address
   shouldn't be handed to customers.
-- **Terms sit after the footer, at the very bottom.** On screen that means the
-  invoice is what's visible and the customer scrolls to reach them; in print
-  they compress into two columns of small type, and the whole document is
-  scaled to `zoom: 0.82` so it stays compact on paper.
+- **Terms sit after the footer, at the very bottom**, styled as small print:
+  no panel, low contrast, two narrow columns, and smaller again below 560px.
+  On screen that means the invoice is what's visible and the customer scrolls
+  past it to reach them; in print the whole document is scaled to `zoom: 0.82`
+  so it stays compact on paper. They remain real text throughout — selectable,
+  searchable and printed in full — just visually subordinate.
 - **`@page` has `margin: 0`.** That is what suppresses the browser's own print
   header and footer — the page title ("Admin panel | PAK CARGO") and the
   timestamp are drawn in that margin and cannot be removed any other way. The

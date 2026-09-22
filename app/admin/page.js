@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/seo";
 import AdminClient from "./AdminClient";
 
 export const metadata = {
@@ -36,7 +37,7 @@ export default async function AdminPage() {
     supabase
       .from("shipments")
       .select(
-        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(id, name, phone, town), invoices(total_charges)"
+        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(id, name, phone, town), invoices(total_charges, share_token)"
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -82,6 +83,12 @@ export default async function AdminPage() {
     tone: toneOf[s.status] || "grey",
     flag: s.flag || "",
     total: Number(embedded(s.invoices)?.total_charges ?? 0),
+    // Carried into the row so Copy link and Send are instant for an invoice
+    // that has already been shared — no server round trip, and the clipboard
+    // write still counts as part of the click.
+    shareUrl: embedded(s.invoices)?.share_token
+      ? `${SITE_URL}/invoice/${embedded(s.invoices).share_token}`
+      : "",
     createdAt: s.created_at,
   }));
 

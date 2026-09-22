@@ -273,14 +273,17 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             invoice itself is what's visible and the customer scrolls to reach
             them. In print they shrink into two tight columns — see
             .invoice-terms in globals.css. */}
-        <section className="invoice-terms mt-[26px] rounded-[6px] border border-[#dbe4f0] bg-[#f9fbfe] px-[16px] py-[14px]">
-          <h2 className="mb-[9px] text-[11px] font-bold tracking-[0.07em] text-ink uppercase">
+        {/* Small print, and styled to read as such: no panel, low contrast,
+            two narrow columns. It stays real text — selectable, searchable and
+            printed in full — just visually subordinate to the invoice. */}
+        <section className="invoice-terms mt-[22px] border-t border-[#eef1f7] pt-[10px]">
+          <h2 className="mb-[6px] text-[8px] font-semibold tracking-[0.05em] text-faint uppercase max-[560px]:text-[7.5px]">
             Please read Terms &amp; Conditions before signing the shipment
           </h2>
-          <ol className="terms-list text-[11px] leading-[1.55] text-muted">
+          <ol className="terms-list columns-2 gap-6 text-[8px] leading-[1.4] text-faint max-[560px]:columns-1 max-[560px]:text-[7px] max-[560px]:leading-[1.35]">
             {termsList(seaEstimate || "8–10 weeks").map((term, i) => (
-              <li key={i} className="mb-[6px] flex break-inside-avoid gap-[6px]">
-                <span className="flex-none font-semibold text-ink">{i + 1}.</span>
+              <li key={i} className="mb-[3px] flex break-inside-avoid gap-[4px]">
+                <span className="flex-none">{i + 1}.</span>
                 <span>{term}</span>
               </li>
             ))}

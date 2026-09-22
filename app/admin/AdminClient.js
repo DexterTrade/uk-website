@@ -260,6 +260,11 @@ export default function AdminClient({
     }
   }
 
+  const invoiceMessage = (shipment, url) =>
+    `Hello ${shipment.customer}, your PAK Cargo invoice for shipment ${shipment.ref} is ready.\n\n` +
+    `View or download it here: ${url}\n\n` +
+    `You can track this shipment at ${SITE_URL}/tracking using reference ${shipment.ref} and this mobile number.`;
+
   // Sends the customer their invoice link over WhatsApp, creating the link
   // first if the invoice hasn't been shared before.
   function handleWhatsApp(shipment) {
@@ -269,9 +274,17 @@ export default function AdminClient({
       return;
     }
 
-    // The tab is opened now, synchronously, and pointed at WhatsApp Web once
-    // the link comes back. Opening it after the await instead would be treated
-    // as an unrequested popup and blocked.
+    // Already shared: no server round trip, so the tab opens straight from the
+    // click with nothing that could be mistaken for a popup.
+    if (shipment.shareUrl) {
+      window.open(whatsAppSendUrl(number, invoiceMessage(shipment, shipment.shareUrl)), "_blank", "noopener");
+      showToast(`WhatsApp opened for ${shipment.customer} — review and send.`);
+      return;
+    }
+
+    // First share: the tab is opened now, synchronously, and pointed at
+    // WhatsApp once the link comes back. Opening it after the await instead
+    // would be treated as an unrequested popup and blocked.
     const tab = window.open("", "_blank");
 
     startTransition(async () => {
@@ -281,15 +294,29 @@ export default function AdminClient({
         showToast(result.error, "error");
         return;
       }
-      const message =
-        `Hello ${shipment.customer}, your PAK Cargo invoice for shipment ${shipment.ref} is ready.\n\n` +
-        `View or download it here: ${result.url}\n\n` +
-        `You can track this shipment at ${SITE_URL}/tracking using reference ${shipment.ref} and this mobile number.`;
-      const waUrl = whatsAppSendUrl(number, message);
-
+      const waUrl = whatsAppSendUrl(number, invoiceMessage(shipment, result.url));
       if (tab) tab.location.href = waUrl;
       else window.open(waUrl, "_blank", "noopener");
       showToast(`WhatsApp opened for ${shipment.customer} — review and send.`);
+      router.refresh();
+    });
+  }
+
+  // Copies the customer link straight to the clipboard, creating it first if
+  // the invoice has never been shared.
+  function handleCopyLink(shipment) {
+    if (shipment.shareUrl) {
+      copyText(shipment.shareUrl, `Invoice link for ${shipment.ref} copied.`);
+      return;
+    }
+    startTransition(async () => {
+      const result = await createInvoiceShareLink(shipment.ref, false);
+      if (result?.error) {
+        showToast(result.error, "error");
+        return;
+      }
+      await copyText(result.url, `Invoice link for ${shipment.ref} created and copied.`);
+      router.refresh();
     });
   }
 
@@ -625,7 +652,7 @@ export default function AdminClient({
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[1380px]">
+                <table className="min-w-[1480px]">
                   <thead>
                     <tr>
                       <th className="w-10">
@@ -708,6 +735,18 @@ export default function AdminClient({
                             >
                               <WhatsAppIcon width="15" height="15" />
                               Send
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm whitespace-nowrap"
+                              title={
+                                s.shareUrl
+                                  ? "Copy the customer invoice link"
+                                  : "Create the customer invoice link and copy it"
+                              }
+                              disabled={isPending}
+                              onClick={() => handleCopyLink(s)}
+                            >
+                              Copy link
                             </button>
                           </div>
                         </td>

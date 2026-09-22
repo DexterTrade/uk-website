@@ -742,24 +742,24 @@
     width: 120mm;
   }
 
-  /* On screen the terms are full size at the bottom of the page; on paper
-     they compress into two columns of small print. */
+  /* Small print on paper too — the screen styles already shrink it, this just
+     tightens the spacing for the sheet. */
   .invoice-doc .invoice-terms {
-    margin-top: 14px;
-    padding: 9px 11px;
+    margin-top: 12px;
+    padding-top: 8px;
   }
   .invoice-doc .invoice-terms h2 {
-    font-size: 9.5px;
-    margin-bottom: 5px;
+    font-size: 7.5px;
+    margin-bottom: 4px;
   }
   .invoice-doc .terms-list {
     columns: 2;
-    column-gap: 22px;
-    font-size: 7.8px;
-    line-height: 1.45;
+    column-gap: 20px;
+    font-size: 7px;
+    line-height: 1.35;
   }
   .invoice-doc .terms-list li {
-    margin-bottom: 3px;
+    margin-bottom: 2px;
   }
   main:has(.invoice-doc) {
     min-height: 0;
