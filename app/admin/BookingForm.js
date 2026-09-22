@@ -169,15 +169,20 @@ export default function BookingForm({ today, initial = null, reference = null })
         setCustomerNote("");
         return;
       }
+      // Only blanks are filled. The name is typed before the mobile, so the
+      // lookup fires after staff have already entered it — overwriting it
+      // here would silently undo what they just typed.
       setValues((prev) => ({
         ...prev,
-        sender_name: found.name || prev.sender_name,
-        sender_email: found.email || prev.sender_email,
-        sender_address: found.address || prev.sender_address,
-        sender_postcode: found.postcode || prev.sender_postcode,
-        sender_town: found.town || prev.sender_town,
+        sender_name: prev.sender_name || found.name || "",
+        sender_email: prev.sender_email || found.email || "",
+        sender_address: prev.sender_address || found.address || "",
+        sender_postcode: prev.sender_postcode || found.postcode || "",
+        sender_town: prev.sender_town || found.town || "",
       }));
-      setCustomerNote(`Existing customer — ${found.name}'s details filled in. Edit anything that has changed.`);
+      setCustomerNote(
+        `Existing customer — ${found.name}. Remaining details filled in; anything you had already typed was left as it is.`
+      );
     });
   }
 
@@ -308,6 +313,16 @@ export default function BookingForm({ today, initial = null, reference = null })
               </select>
             </Field>
 
+            <Field name="sender_name" error={errors.sender_name} label="Sender name">
+              <input
+                className={inputClass("sender_name")}
+                placeholder="Full name"
+                value={values.sender_name}
+                onChange={(e) => setField("sender_name", e.target.value)}
+                onBlur={() => handleBlur("sender_name")}
+              />
+            </Field>
+
             <Field
               name="sender_phone"
               error={errors.sender_phone}
@@ -325,16 +340,6 @@ export default function BookingForm({ today, initial = null, reference = null })
                 onBlur={handlePhoneBlur}
               />
               {customerNote && <span className="text-[12.5px] font-medium text-green-ink">{customerNote}</span>}
-            </Field>
-
-            <Field name="sender_name" error={errors.sender_name} label="Sender name">
-              <input
-                className={inputClass("sender_name")}
-                placeholder="Full name"
-                value={values.sender_name}
-                onChange={(e) => setField("sender_name", e.target.value)}
-                onBlur={() => handleBlur("sender_name")}
-              />
             </Field>
 
             <Field name="sender_email" error={errors.sender_email} label="Sender email" hint="optional">

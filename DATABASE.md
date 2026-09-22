@@ -378,7 +378,9 @@ is why the group headings could go.
   number is offered as a "use this total" link instead.
 - **Returning customers prefill.** Blurring the sender mobile calls
   `lookupCustomer` → `find_customer_by_phone`, and fills in the rest of the
-  sender block.
+  sender block. It **only fills blanks**: the name field comes before the
+  mobile, so the lookup always fires after staff have typed the name, and
+  overwriting it would silently undo what they just entered.
 - **The receiver is assumed to be in Pakistan.** A "Not in Pakistan" toggle
   switches both receiver mobile fields from the Pakistan rule to generic
   E.164 and reveals a short country select (`OTHER_COUNTRIES` in the
