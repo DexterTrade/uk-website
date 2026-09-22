@@ -473,9 +473,16 @@ markup. Keep it that way — two copies would drift.
 - Because staff can overwrite the suggested total, the rows don't always sum
   to it; the difference prints as its own **Adjustment** line rather than
   leaving a document whose arithmetic appears wrong.
-- There are **no terms and conditions on it yet**. The reference document had
-  a block of them; inventing liability, refund or credit-note terms for a real
-  business would be wrong, so that space is left for real copy.
+- **The terms and conditions are the business's own**, supplied verbatim and
+  reproduced as given in `termsList()` — only two plain spelling slips were
+  corrected. Treat that text as contractual: don't reword, renumber or
+  "improve" it without being asked.
+- **Clause 3 quotes the sea delivery time, so it is interpolated from
+  `rates.estimated_time`** rather than frozen into the string. That figure had
+  previously drifted into three different values across the site, which is the
+  reason the column exists; an invoice is the last place it should go stale.
+  Both the page and the preview action read it per request, so no
+  `revalidatePath` entry is needed for it.
 
 ### Editing a booking
 
@@ -634,7 +641,11 @@ propagates sitewide:
 - `BUSINESS.companyNumber` — `17455357`. A UK limited company must show its
   registration number on its website and on every invoice, so this renders in
   the site footer and on the printed invoice document
-- `BUSINESS.legalName`, address fields, `hours`
+- `BUSINESS.streetAddress` / `addressLocality` / `postalCode` — the office at
+  **148 Sneinton Dale, Nottingham NG2 4HJ**. Defined only here, so it reaches
+  the footer, Contact Us, the `Organization` structured data and the invoice
+  from one place; don't hardcode it anywhere else
+- `BUSINESS.legalName`, `hours`
 - `pageMeta({ title, description, path })` — every page's `metadata` export
   should build on this, not just set `{title, description}` directly. Without
   it, a page silently inherits the root layout's `openGraph`/`twitter` block
@@ -798,10 +809,11 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
   hasn't been given a confirmation flow yet — do it in Supabase for now.
 - **No invoice emailing.** The invoice document is print/save-as-PDF only;
   there is no email provider wired up, deliberately.
-- **`BUSINESS.streetAddress` / `postalCode` in `lib/seo.js` are still
-  placeholders** (`Unit 0, Example Industrial Estate`, `XX0 0XX`). They now
-  print on every invoice as well as in the footer and structured data, so
-  they're worth replacing with the real registered address.
+- **Two currency figures in the printed terms need confirming**: clause 4
+  ("a credit note of 20") has no currency symbol at all, and clause 12
+  ("Service Charges (Mandatory) € 20 in by Air") is in euros for a UK company
+  invoicing in pounds. Both are reproduced exactly as supplied rather than
+  guessed at — they are contractual text on a customer-facing document.
 - **Sea cargo's `£1.20/kg` headline rate is a placeholder**, set when the
   pricing model was switched from per-m³ to per-kg at the user's explicit
   request — not a real quoted figure. Same for `estimated_time` values

@@ -102,7 +102,7 @@ export async function updateRate(
 export async function getInvoicePreview(reference) {
   const supabase = await requireStaff();
 
-  const [{ data: shipment }, { data: userData }] = await Promise.all([
+  const [{ data: shipment }, { data: userData }, { data: seaRate }] = await Promise.all([
     supabase
       .from("shipments")
       .select(
@@ -114,6 +114,9 @@ export async function getInvoicePreview(reference) {
       .ilike("reference", reference)
       .maybeSingle(),
     supabase.auth.getUser(),
+    // Clause 3 of the printed terms quotes the sea delivery time, which is
+    // editable in /admin → Rates. Read it rather than hardcoding a duplicate.
+    supabase.from("rates").select("estimated_time").eq("mode", "sea").maybeSingle(),
   ]);
 
   if (!shipment) return { error: "That booking no longer exists." };
@@ -131,6 +134,7 @@ export async function getInvoicePreview(reference) {
       // Placeholder for the operator/role work to come: the signed-in staff
       // account is the closest thing to "who booked this" we currently store.
       operator: userData?.user?.email || "",
+      seaEstimate: seaRate?.estimated_time || "",
     },
   };
 }

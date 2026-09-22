@@ -756,9 +756,6 @@ export default function AdminClient({
                 Invoice preview &middot; {preview.reference}
               </span>
               <div className="flex flex-wrap gap-[10px]">
-                <Link className="btn btn-ghost btn-sm" href={`/admin/invoices/${preview.reference}`}>
-                  Open full page
-                </Link>
                 <button
                   className="btn btn-green btn-sm"
                   disabled={!preview.data}

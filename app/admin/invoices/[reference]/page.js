@@ -14,7 +14,7 @@ export default async function InvoiceDetailPage({ params }) {
   const { reference } = await params;
   const supabase = await createClient();
 
-  const [{ data: shipment }, { data: userData }] = await Promise.all([
+  const [{ data: shipment }, { data: userData }, { data: seaRate }] = await Promise.all([
     supabase
       .from("shipments")
       .select(
@@ -26,6 +26,7 @@ export default async function InvoiceDetailPage({ params }) {
       .ilike("reference", reference)
       .maybeSingle(),
     supabase.auth.getUser(),
+    supabase.from("rates").select("estimated_time").eq("mode", "sea").maybeSingle(),
   ]);
 
   if (!shipment) notFound();
@@ -60,6 +61,7 @@ export default async function InvoiceDetailPage({ params }) {
           customer={customer || {}}
           invoice={invoice}
           operator={userData?.user?.email || ""}
+          seaEstimate={seaRate?.estimated_time || ""}
         />
       </div>
 

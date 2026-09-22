@@ -45,7 +45,31 @@ function Fact({ label, value }) {
   );
 }
 
-export default function InvoiceDocument({ shipment, customer, invoice, operator }) {
+// Supplied by the business, reproduced verbatim apart from two plain spelling
+// fixes ("disretion", "ma cause"). Clause 3 quotes the sea delivery time,
+// which is editable in /admin → Rates, so it is interpolated from
+// `rates.estimated_time` rather than frozen here — that figure previously
+// drifted into three different values across the site, which is the whole
+// reason that column exists.
+function termsList(seaEstimate) {
+  return [
+    "Custom inspects the consignments and may at times impose duties/charges which we promptly notify to the customers. These charges are borne by the customers. Our company cannot predict these charges if any at all as it is upon the discretion of authorities and can only be informed/charged once the consignment is inspected by the customs.",
+    "If parcel is not received in Pakistan and no enquiry is made within 3 months, we will dispose of the parcel without notice.",
+    `By Sea, delivery within ${seaEstimate}.`,
+    "If any parcel is lost or missing a credit note of 20 will be given. No cash refund.",
+    "The parcel may be disposed off, if any undeclared & illegitimate item found in it.",
+    "Any complaint should be notified in writing within 24 hours of receiving parcel in Pakistan & AJK, after that no responsibility will be taken.",
+    "We take care of the parcels at our best, but any fragile cargo, i.e. electronics, electrics are couriered at owner's risk.",
+    "Restricted items such as body sprays, perfumes, battery items and flammable items are not allowed in air shipment; if found it may cause delay in delivery procedure.",
+    "We shall not be held liable for any delays or damages occurring during transit, particularly once the freight has entered the destination country.",
+    "Any threats or any abusive language with our staff will terminate the contract and no refund and return will be made.",
+    "If the ship sank or in case of fire in UK and Pakistan, the company will take no responsibility.",
+    "Service Charges (Mandatory) € 20 in by Air.",
+    "Customers are responsible for insuring their items against damage during transit. It is also the customer's responsibility to ensure items are properly and securely packed.",
+  ];
+}
+
+export default function InvoiceDocument({ shipment, customer, invoice, operator, seaEstimate }) {
   const weight = Number(shipment.weight_kg);
   const rate = Number(invoice.rate_per_kg);
   const other = Number(invoice.other_charges);
@@ -110,6 +134,10 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator 
                 <strong className="text-ink">{p.display}</strong>
               </span>
             ))}
+            <span className="block">
+              <span className="text-soft">WhatsApp</span>{" "}
+              <strong className="text-ink">{BUSINESS.whatsappDisplay}</strong>
+            </span>
           </div>
         </section>
 
@@ -220,6 +248,21 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator 
         <p className="mt-[10px] text-[10.5px] text-soft">
           Paid in full at the time of booking. No balance outstanding.
         </p>
+
+        {/* ------------------------------------------ terms and conditions */}
+        <section className="invoice-terms mt-[20px] rounded-[6px] border border-[#dbe4f0] bg-[#f9fbfe] px-[14px] py-[12px]">
+          <h2 className="mb-[7px] text-[10.5px] font-bold tracking-[0.07em] text-ink uppercase">
+            Please read Terms &amp; Conditions before signing the shipment
+          </h2>
+          <ol className="columns-2 gap-7 text-[8.4px] leading-[1.5] text-muted max-[560px]:columns-1">
+            {termsList(seaEstimate || "8–10 weeks").map((term, i) => (
+              <li key={i} className="mb-[4px] flex break-inside-avoid gap-[5px]">
+                <span className="flex-none font-semibold text-ink">{i + 1}.</span>
+                <span>{term}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         {/* ------------------------------------------------------- footer */}
         <footer className="mt-[22px] border-t border-line pt-[12px] text-[9.5px] leading-[1.55] text-soft">
