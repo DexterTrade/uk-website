@@ -23,7 +23,8 @@ export default async function ShipmentDetailPage({ params }) {
         "receiver_name, receiver_phone, receiver_phone_alt, receiver_email, receiver_address, receiver_city, " +
         "receiver_country, eta_label, summary, flag, created_at, " +
         "customers(id, name, phone, email, address, postcode, town), " +
-        "invoices(id, rate_per_kg, other_charges, total_charges, issued_date), " +
+        "invoices(id, rate_per_kg, other_charges, total_charges, issued_date, bill_to_name, " +
+        "bill_to_address, bill_to_postcode, bill_to_town, bill_to_phone, bill_to_email), " +
         "shipment_stages(position, label, when_label, done)"
     )
     .ilike("reference", reference)
@@ -34,6 +35,13 @@ export default async function ShipmentDetailPage({ params }) {
   const customer = Array.isArray(shipment.customers) ? shipment.customers[0] : shipment.customers;
   const invoice = Array.isArray(shipment.invoices) ? shipment.invoices[0] : shipment.invoices;
   const stages = [...(shipment.shipment_stages || [])].sort((a, b) => a.position - b.position);
+
+  // Staff can overwrite the suggested total, so the parts don't always add up
+  // to it — the difference is shown as its own figure rather than left to look
+  // like an arithmetic error.
+  const freight = Math.round(Number(invoice?.rate_per_kg ?? 0) * Number(shipment.weight_kg) * 100) / 100;
+  const adjustment =
+    Math.round((Number(invoice?.total_charges ?? 0) - freight - Number(invoice?.other_charges ?? 0)) * 100) / 100;
 
   return (
     <DetailShell
@@ -111,16 +119,35 @@ export default async function ShipmentDetailPage({ params }) {
         title="Invoice"
         action={
           <Link className="text-[13px] font-semibold text-green" href={`/admin/invoices/${shipment.reference}`}>
-            Open invoice &rarr;
+            Print / save PDF &rarr;
           </Link>
         }
       >
         <DataList
           rows={[
-            ["Rate per kg", `£${money(invoice?.rate_per_kg ?? 0)}`],
-            ["Duty + handling + packing", `£${money(invoice?.other_charges ?? 0)}`],
-            ["Total charged", `£${money(invoice?.total_charges ?? 0)}`],
+            ["Invoice number", shipment.reference],
             ["Issued", formatDate(invoice?.issued_date)],
+            ["Rate per kg", `£${money(invoice?.rate_per_kg ?? 0)}`],
+            ["Freight", `${Number(shipment.weight_kg)} kg × £${money(invoice?.rate_per_kg ?? 0)} = £${money(freight)}`],
+            ["Duty + handling + packing", `£${money(invoice?.other_charges ?? 0)}`],
+            ...(adjustment !== 0
+              ? [["Adjustment", `${adjustment < 0 ? "−" : ""}£${money(Math.abs(adjustment))}`]]
+              : []),
+            ["Total charged", `£${money(invoice?.total_charges ?? 0)}`],
+          ]}
+        />
+
+        <p className="mt-6 mb-3 text-xs font-semibold tracking-[0.06em] text-faint uppercase">
+          Billed to (as printed on the invoice)
+        </p>
+        <DataList
+          rows={[
+            ["Name", invoice?.bill_to_name],
+            ["Mobile", invoice?.bill_to_phone],
+            ["Email", invoice?.bill_to_email],
+            ["Address", invoice?.bill_to_address],
+            ["Town / city", invoice?.bill_to_town],
+            ["Postcode", invoice?.bill_to_postcode],
           ]}
         />
       </Panel>

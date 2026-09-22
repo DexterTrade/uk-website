@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { money } from "@/lib/data";
 import {
@@ -65,6 +65,7 @@ export default function BookingForm({ today, initial = null, reference = null })
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [created, setCreated] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [customerNote, setCustomerNote] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -226,35 +227,48 @@ export default function BookingForm({ today, initial = null, reference = null })
 
   const inputClass = (name, base = "input") => `${base} ${errors[name] ? "border-red" : ""}`.trim();
 
-  if (created) {
-    return (
-      <main className="min-h-screen bg-bg-soft px-5 py-16">
-        <div className="mx-auto max-w-[560px] rounded-xl border border-line bg-white p-9 text-center shadow-[0_18px_40px_-34px_rgba(22,35,60,0.45)]">
-          <span className="badge">{isEdit ? "Changes saved" : "Booking created"}</span>
-          <p className="mt-5 text-[13.5px] font-semibold text-soft">Tracking reference</p>
-          <p className="mt-1 font-head text-[44px] leading-none font-extrabold text-green">{created.reference}</p>
-          <p className="mt-5 text-[15px] leading-[1.6] text-muted">
-            {isEdit
-              ? "The shipment, its invoice and the customer record have been updated."
-              : "The shipment and its invoice are saved. Give the customer this reference — they track with it and the mobile number on the booking."}
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link className="btn btn-green" href={`/admin/shipments/${created.reference}`}>
-              View shipment
-            </Link>
-            {isEdit ? (
-              <Link className="btn btn-ghost" href="/admin">
-                Back to admin
-              </Link>
-            ) : (
-              <button className="btn btn-ghost" onClick={reset}>
-                New booking
-              </button>
-            )}
-          </div>
-        </div>
-      </main>
-    );
+  // Dismissing after a new booking clears the form for the next one; after an
+  // edit there is nothing to clear.
+  const closeDialog = useCallback(() => {
+    if (isEdit) setCreated(null);
+    else reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit]);
+
+  useEffect(() => {
+    if (!created) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") closeDialog();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [created, closeDialog]);
+
+  async function copyReference() {
+    const text = created.reference;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      // navigator.clipboard needs a secure context and permission, neither of
+      // which is guaranteed on an office machine over plain http — fall back
+      // to the old selection-based copy so the button always does something.
+      try {
+        const field = document.createElement("textarea");
+        field.value = text;
+        field.setAttribute("readonly", "");
+        field.style.position = "fixed";
+        field.style.opacity = "0";
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand("copy");
+        document.body.removeChild(field);
+        setCopied(true);
+      } catch {
+        setCopied(false);
+      }
+    }
+    setTimeout(() => setCopied(false), 2500);
   }
 
   return (
@@ -646,6 +660,56 @@ export default function BookingForm({ today, initial = null, reference = null })
 
         {formError && <p className="alert alert-error">{formError}</p>}
       </form>
+
+      {created && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-5 py-8 backdrop-blur-[2px]"
+          // Only a click on the backdrop itself closes it — without the target
+          // check, a click that starts inside the card and drifts out would too.
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDialog();
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="booking-created-title"
+            className="relative w-full max-w-[460px] rounded-xl border border-line bg-white p-8 text-center shadow-[0_30px_70px_-30px_rgba(22,35,60,0.6)] max-[520px]:p-6"
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closeDialog}
+              className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-md text-xl leading-none text-faint hover:bg-bg-soft hover:text-ink"
+            >
+              &times;
+            </button>
+
+            <span className="badge">{isEdit ? "Changes saved" : "Invoice created"}</span>
+
+            <h2 id="booking-created-title" className="mt-4 font-head text-[19px] font-bold text-ink">
+              {isEdit ? "Booking updated" : "The booking and its invoice are saved"}
+            </h2>
+
+            <p className="mt-[18px] text-[13px] font-semibold tracking-[0.06em] text-faint uppercase">
+              Invoice number
+            </p>
+            <p className="mt-1 font-head text-[42px] leading-none font-extrabold text-green">{created.reference}</p>
+            <p className="mt-4 text-[14.5px] leading-[1.6] text-muted">
+              The customer tracks with this number and the mobile on the booking.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-[10px]">
+              <button type="button" className="btn btn-ghost w-full" onClick={copyReference}>
+                {copied ? "Copied to clipboard" : "Copy invoice number"}
+              </button>
+              <Link className="btn btn-green w-full" href={`/admin/shipments/${created.reference}`}>
+                Go to shipment details
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

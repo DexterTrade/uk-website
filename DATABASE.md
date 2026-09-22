@@ -310,11 +310,17 @@ Server Component (`app/admin/page.js`) fetches shipments (joined to
 `customers` for the sender and to `invoices` for the amount charged), invoices
 (joined back to `shipments` for the reference), and both rate rows in
 parallel, then hands them to `AdminClient.js` (client component) for the
-interactive table/filter/edit UI. Tabs: Dashboard, Shipments, Invoices,
-Customers, Rates. Key actions: change shipment status, and edit sea/air rates
-(headline rate, note, **estimated time**, UK pickup charge, and the
-next-dispatch date/note — all per mode). Every reference and customer name in
-those tables links through to the matching detail page.
+interactive table/filter/edit UI. Tabs: **Dashboard, Shipments, Customers,
+Rates**. Key actions: change shipment status, and edit sea/air rates (headline
+rate, note, **estimated time**, UK pickup charge, and the next-dispatch
+date/note — all per mode). Every reference and customer name in those tables
+links through to the matching detail page.
+
+**There is deliberately no Invoices tab.** An invoice is 1:1 with its shipment
+and is shown in full on the shipment detail page, so a separate list would be
+the same rows a second time under a different heading. Invoice totals still
+feed the dashboard's monthly figures, and the printable document still has its
+own route.
 
 Customer booking counts and lifetime spend on the Customers tab are derived in
 `page.js` from the shipments already fetched, rather than asking Postgres for
@@ -325,9 +331,11 @@ a per-customer aggregate.
 Three read views, all staff-only under `/admin/*` (so covered by the same
 proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
 
-- **`/admin/shipments/[reference]`** — specs, sender (linked to the customer
-  record), receiver, invoice summary and the tracking timeline. "Edit booking"
-  leads to the edit form.
+- **`/admin/shipments/[reference]`** — **everything about one booking in one
+  place**: shipment specs, sender, receiver, the invoice in full (rate,
+  freight subtotal, charges, any adjustment, total, and the `bill_to_*`
+  snapshot as printed) and the tracking timeline. This is why there is no
+  invoices list. "Edit booking" leads to the edit form.
 - **`/admin/invoices/[reference]`** — the invoice document itself: business
   header with the company number, the `bill_to_*` snapshot, the delivery
   address, and the pricing as lines. Because staff can overwrite the suggested
@@ -336,8 +344,11 @@ proxy matcher), sharing the presentational pieces in `app/admin/DetailUI.js`:
   wrong. Printing is plain `window.print()` plus an `@media print` block in
   `globals.css` that strips the admin chrome — no PDF library, no new
   dependency.
-- **`/admin/customers/[id]`** — the customer's details, lifetime value, and
-  every shipment and invoice of theirs, each linking onward.
+- **`/admin/customers/[id]`** — **the customer record only**: contact details,
+  booking count and lifetime value. No shipment or invoice tables; it answers
+  "who is this person", and the shipment page answers "what happened on this
+  booking". Don't add listings back here without checking — the split is
+  deliberate.
 
 Keyed by `reference`, not `id`, for shipments and invoices: the reference is
 what staff and customers actually quote, and since invoices are 1:1 with
@@ -388,8 +399,13 @@ is why the group headings could go.
   ~200 countries, since the dialling code carries the detail).
 - **The collection date is fixed to today and disabled.** See "Collection date
   and server time" below — the disabled input is presentation only.
-- On success it shows the generated `PC0001` reference on its own, since that
-  is what the customer needs to track with.
+- **On success a modal opens** over the form showing the invoice number
+  (`PC0001` — the shipment reference is the invoice number) with two actions:
+  copy it to the clipboard, and go to the shipment detail page. Copying falls
+  back to the old `execCommand` selection trick, because `navigator.clipboard`
+  needs a secure context and would silently do nothing on an office machine
+  over plain http. Dismissing the modal (×, Escape, or the backdrop) clears
+  the form for the next booking.
 
 ### Collection date and server time (`lib/server-time.js`)
 

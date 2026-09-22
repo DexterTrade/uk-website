@@ -6,10 +6,11 @@ import Link from "next/link";
 import { money, STATUS_CLASS, STATUSES, FILTERS } from "@/lib/data";
 import { signOutAction, updateRate, updateShipmentStatus } from "./actions";
 
+// No Invoices tab: an invoice is 1:1 with its shipment and is shown in full on
+// the shipment detail page, so a separate list would be the same rows twice.
 const NAV = [
   { key: "dash", label: "Dashboard" },
   { key: "ship", label: "Shipments" },
-  { key: "inv", label: "Invoices" },
   { key: "cust", label: "Customers" },
   { key: "rates", label: "Rates" },
 ];
@@ -66,10 +67,6 @@ export default function AdminClient({
         .filter((s) => filter === "All" || s.status === filter)
         .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service}`, search)),
     [shipments, filter, search]
-  );
-  const invoiceRows = useMemo(
-    () => invoices.filter((i) => matches(`${i.ref} ${i.customer} ${i.town}`, search)),
-    [invoices, search]
   );
   const customerRows = useMemo(
     () => customers.filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.town} ${c.postcode}`, search)),
@@ -270,49 +267,6 @@ export default function AdminClient({
                 </table>
               </div>
               {shipmentRows.length === 0 && <p className="empty">No shipments match that search or filter.</p>}
-            </div>
-          </section>
-        )}
-
-        {view === "inv" && (
-          <section className="admin-view">
-            <h1>Invoices</h1>
-            <p className="sub">
-              £{money(invoices.reduce((a, b) => a + b.total, 0))} invoiced across {invoices.length} bookings.
-              Every booking is paid at the point of sale, so there is nothing outstanding to chase.
-            </p>
-            <div className="pane">
-              <div className="scroll">
-                <table className="min-w-[820px]">
-                  <thead>
-                    <tr>
-                      <th>Reference</th><th>Customer</th><th>Town</th><th>Mode</th><th>Issued</th>
-                      <th className="num-right">Rate/kg</th>
-                      <th className="num-right">Duty + handling</th>
-                      <th className="num-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoiceRows.map((i) => (
-                      <tr key={i.id}>
-                        <td className="key">
-                          <Link className="text-green hover:underline" href={`/admin/invoices/${i.ref}`}>
-                            {i.ref}
-                          </Link>
-                        </td>
-                        <td>{i.customer}</td>
-                        <td>{i.town}</td>
-                        <td>{i.mode}</td>
-                        <td>{i.issued}</td>
-                        <td className="num-right">£{money(i.rate)}</td>
-                        <td className="num-right">£{money(i.other)}</td>
-                        <td className="num-right font-semibold">£{money(i.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {invoiceRows.length === 0 && <p className="empty">No invoices match that search.</p>}
             </div>
           </section>
         )}
