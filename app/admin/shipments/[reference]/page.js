@@ -45,7 +45,7 @@ export default async function ShipmentDetailPage({ params }) {
 
   return (
     <DetailShell
-      back={{ href: "/admin", label: "Admin" }}
+      back="/admin"
       eyebrow="Shipment"
       title={shipment.reference}
       badge={

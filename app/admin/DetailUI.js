@@ -3,14 +3,17 @@
 
 import Link from "next/link";
 
+// `back` is an href. The link always reads "← Back" rather than naming the
+// destination: where it goes depends on how the page was reached, and a label
+// that says "PC0001" on a page titled PC0001 reads as though it goes nowhere.
 export function DetailShell({ back, eyebrow, title, badge, actions, children }) {
   return (
     <main className="min-h-screen bg-bg-soft pb-16">
       <div className="border-b border-line bg-white print:hidden-force">
         <div className="mx-auto flex max-w-[980px] flex-wrap items-start justify-between gap-4 px-5 py-5">
           <div>
-            <Link className="text-[13px] font-semibold text-soft hover:text-ink" href={back.href}>
-              &larr; {back.label}
+            <Link className="text-[13px] font-semibold text-soft hover:text-ink" href={back}>
+              &larr; Back
             </Link>
             {eyebrow && (
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-faint uppercase">{eyebrow}</p>

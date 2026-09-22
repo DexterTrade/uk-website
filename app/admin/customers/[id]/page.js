@@ -33,7 +33,7 @@ export default async function CustomerDetailPage({ params }) {
 
   return (
     <DetailShell
-      back={{ href: "/admin", label: "Admin" }}
+      back="/admin"
       eyebrow="Customer"
       title={customer.name}
       actions={

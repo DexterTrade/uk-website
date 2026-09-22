@@ -280,7 +280,7 @@ export default function BookingForm({ today, initial = null, reference = null })
               className="text-[13px] font-semibold text-soft hover:text-ink"
               href={isEdit ? `/admin/shipments/${reference}` : "/admin"}
             >
-              &larr; {isEdit ? reference : "Admin"}
+              &larr; Back
             </Link>
             <h1 className="mt-1 font-head text-[22px] font-extrabold text-ink">
               {isEdit ? `Edit booking ${reference}` : "New booking"}

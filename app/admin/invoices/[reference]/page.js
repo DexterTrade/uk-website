@@ -38,7 +38,7 @@ export default async function InvoiceDetailPage({ params }) {
 
   return (
     <DetailShell
-      back={{ href: `/admin/shipments/${shipment.reference}`, label: shipment.reference }}
+      back={`/admin/shipments/${shipment.reference}`}
       eyebrow="Invoice"
       title={shipment.reference}
       actions={
