@@ -383,6 +383,25 @@ Each row has a checkbox, with a header checkbox that selects everything
 currently shown, and a bar above the table applies one status to the selection
 in a single `UPDATE ... IN (...)`.
 
+**The bulk controls only appear once two or more rows are selected.** Below
+that the bar carries a red "Select multiple shipments to bulk update the
+status" instead — and when exactly one is selected it also points at the
+per-row status dropdown, which is the right tool for a single shipment. A
+disabled dropdown with no explanation would leave staff guessing.
+
+### Feedback on admin actions
+
+Anything that changes data and stays on the page raises a toast
+(`app/admin/Toast.js`, mounted once in `AdminClient`): a single status change,
+a bulk update, a rate save, and the failure case of each. Errors returned by
+the Server Actions surface there too, in red, rather than being swallowed —
+several of these previously succeeded or failed in complete silence.
+
+Creating or editing a booking is the exception: it keeps its own modal,
+because that one produces a reference the user has to copy or follow, which a
+toast that disappears after four seconds cannot carry. Toasts are for "that
+worked"; the modal is for "here is the thing you now need".
+
 The selection is always intersected with the visible rows before anything is
 applied. Without that, narrowing the filter would leave rows selected that the
 user can't see, and "apply to N selected" would silently change more than what

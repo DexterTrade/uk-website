@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
 import { signOutAction, updateRate, updateShipmentStatus, updateShipmentStatuses } from "./actions";
 import RangeSlider from "./RangeSlider";
+import Toast from "./Toast";
 
 // No Invoices tab: an invoice is 1:1 with its shipment and is shown in full on
 // the shipment detail page, so a separate list would be the same rows twice.
@@ -60,7 +61,24 @@ export default function AdminClient({
 
   const [selected, setSelected] = useState(() => new Set());
   const [bulkStatus, setBulkStatus] = useState("");
-  const [bulkNote, setBulkNote] = useState("");
+
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+
+  // One toast at a time: a new message replaces the previous one and restarts
+  // the timer, rather than queueing behind it.
+  const showToast = useCallback((message, tone = "ok") => {
+    clearTimeout(toastTimer.current);
+    setToast({ message, tone, id: Date.now() });
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    clearTimeout(toastTimer.current);
+    setToast(null);
+  }, []);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const [rateForm, setRateForm] = useState(() =>
     Object.fromEntries(
@@ -77,7 +95,6 @@ export default function AdminClient({
       ])
     )
   );
-  const [rateSaved, setRateSaved] = useState({});
 
   // Derived from the statuses table rather than naming a status in code: the
   // first is the earliest stage and the last is the terminal one, so renaming
@@ -145,14 +162,23 @@ export default function AdminClient({
     [shipmentRows, selected]
   );
   const allVisibleSelected = shipmentRows.length > 0 && visibleSelected.length === shipmentRows.length;
+
+  // Bulk edit is for several rows at once; a single shipment is changed with
+  // the status dropdown in its own row.
+  const canBulkEdit = visibleSelected.length >= 2;
   const customerRows = useMemo(
     () => customers.filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.town} ${c.postcode}`, search)),
     [customers, search]
   );
 
-  function handleStatusChange(shipmentId, status) {
+  function handleStatusChange(shipmentId, reference, status) {
     startTransition(async () => {
-      await updateShipmentStatus(shipmentId, status);
+      const result = await updateShipmentStatus(shipmentId, status);
+      if (result?.error) {
+        showToast(result.error, "error");
+        return;
+      }
+      showToast(`${reference} updated to ${status}.`);
       router.refresh();
     });
   }
@@ -163,7 +189,6 @@ export default function AdminClient({
     setDateRange(null);
     setPriceRange(null);
     setWeightRange(null);
-    setBulkNote("");
   }
 
   function toggleRow(id) {
@@ -173,7 +198,6 @@ export default function AdminClient({
       else next.add(id);
       return next;
     });
-    setBulkNote("");
   }
 
   function toggleAllVisible() {
@@ -183,20 +207,17 @@ export default function AdminClient({
       else shipmentRows.forEach((s) => next.add(s.id));
       return next;
     });
-    setBulkNote("");
   }
 
   function handleBulkApply() {
-    if (!bulkStatus || visibleSelected.length === 0) return;
+    if (!bulkStatus || !canBulkEdit) return;
     startTransition(async () => {
       const result = await updateShipmentStatuses(visibleSelected, bulkStatus);
       if (result?.error) {
-        setBulkNote(result.error);
+        showToast(result.error, "error");
         return;
       }
-      setBulkNote(
-        `${result.updated} ${result.updated === 1 ? "shipment" : "shipments"} set to ${bulkStatus}.`
-      );
+      showToast(`${result.updated} shipments updated to ${bulkStatus}.`);
       setSelected(new Set());
       setBulkStatus("");
       router.refresh();
@@ -205,16 +226,17 @@ export default function AdminClient({
 
   function updateRateField(mode, field, value) {
     setRateForm((prev) => ({ ...prev, [mode]: { ...prev[mode], [field]: value } }));
-    setRateSaved((prev) => ({ ...prev, [mode]: false }));
   }
 
   function handleSaveRate(mode) {
     startTransition(async () => {
       const result = await updateRate(mode, rateForm[mode]);
-      if (!result?.error) {
-        setRateSaved((prev) => ({ ...prev, [mode]: true }));
-        router.refresh();
+      if (result?.error) {
+        showToast(result.error, "error");
+        return;
       }
+      showToast(`${mode === "sea" ? "Sea" : "Air"} cargo rates saved — live everywhere they're shown.`);
+      router.refresh();
     });
   }
 
@@ -348,7 +370,6 @@ export default function AdminClient({
                     value={statusFilter}
                     onChange={(e) => {
                       setStatusFilter(e.target.value);
-                      setBulkNote("");
                     }}
                   >
                     <option value="">All statuses</option>
@@ -367,7 +388,6 @@ export default function AdminClient({
                     value={serviceFilter}
                     onChange={(e) => {
                       setServiceFilter(e.target.value);
-                      setBulkNote("");
                     }}
                   >
                     <option value="">Air and sea</option>
@@ -414,46 +434,53 @@ export default function AdminClient({
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-[#e2e7f0] bg-white px-4 py-3">
-              <span className="text-[13.5px] font-semibold text-ink">
-                {visibleSelected.length} selected
-              </span>
-              <span className="text-[13px] text-soft">
-                {filtersActive ? "within the current filter" : "across all shipments"}
-              </span>
-              <select
-                className="status-select"
-                aria-label="Bulk status"
-                value={bulkStatus}
-                disabled={isPending || visibleSelected.length === 0}
-                onChange={(e) => setBulkStatus(e.target.value)}
-              >
-                <option value="">Set status to…</option>
-                {statuses.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.value}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="btn btn-green btn-sm"
-                disabled={isPending || !bulkStatus || visibleSelected.length === 0}
-                onClick={handleBulkApply}
-              >
-                {isPending ? "Applying…" : "Apply"}
-              </button>
-              {visibleSelected.length > 0 && (
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => {
-                    setSelected(new Set());
-                    setBulkNote("");
-                  }}
-                >
-                  Clear selection
-                </button>
+            {/* The controls appear only once there is a multi-row selection to
+                act on; below that the bar explains what's missing instead of
+                offering a disabled dropdown with no reason given. */}
+            <div className="mt-4 flex min-h-[58px] flex-wrap items-center gap-3 rounded-[10px] border border-[#e2e7f0] bg-white px-4 py-3">
+              {canBulkEdit ? (
+                <>
+                  <span className="text-[13.5px] font-semibold text-ink">
+                    {visibleSelected.length} selected
+                  </span>
+                  <span className="text-[13px] text-soft">
+                    {filtersActive ? "within the current filter" : "across all shipments"}
+                  </span>
+                  <select
+                    className="status-select"
+                    aria-label="Bulk status"
+                    value={bulkStatus}
+                    disabled={isPending}
+                    onChange={(e) => setBulkStatus(e.target.value)}
+                  >
+                    <option value="">Set status to…</option>
+                    {statuses.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.value}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn btn-green btn-sm"
+                    disabled={isPending || !bulkStatus}
+                    onClick={handleBulkApply}
+                  >
+                    {isPending ? "Applying…" : "Apply to all selected"}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>
+                    Clear selection
+                  </button>
+                </>
+              ) : (
+                <p className="text-[13.5px] font-medium text-red">
+                  Select multiple shipments to bulk update the status.
+                  {visibleSelected.length === 1 && (
+                    <span className="ml-1 font-normal text-soft">
+                      One is selected — change a single shipment with the status dropdown in its row.
+                    </span>
+                  )}
+                </p>
               )}
-              {bulkNote && <span className="text-[13px] font-medium text-green-ink">{bulkNote}</span>}
             </div>
             <div className="pane">
               <div className="scroll">
@@ -509,7 +536,7 @@ export default function AdminClient({
                             className="status-select"
                             value={s.status}
                             disabled={isPending}
-                            onChange={(e) => handleStatusChange(s.id, e.target.value)}
+                            onChange={(e) => handleStatusChange(s.id, s.ref, e.target.value)}
                           >
                             {statuses.map((o) => (
                               <option key={o.value} value={o.value}>{o.value}</option>
@@ -660,15 +687,14 @@ export default function AdminClient({
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save
                   </button>
-                  {rateSaved[mode] && (
-                    <span className="text-[13.5px] text-green-ink">Saved &mdash; live everywhere it&rsquo;s shown now.</span>
-                  )}
                 </div>
               </div>
             ))}
           </section>
         )}
       </main>
+
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }

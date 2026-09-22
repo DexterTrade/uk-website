@@ -675,6 +675,26 @@
 }
 
 @layer utilities {
+  /* Toast entrance. Skipped for anyone who has asked for reduced motion. */
+  @keyframes toast-pop {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .toast-pop {
+    animation: toast-pop 180ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast-pop {
+      animation: none;
+    }
+  }
+
   .grid-fields {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
