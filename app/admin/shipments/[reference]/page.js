@@ -82,7 +82,7 @@ export default async function ShipmentDetailPage({ params }) {
       </Panel>
 
       <Panel
-        title="Sender"
+        title="Customer (sender)"
         action={
           <Link className="text-[13px] font-semibold text-green" href={`/admin/customers/${customer?.id}`}>
             Customer record &rarr;

@@ -220,11 +220,12 @@ export default function AdminClient({
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[940px]">
+                <table className="min-w-[1030px]">
                   <thead>
                     <tr>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
-                      <th>Weight</th><th>Collection</th><th>Status</th><th className="num-right">Charged</th>
+                      <th>Weight</th><th>Collection</th><th>Status</th>
+                      <th className="num-right">Charged</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -261,6 +262,11 @@ export default function AdminClient({
                           </select>
                         </td>
                         <td className="num-right font-semibold">£{money(s.total)}</td>
+                        <td>
+                          <Link className="btn btn-ghost btn-sm whitespace-nowrap" href={`/admin/shipments/${s.ref}`}>
+                            View
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
