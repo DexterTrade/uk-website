@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/seo";
+import { getStaff } from "@/lib/supabase/staff";
 import AdminClient from "./AdminClient";
+import ManagerHome from "./ManagerHome";
 
 export const metadata = {
   title: "Admin panel",
@@ -27,6 +29,14 @@ export default async function AdminPage({ searchParams }) {
   // page returns to the tab you left rather than resetting to the dashboard.
   const { tab } = await searchParams;
   const supabase = await createClient();
+
+  // A manager gets the booking screen and nothing else. The queries below are
+  // skipped entirely rather than run and discarded — under the role-aware RLS
+  // policies most of them would come back empty anyway.
+  const staff = await getStaff(supabase);
+  if (staff && staff.role !== "super_admin") {
+    return <ManagerHome fullName={staff.fullName} />;
+  }
 
   const [
     { data: userData },

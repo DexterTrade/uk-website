@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getStaff, isSuperAdmin } from "@/lib/supabase/staff";
 import { money, statusBadgeClass } from "@/lib/data";
 import { DataList, DetailShell, Panel, backToTab, formatDate, modeLabel, weightLabel } from "../../DetailUI";
 
@@ -14,6 +15,11 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
   const { reference } = await params;
   const { from } = await searchParams;
   const supabase = await createClient();
+
+  // Super-admin only. RLS would return nothing to a manager anyway; this
+  // turns that into an honest 404 rather than a page of empty fields.
+  if (!isSuperAdmin(await getStaff(supabase))) notFound();
+
 
   const { data: shipment } = await supabase
     .from("shipments")

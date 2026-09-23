@@ -105,6 +105,49 @@ frozen at write time; they're now derived at read time — `route` from
 — inside `get_shipment_by_reference()` and in `app/admin/page.js`. If you need
 a new display string, derive it too rather than adding a column.
 
+### `staff`
+Who may sign in to `/admin` and what they may do. **Two roles:**
+
+| Role | May |
+|---|---|
+| `super_admin` | Everything — statuses, edits, rates, customer links, the activity log |
+| `manager` | **Create bookings only** (which means inserting a customer, a shipment and an invoice) |
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | uuid PK → `auth.users.id` (`ON DELETE CASCADE`) | |
+| `full_name` | text | Printed on invoices as "Booked by" |
+| `role` | text | CHECK `super_admin` / `manager` |
+| `active` | boolean | Set false to revoke access without deleting history |
+| `created_at` | timestamptz | |
+
+**Three things about this that must not regress:**
+
+1. **Roles are not in `user_metadata`.** That is writable by the signed-in
+   user through `supabase.auth.updateUser()`, so a role stored there could be
+   self-granted. This table has a `select` policy and **no insert, update or
+   delete policy at all** — staff and roles can only be changed from the SQL
+   editor or with the service key.
+2. **Enforcement is RLS, not the UI.** Every Server Action talks to Postgres
+   with the staff member's own token, so hiding buttons would stop nothing —
+   a manager could call PostgREST directly. `is_staff()` and
+   `is_super_admin()` (both `SECURITY DEFINER`, `STABLE`) back the policies on
+   every table.
+3. **An authenticated account with no active staff row has no access to
+   anything.** That is the intended default, and it means a new Supabase Auth
+   user is inert until a staff row is added for them.
+
+Managers keep `insert` on customers, shipments and invoices, and `update` on
+customers, because `create_booking()` is `SECURITY INVOKER` and a returning
+customer's details are refreshed in the same transaction. Everything else —
+status changes, booking edits, share tokens, rates, reading the activity log —
+is `super_admin`. Their actions are still written to `activity_log`; they just
+can't read it.
+
+**Adding staff**: create the Auth user (Supabase → Authentication → Users →
+Add user, with *Auto Confirm User* ticked, since the site has no sign-up
+flow), then insert their `staff` row with a name and role.
+
 ### `shipment_statuses`
 The set of statuses a shipment can have. A table rather than a CHECK
 constraint or a JS array, so the admin panel's filters and dropdowns read the
@@ -266,23 +309,28 @@ propagation list).
 
 RLS is **enabled on every table**. Policies:
 
-| Table | Policy | Role | Effect |
-|---|---|---|---|
-| `customers` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
-| `shipments` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
-| `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only (table superseded, see above) |
-| `shipment_status_history` | `staff read status history` | `authenticated` | `SELECT` only — rows are written by a trigger, never by the app |
-| `shipment_statuses` | `staff read statuses` | `authenticated` | `SELECT` only — the list is edited in Supabase, not from the app |
-| `activity_log` | `staff read activity`, `staff append activity` | `authenticated` | `SELECT` and `INSERT` only — deliberately no update or delete, so the audit trail can't be rewritten from the app |
-| `invoices` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
-| `rates` | `public read rates` | `anon`, `authenticated` | Public `SELECT` only |
-| `rates` | `staff update rates` | `authenticated` | Staff can `UPDATE` |
+| Table | Who | Effect |
+|---|---|---|
+| `staff` | any signed-in user | `SELECT` only. **No write policy at all** — roles cannot be changed from the app |
+| `customers` | any active staff | `SELECT`, `INSERT`, `UPDATE` (a booking refreshes a returning customer). `DELETE` is super_admin |
+| `shipments` | any active staff | `SELECT`, `INSERT`. `UPDATE`/`DELETE` are super_admin |
+| `invoices` | any active staff | `SELECT`, `INSERT`. `UPDATE`/`DELETE` are super_admin — share tokens and price corrections both go through UPDATE |
+| `shipment_statuses` | any active staff | `SELECT` only; the list is edited in Supabase |
+| `shipment_status_history` | any active staff | `SELECT` only; rows are written by a trigger |
+| `activity_log` | any active staff | `INSERT` only. `SELECT` is super_admin. **No update or delete policy**, so the audit trail can't be rewritten |
+| `shipment_stages` | super_admin | Superseded table, kept but unused |
+| `rates` | `anon` + `authenticated` | Public `SELECT` — the website reads these anonymously. `UPDATE` is super_admin |
 
 **There is no public SELECT policy on `customers`, `shipments`,
-`shipment_stages` or `invoices`.** The *only* way the public site reads
-shipment data is through the narrow SECURITY DEFINER RPC below — direct table
-access from the anon key returns nothing. Customer contact details in
-particular are never readable by `anon` through any path.
+`shipment_status_history`, `invoices` or `staff`.** The only ways the public
+reads any of it are the two narrow `SECURITY DEFINER` RPCs below; direct table
+access with the anon key returns nothing. Customer contact details in
+particular are never readable by `anon` except as part of that customer's own
+invoice.
+
+**An authenticated account with no active `staff` row sees nothing and can
+write nothing** — verified by simulating such a token. Access is granted by
+adding a staff row, not by being able to log in.
 
 ## Database functions (RPCs)
 
@@ -399,7 +447,12 @@ Standard `updated_at = now()` trigger function, attached to tables with an
 3. **Competitor names never appear in site copy.** SEO content may target the
    same search intent as named competitors but must never print a
    competitor's actual business name (trademark/passing-off risk).
-4. **`/admin` is gated two ways**: `proxy.js` (`matcher: ["/admin/:path*"]`)
+4. **Roles are enforced in the database.** See the `staff` table: a manager
+   may only create bookings, and that is a set of RLS policies, not hidden
+   buttons. The Server Actions also check the role so a blocked write reports
+   an error instead of silently affecting zero rows, but the policies are what
+   actually stop it.
+5. **`/admin` is gated two ways**: `proxy.js` (`matcher: ["/admin/:path*"]`)
    refreshes/redirects based on session for page navigations, *and* every
    Server Action in `app/admin/actions.js` independently calls
    `requireStaff()` (checks `supabase.auth.getClaims()`, redirects to

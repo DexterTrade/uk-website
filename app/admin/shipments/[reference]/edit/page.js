@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getStaff, isSuperAdmin } from "@/lib/supabase/staff";
 import BookingForm from "../../../BookingForm";
 import { getTodayISO } from "@/lib/server-time";
 
@@ -11,6 +12,11 @@ export const metadata = {
 export default async function EditBookingPage({ params }) {
   const { reference } = await params;
   const supabase = await createClient();
+
+  // Super-admin only. RLS would return nothing to a manager anyway; this
+  // turns that into an honest 404 rather than a page of empty fields.
+  if (!isSuperAdmin(await getStaff(supabase))) notFound();
+
 
   const { data: shipment } = await supabase
     .from("shipments")

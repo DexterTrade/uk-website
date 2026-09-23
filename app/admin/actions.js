@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from "@/lib/validation/booking";
 import { getTodayISO } from "@/lib/server-time";
 import { SITE_URL } from "@/lib/seo";
+import { getStaff, isSuperAdmin } from "@/lib/supabase/staff";
 
 // Server Actions are public HTTP endpoints in their own right — the proxy
 // only guards page navigations, so every action re-checks the session
@@ -18,6 +19,18 @@ async function requireStaff() {
     redirect("/admin/login");
   }
   return supabase;
+}
+
+// RLS is what actually stops a manager writing, but an UPDATE blocked by a
+// policy affects zero rows *without raising an error* — so without this check
+// the panel would cheerfully report success while nothing changed. It also
+// gives a readable message instead of a silent no-op.
+const FORBIDDEN = { error: "Your account doesn't have permission for that." };
+
+async function requireSuperAdmin() {
+  const supabase = await requireStaff();
+  const staff = await getStaff(supabase);
+  return { supabase, staff, allowed: isSuperAdmin(staff) };
 }
 
 // Appends to the audit trail. Deliberately swallows its own failures: a log
@@ -57,7 +70,8 @@ async function assertKnownStatus(supabase, status) {
 }
 
 export async function updateShipmentStatus(shipmentId, status) {
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
   if (!(await assertKnownStatus(supabase, status))) return { error: "Unknown status." };
 
   const { data: updated, error } = await supabase
@@ -81,7 +95,8 @@ export async function updateShipmentStatus(shipmentId, status) {
 // the current filtered selection or everything — in one statement rather
 // than a request per row.
 export async function updateShipmentStatuses(shipmentIds, status) {
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
 
   const ids = [...new Set((shipmentIds || []).filter(Boolean))];
   if (ids.length === 0) return { error: "Select at least one shipment." };
@@ -111,7 +126,8 @@ export async function updateRate(
   if (mode !== "air" && mode !== "sea") {
     return { error: "Unknown rate mode." };
   }
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
   const { error } = await supabase
     .from("rates")
     .update({
@@ -148,7 +164,8 @@ export async function updateRate(
 // anyone who could count. Two random UUIDs give ~244 bits from the platform
 // CSPRNG.
 export async function createInvoiceShareLink(reference, regenerate = false) {
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
 
   const { data: shipment } = await supabase
     .from("shipments")
@@ -184,7 +201,8 @@ export async function createInvoiceShareLink(reference, regenerate = false) {
 // Everything the invoice document needs for one booking, fetched on demand so
 // the shipments list doesn't carry invoice bodies for every row it renders.
 export async function getInvoicePreview(reference) {
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
 
   const [{ data: shipment }, { data: seaRate }] = await Promise.all([
     supabase
@@ -260,8 +278,12 @@ export async function createBooking(values) {
 
   // Recorded on the shipment, not looked up when the invoice is viewed: the
   // name on an invoice is whoever took the booking, not whoever opened it.
-  const { data: claims } = await supabase.auth.getClaims();
-  const bookedBy = claims?.claims?.user_metadata?.full_name || "";
+  // Taken from the staff table rather than the session token, so it is
+  // correct immediately after a name is set instead of only once the token
+  // refreshes — and isn't a value the user can edit about themselves.
+  const staff = await getStaff(supabase);
+  if (!staff) return FORBIDDEN;
+  const bookedBy = staff.fullName || "";
 
   const { data, error } = await supabase.rpc("create_booking", {
     payload: { ...toBookingPayload(clean), booked_by: bookedBy },
@@ -282,7 +304,8 @@ export async function createBooking(values) {
 // yup context so a booking whose collection date has since passed can still
 // be re-saved.
 export async function updateBooking(reference, values) {
-  const supabase = await requireStaff();
+  const { supabase, allowed } = await requireSuperAdmin();
+  if (!allowed) return FORBIDDEN;
 
   const { data: existing } = await supabase
     .from("shipments")
