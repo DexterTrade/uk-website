@@ -110,6 +110,22 @@ function whatsAppSendUrl(number, message) {
     : `https://web.whatsapp.com/send?phone=${number}&text=${text}`;
 }
 
+// Dashboard date presets. Ranges are inclusive ISO date strings, which
+// compare correctly as plain strings, so no Date objects are needed to filter.
+const shiftDays = (iso, days) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+const DATE_PRESETS = [
+  { key: "today", label: "Today", range: (today) => [today, today] },
+  { key: "7", label: "Last 7 days", range: (today) => [shiftDays(today, -6), today] },
+  { key: "30", label: "Last 30 days", range: (today) => [shiftDays(today, -29), today] },
+  { key: "month", label: "This month", range: (today) => [`${today.slice(0, 7)}-01`, today] },
+  { key: "all", label: "All time", range: () => ["0001-01-01", "9999-12-31"] },
+];
+
 // A range the user hasn't touched spans the whole of the data; one they have
 // is still clamped, because reloading can move the bounds underneath it.
 const clampRange = (range, [min, max]) =>
@@ -124,9 +140,8 @@ export default function AdminClient({
   statuses,
   activity,
   initialTab,
+  todayISO,
   rates,
-  monthKey,
-  monthLabel,
   staffEmail,
 }) {
   const router = useRouter();
@@ -137,6 +152,12 @@ export default function AdminClient({
   );
 
   const [search, setSearch] = useState("");
+
+  // Dashboard date filter. "custom" is selected implicitly by typing into
+  // either date box, so there's no separate mode to remember to switch.
+  const [datePreset, setDatePreset] = useState("month");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // "" means no filter on that field.
   const [statusFilter, setStatusFilter] = useState("");
@@ -203,18 +224,36 @@ export default function AdminClient({
   const firstStatus = statuses[0]?.value ?? "";
   const finalStatus = statuses[statuses.length - 1]?.value ?? "";
 
-  const active = useMemo(
-    () => shipments.filter((s) => s.status !== finalStatus),
-    [shipments, finalStatus]
-  );
-  const attention = useMemo(() => shipments.filter((s) => s.flag), [shipments]);
+  // The dashboard's active range: a preset, unless either date box has been
+  // filled in, in which case those win.
+  const [rangeFrom, rangeTo] = useMemo(() => {
+    if (dateFrom || dateTo) return [dateFrom || "0001-01-01", dateTo || "9999-12-31"];
+    const preset = DATE_PRESETS.find((p) => p.key === datePreset) || DATE_PRESETS[3];
+    return preset.range(todayISO);
+  }, [datePreset, dateFrom, dateTo, todayISO]);
 
-  // monthKey ("2026-09") comes from the server so this follows the calendar
-  // instead of matching a hardcoded month name.
-  const monthly = useMemo(
-    () => invoices.filter((i) => (i.issuedISO || "").startsWith(monthKey)),
-    [invoices, monthKey]
+  const isCustomRange = Boolean(dateFrom || dateTo);
+  const rangeLabel = isCustomRange
+    ? `${dateFrom || "the start"} to ${dateTo || "today"}`
+    : (DATE_PRESETS.find((p) => p.key === datePreset) || DATE_PRESETS[3]).label.toLowerCase();
+
+  // ISO date strings compare correctly as strings, so no Date objects here.
+  const inRange = useCallback((iso) => Boolean(iso) && iso >= rangeFrom && iso <= rangeTo, [rangeFrom, rangeTo]);
+
+  // Everything on the dashboard is scoped to the range: a booking's date is
+  // its collection date, which by design is the day the booking was taken.
+  const dashShipments = useMemo(
+    () => shipments.filter((s) => inRange(s.collectionISO)),
+    [shipments, inRange]
   );
+  const dashInvoices = useMemo(() => invoices.filter((i) => inRange(i.issuedISO)), [invoices, inRange]);
+  const dashActivity = useMemo(() => activity.filter((a) => inRange(a.atISO)), [activity, inRange]);
+
+  const active = useMemo(
+    () => dashShipments.filter((s) => s.status !== finalStatus),
+    [dashShipments, finalStatus]
+  );
+  const attention = useMemo(() => dashShipments.filter((s) => s.flag), [dashShipments]);
 
   // Slider bounds come from the data itself, so the handles always span
   // exactly what exists rather than an arbitrary hardcoded ceiling.
@@ -538,30 +577,86 @@ export default function AdminClient({
         {view === "dash" && (
           <section className="admin-view">
             <h1>Dashboard</h1>
-            <p className="sub">{monthLabel}</p>
+            <p className="sub">
+              Showing {rangeLabel} &middot; {dashShipments.length} of {shipments.length} bookings
+            </p>
+
+            {/* One date filter drives every figure and table below it. */}
+            <div className="mt-5 flex flex-wrap items-end justify-between gap-4 rounded-[10px] border border-[#e2e7f0] bg-white px-5 py-[16px]">
+              <div className="chips mt-0">
+                {DATE_PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    className="chip"
+                    aria-pressed={!isCustomRange && datePreset === p.key}
+                    onClick={() => {
+                      setDatePreset(p.key);
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="field">
+                  From
+                  <input
+                    className="input min-h-[42px] py-2"
+                    type="date"
+                    max={dateTo || undefined}
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  To
+                  <input
+                    className="input min-h-[42px] py-2"
+                    type="date"
+                    min={dateFrom || undefined}
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </label>
+                {isCustomRange && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                  >
+                    Clear dates
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="kpis">
               <div className="kpi">
-                <div className="k">Active shipments</div>
-                <div className="v">{active.length}</div>
+                <div className="k">Bookings</div>
+                <div className="v">{dashShipments.length}</div>
                 <div className="n good">
-                  {active.filter((s) => s.mode === "air").length} air &middot;{" "}
-                  {active.filter((s) => s.mode === "sea").length} sea
+                  {dashShipments.filter((s) => s.mode === "air").length} air &middot;{" "}
+                  {dashShipments.filter((s) => s.mode === "sea").length} sea
                 </div>
               </div>
               <div className="kpi">
+                <div className="k">Invoiced</div>
+                <div className="v">£{money(dashInvoices.reduce((a, b) => a + b.total, 0))}</div>
+                <div className="n">Across {dashInvoices.length} invoices</div>
+              </div>
+              <div className="kpi">
+                <div className="k">Still in progress</div>
+                <div className="v">{active.length}</div>
+                <div className="n">Not yet {finalStatus.toLowerCase()}</div>
+              </div>
+              <div className="kpi">
                 <div className="k">Awaiting dispatch</div>
-                <div className="v">{shipments.filter((s) => s.status === firstStatus).length}</div>
+                <div className="v">{dashShipments.filter((s) => s.status === firstStatus).length}</div>
                 <div className="n">{firstStatus}, not yet moved on</div>
-              </div>
-              <div className="kpi">
-                <div className="k">Bookings this month</div>
-                <div className="v">{monthly.length}</div>
-                <div className="n">{shipments.length} in total</div>
-              </div>
-              <div className="kpi">
-                <div className="k">Invoiced this month</div>
-                <div className="v">£{money(monthly.reduce((a, b) => a + b.total, 0))}</div>
-                <div className="n">Across {monthly.length} bookings</div>
               </div>
             </div>
             <div className="pane">
@@ -597,7 +692,9 @@ export default function AdminClient({
             <div className="pane">
               <div className="pane-head">
                 <h2>Activity log</h2>
-                <span className="text-[13px] text-soft">Last {activity.length} actions</span>
+                <span className="text-[13px] text-soft">
+                  {dashActivity.length} {dashActivity.length === 1 ? "action" : "actions"} in range
+                </span>
               </div>
               <div className="scroll">
                 <table className="min-w-[680px]">
@@ -605,7 +702,7 @@ export default function AdminClient({
                     <tr><th>When</th><th>Who</th><th>What</th><th>Reference</th></tr>
                   </thead>
                   <tbody>
-                    {activity.map((a) => (
+                    {dashActivity.map((a) => (
                       <tr key={a.id}>
                         <td className="whitespace-nowrap">{a.when}</td>
                         <td>{a.who}</td>
@@ -616,7 +713,9 @@ export default function AdminClient({
                   </tbody>
                 </table>
               </div>
-              {activity.length === 0 && <p className="empty">Nothing recorded yet.</p>}
+              {dashActivity.length === 0 && (
+                <p className="empty">Nothing recorded in this date range.</p>
+              )}
             </div>
           </section>
         )}

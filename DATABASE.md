@@ -708,11 +708,26 @@ and switches to `updateBooking`. Keeping one component means a field added to
 the booking form can't be forgotten on the edit form. It lives at
 `app/admin/BookingForm.js` (not inside `new-booking/`) for that reason.
 
-The dashboard's "this month" figures take a `monthKey` (`"2026-09"`) computed
-on the server in `page.js`, rather than string-matching a hardcoded month name
-the way they used to — that quietly read zero the moment the month rolled
-over. The dashboard also shows the **activity log**: the last 40 entries from
-`activity_log`, with who did each one.
+**The dashboard is driven by one date filter.** Presets (Today / Last 7 days /
+Last 30 days / This month / All time) plus From and To boxes; filling either
+box switches to that custom range, so there is no separate mode to select.
+Every figure and table below it is scoped to the range — the four KPIs
+(bookings, invoiced, still in progress, awaiting dispatch), the flagged-
+shipments table and the activity log — so the heading states which range is
+showing and how many of the total bookings it covers.
+
+Two details:
+
+- **Ranges are inclusive ISO date strings and compared as strings.** `>=` and
+  `<=` on `YYYY-MM-DD` are already chronological, so no `Date` objects are
+  built per row. `todayISO` comes from the server (`getTodayISO()`), so the
+  presets resolve identically in the server render and the browser.
+- **A booking's date is its collection date**, which by design is the day the
+  booking was taken; invoices use `issued_date` and log entries their
+  timestamp.
+
+`shiftDays` is UTC-based so "last 30 days" crosses month and leap-year
+boundaries correctly — verified at 1 March and in a leap February.
 
 **The active tab lives in the URL** (`/admin?tab=ship`), set by `changeView()`
 with `router.replace`, and links out to detail pages carry `?from=<tab>`.

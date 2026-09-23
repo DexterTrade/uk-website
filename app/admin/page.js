@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/seo";
 import { getStaff } from "@/lib/supabase/staff";
+import { getTodayISO } from "@/lib/server-time";
 import AdminClient from "./AdminClient";
 import ManagerHome from "./ManagerHome";
 
@@ -75,6 +76,9 @@ export default async function AdminPage({ searchParams }) {
 
   const activity = (activityRaw || []).map((a) => ({
     id: a.id,
+    // Raw date alongside the display string so the dashboard filter has
+    // something comparable to work with.
+    atISO: String(a.created_at).slice(0, 10),
     when: new Date(a.created_at).toLocaleString("en-GB", {
       day: "2-digit",
       month: "short",
@@ -165,11 +169,9 @@ export default async function AdminPage({ searchParams }) {
     next_dispatch_note: r.next_dispatch_note || "",
   }));
 
-  // Computed on the server so the dashboard's "this month" figures follow the
-  // calendar instead of the hardcoded "Sep 2026" string match they used to.
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  // Today's date, resolved on the server so the dashboard's date presets are
+  // identical in the server render and the browser.
+  const todayISO = await getTodayISO();
 
   return (
     <AdminClient
@@ -179,9 +181,8 @@ export default async function AdminPage({ searchParams }) {
       statuses={statuses}
       activity={activity}
       initialTab={tab || "dash"}
+      todayISO={todayISO}
       rates={rates}
-      monthKey={monthKey}
-      monthLabel={monthLabel}
       staffEmail={userData?.user?.email}
     />
   );
