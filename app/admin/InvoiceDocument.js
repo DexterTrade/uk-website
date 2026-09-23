@@ -1,5 +1,6 @@
 import { money } from "@/lib/data";
 import { BUSINESS } from "@/lib/seo";
+import { EmailIcon } from "@/app/components/contact-icons";
 
 // The invoice as the customer receives it. A plain presentational component
 // with no server-only imports, so the same markup backs both the preview
@@ -126,8 +127,11 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
                 one — a customer who reached us on the other address should see
                 it here too. */}
             {BUSINESS.domains.join(" · ")}
-            <br />
-            <strong className="text-ink">{BUSINESS.email}</strong>
+            {/* flex makes this its own line, so no <br /> before it. */}
+            <span className="mt-[2px] flex items-center gap-[5px]">
+              <EmailIcon width="11" height="11" className="flex-none text-green" />
+              <strong className="text-ink">{BUSINESS.email}</strong>
+            </span>
           </address>
           <div className="text-right">
             {BUSINESS.phones.map((p) => (
@@ -236,10 +240,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             <p className="mt-[2px] text-[10px] leading-[1.45] text-ink">£{money(shipment.goods_value_gbp)}</p>
           </div>
         </section>
-
-        <p className="mt-[10px] text-[10.5px] text-soft">
-          Paid in full at the time of booking. No balance outstanding.
-        </p>
 
         {/* ------------------------------------------------------- footer */}
         <footer className="mt-[22px] border-t border-line pt-[12px] text-[9.5px] leading-[1.55] text-soft">
