@@ -527,10 +527,17 @@ shipments it identifies both.
 ### The invoice document (`app/admin/InvoiceDocument.js`)
 
 The invoice as the customer receives it, modelled on the layout supplied as a
-reference: letterhead with the logo and watermark, office address and all
-three branch numbers, sender and receiver blocks side by side, a fact strip
-(freight type, parcels, weight, collection date, operator), then pricing in a
-table, then the footer with tracking instructions and the company number.
+reference. Order, top to bottom: letterhead (logo, watermark, tracking number
+in red, issue date) → office address, all three branch numbers and WhatsApp →
+the email band → sender and receiver side by side → a fact strip of **cargo
+type, number of parcels and "Booked by"** → the charges table (**total weight,
+rate per kg, customs duty/handling/packing, total charges**) → description and
+value of goods side by side in small type → footer → terms.
+
+There is deliberately **no collection date** on it: the issue date in the
+letterhead already dates the document. "Booked by" renders blank rather than
+disappearing when no name is given, which on the customer's copy is always —
+see the `operator` note below.
 
 **One component, two renderers.** It is a plain presentational component with
 no server-only imports, so the printable page (a Server Component) and the
@@ -762,7 +769,9 @@ propagates sitewide:
 - `BUSINESS.phones[]` — `{ city, display, href }` per branch (London,
   Birmingham, Nottingham)
 - `BUSINESS.whatsapp` / `whatsappDisplay` — `wa.me` link + display number
-- `BUSINESS.email` — `info@pakcargo.co.uk`
+- `BUSINESS.email` — `info@pakcargouk.co.uk`, on the trading domain
+- `BUSINESS.domains[]` — every domain the business trades under. The invoice
+  lists them all; `SITE_URL` is only the canonical one
 - `BUSINESS.companyNumber` — `17455357`. A UK limited company must show its
   registration number on its website and on every invoice, so this renders in
   the site footer and on the printed invoice document

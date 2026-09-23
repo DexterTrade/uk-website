@@ -75,7 +75,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
   const rate = Number(invoice.rate_per_kg);
   const other = Number(invoice.other_charges);
   const total = Number(invoice.total_charges);
-  const freight = Math.round(rate * weight * 100) / 100;
 
   const isPakistan = (shipment.receiver_country || "PK") === "PK";
 
@@ -183,15 +182,15 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
 
         {/* ---------------------------------------------------- fact strip */}
         <section className="flex divide-x divide-[#dbe4f0] rounded-[6px] border border-[#dbe4f0] bg-[#f7faff] max-[560px]:flex-wrap max-[560px]:divide-x-0">
-          <Fact label="Freight type" value={shipment.mode === "air" ? "Air freight" : "Sea freight"} />
+          <Fact label="Cargo type" value={shipment.mode === "air" ? "Air cargo" : "Sea cargo"} />
           <Fact label="No. of parcels" value={shipment.parcels} />
-          <Fact label="Total weight" value={`${weight} kg`} />
-          <Fact label="Collection date" value={formatDate(shipment.collection_date)} />
-          {/* Omitted on the customer's copy: "operator" is currently the
-              signed-in staff account's email address, which is an internal
-              identifier and shouldn't be handed out. It returns once real
-              operator names exist. */}
-          {operator && <Fact label="Booked by" value={operator} />}
+          {/* Blank when no name is given. On the customer's copy that is
+              always: "operator" is currently the signed-in staff account's
+              email, an internal identifier, so it is passed empty and this
+              cell stays blank until real operator names exist. There is no
+              collection date here — the issue date above already dates the
+              document. */}
+          <Fact label="Booked by" value={operator || " "} />
         </section>
 
         {/* -------------------------------------------------- pricing table */}
@@ -199,13 +198,7 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
           <thead>
             <tr className="bg-ink text-white">
               <th className="px-[10px] py-[8px] text-left font-head text-[9.5px] font-bold tracking-[0.09em] uppercase">
-                Description of goods
-              </th>
-              <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
-                Weight
-              </th>
-              <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
-                Rate / kg
+                Charges
               </th>
               <th className="px-[10px] py-[8px] text-right font-head text-[9.5px] font-bold tracking-[0.09em] whitespace-nowrap uppercase">
                 Amount
@@ -214,39 +207,21 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
           </thead>
           <tbody>
             <tr className="border-b border-[#e6ebf3]">
-              <td className="px-[10px] py-[11px] align-top">
-                <span className="font-semibold">{shipment.goods_description}</span>
-                <span className="mt-[3px] block text-[10.5px] text-soft">
-                  {shipment.parcels} {shipment.parcels === 1 ? "parcel" : "parcels"} &middot; declared value £
-                  {money(shipment.goods_value_gbp)} &middot; charged on actual weight
-                </span>
-              </td>
-              <td className="px-[10px] py-[11px] text-right align-top whitespace-nowrap">{weight} kg</td>
-              <td className="px-[10px] py-[11px] text-right align-top whitespace-nowrap">£{money(rate)}</td>
-              <td className="px-[10px] py-[11px] text-right align-top font-semibold whitespace-nowrap">
-                £{money(freight)}
-              </td>
-            </tr>
-
-            <tr className="border-b border-[#e6ebf3]">
-              <td className="px-[10px] py-[8px]" colSpan={3}>
-                Sub total
-              </td>
-              <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(freight)}</td>
+              <td className="px-[10px] py-[8px]">Total weight</td>
+              <td className="px-[10px] py-[8px] text-right whitespace-nowrap">{weight} kg</td>
             </tr>
             <tr className="border-b border-[#e6ebf3]">
-              <td className="px-[10px] py-[8px]" colSpan={3}>
-                Customs duty, handling and packing
-              </td>
+              <td className="px-[10px] py-[8px]">Rate per kg</td>
+              <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(rate)}</td>
+            </tr>
+            <tr className="border-b border-[#e6ebf3]">
+              <td className="px-[10px] py-[8px]">Customs duty, handling and packing</td>
               <td className="px-[10px] py-[8px] text-right whitespace-nowrap">£{money(other)}</td>
             </tr>
             {/* No reconciling line: the total is whatever was agreed and
                 stored, shown directly. */}
             <tr className="bg-green-soft">
-              <td
-                className="px-[10px] py-[11px] font-head text-[13px] font-extrabold text-green-ink"
-                colSpan={3}
-              >
+              <td className="px-[10px] py-[11px] font-head text-[13px] font-extrabold text-green-ink">
                 Total charges
               </td>
               <td className="px-[10px] py-[11px] text-right font-head text-[16px] font-extrabold whitespace-nowrap text-green-ink">
@@ -255,6 +230,19 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             </tr>
           </tbody>
         </table>
+
+        {/* Description and value sit under the charges, side by side and
+            small: they describe the consignment rather than price it. */}
+        <section className="mt-[12px] flex gap-6 max-[560px]:flex-col max-[560px]:gap-3">
+          <div className="flex-1">
+            <p className="text-[8px] font-bold tracking-[0.09em] text-soft uppercase">Description of goods</p>
+            <p className="mt-[2px] text-[10px] leading-[1.45] text-ink">{shipment.goods_description}</p>
+          </div>
+          <div className="w-[150px] flex-none max-[560px]:w-auto">
+            <p className="text-[8px] font-bold tracking-[0.09em] text-soft uppercase">Value of goods</p>
+            <p className="mt-[2px] text-[10px] leading-[1.45] text-ink">£{money(shipment.goods_value_gbp)}</p>
+          </div>
+        </section>
 
         <p className="mt-[10px] text-[10.5px] text-soft">
           Paid in full at the time of booking. No balance outstanding.
