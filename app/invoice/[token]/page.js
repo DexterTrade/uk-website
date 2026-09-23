@@ -52,7 +52,7 @@ export default async function PublicInvoicePage({ params }) {
             customer={data.customer}
             invoice={data.invoice}
             seaEstimate={data.seaEstimate}
-            operator=""
+            operator={data.shipment.booked_by || ""}
           />
         </div>
         <p className="fine mt-5 px-5 text-center print:hidden-force">

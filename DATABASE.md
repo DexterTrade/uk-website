@@ -91,6 +91,7 @@ its invoice by `create_booking()` — never on its own.
 | `receiver_address` | text | |
 | `receiver_city` | text | Also the destination half of the derived tracking route |
 | `receiver_country` | text | 2-letter code, defaults `'PK'` |
+| `booked_by` | text, nullable | Name of the staff member who took the booking, captured at creation. Text, not a FK to `auth.users`: the name printed on an invoice must not change or vanish because the account was later renamed or removed |
 | `status` | text | FK → `shipment_statuses.value` (`ON UPDATE CASCADE`), **not** a CHECK constraint and **not** a constant in `lib/data.js` |
 | `eta_label` | text, nullable | Human-readable ETA |
 | `summary` | text | Short status blurb shown on the tracking page; seeded by `create_booking()` |
@@ -563,10 +564,19 @@ markup. Keep it that way — two copies would drift.
   browsers drop background graphics by default and the header bar, total row
   and watermark are exactly that. The page tells staff to enable background
   graphics.
-- **`operator` is a placeholder** — currently the signed-in staff account's
-  email, pending the roles work. It is passed as empty on the customer's copy
-  and the "Booked by" cell then disappears, because an internal email address
-  shouldn't be handed to customers.
+- **"Booked by" comes from `shipments.booked_by`**, recorded when the booking
+  is created from the staff member's `full_name` in their Supabase Auth user
+  metadata. It used to read the *viewing* user's email, which was the wrong
+  fact: the same invoice named a different person depending on who opened it,
+  and the customer's copy named nobody. Bookings made before this exists show
+  a blank cell. Staff names are set in Supabase → Authentication → Users →
+  User Metadata as `{"full_name": "…"}`.
+
+  **Roles must not go in user metadata.** `user_metadata` is writable by the
+  signed-in user through `supabase.auth.updateUser()`, so anyone who can log
+  in could give themselves `{"role": "admin"}`. It is fine for a display name;
+  when roles arrive they need a `staff` table (or `app_metadata`) that the
+  user cannot write to.
 - **Terms sit after the footer, at the very bottom**, styled as small print:
   no panel, low contrast, two narrow columns, and smaller again below 560px.
   On screen that means the invoice is what's visible and the customer scrolls
@@ -584,8 +594,10 @@ markup. Keep it that way — two copies would drift.
   `total_charges` is whatever was agreed and is printed directly. An earlier
   version carried an "Adjustment" row for the difference; it was removed by
   request. Don't reintroduce one.
-- **Email is given its own band** under the letterhead rather than a line in
-  the address block: it is the channel customers are most likely to reply on.
+- **Email sits in the letterhead contact block**, bolded but at body size.
+  It briefly had a large green band of its own; that was too loud.
+- **Sender and receiver details are small** (9.5px) and the sender's postcode
+  is its own labelled row rather than being tacked onto the town.
 - **Every domain is listed** (`BUSINESS.domains`), not just the canonical
   `SITE_URL` — a customer who reached the business on the other address should
   see it on the invoice too.

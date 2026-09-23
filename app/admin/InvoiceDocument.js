@@ -1,6 +1,5 @@
 import { money } from "@/lib/data";
 import { BUSINESS } from "@/lib/seo";
-import { EmailIcon } from "@/app/components/contact-icons";
 
 // The invoice as the customer receives it. A plain presentational component
 // with no server-only imports, so the same markup backs both the preview
@@ -21,15 +20,15 @@ function formatDate(dateStr) {
 
 function Party({ title, lines }) {
   return (
-    <div className="flex-1">
-      <p className="mb-[7px] border-b-2 border-green pb-[5px] text-[10.5px] font-bold tracking-[0.1em] text-green-ink uppercase">
+    <div className="min-w-0 flex-1">
+      <p className="mb-[6px] border-b-2 border-green pb-[4px] text-[9px] font-bold tracking-[0.1em] text-green-ink uppercase">
         {title}
       </p>
-      <dl className="text-[11.5px] leading-[1.55] text-ink">
+      <dl className="text-[9.5px] leading-[1.5] text-ink">
         {lines.map(([label, value]) => (
-          <div key={label} className="flex gap-[6px] py-[1px]">
-            <dt className="w-[62px] flex-none text-soft">{label}</dt>
-            <dd className="font-medium break-words">{value || "—"}</dd>
+          <div key={label} className="flex gap-[5px] py-[1px]">
+            <dt className="w-[54px] flex-none text-soft">{label}</dt>
+            <dd className="min-w-0 font-medium break-words">{value || "—"}</dd>
           </div>
         ))}
       </dl>
@@ -127,6 +126,8 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
                 one — a customer who reached us on the other address should see
                 it here too. */}
             {BUSINESS.domains.join(" · ")}
+            <br />
+            <strong className="text-ink">{BUSINESS.email}</strong>
           </address>
           <div className="text-right">
             {BUSINESS.phones.map((p) => (
@@ -142,19 +143,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
           </div>
         </section>
 
-        {/* Email gets its own band rather than a line in the address block:
-            it is the channel customers are most likely to reply on. */}
-        <section className="flex items-center justify-center gap-[7px] border-b border-line bg-green-soft px-3 py-[9px] text-center">
-          <EmailIcon width="13" height="13" className="flex-none text-green-ink" />
-          <span className="text-[9px] font-bold tracking-[0.1em] text-green-ink uppercase">Email</span>
-          <a
-            href={`mailto:${BUSINESS.email}`}
-            className="font-head text-[14px] font-extrabold tracking-[0.01em] text-green-ink"
-          >
-            {BUSINESS.email}
-          </a>
-        </section>
-
         {/* --------------------------------------------- sender / receiver */}
         <section className="flex gap-9 pt-[16px] pb-[14px] max-[560px]:flex-col max-[560px]:gap-5">
           <Party
@@ -162,7 +150,8 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             lines={[
               ["Name", customer.name],
               ["Address", customer.address],
-              ["Town", `${customer.town} ${customer.postcode}`],
+              ["Town", customer.town],
+              ["Postcode", customer.postcode],
               ["Phone", customer.phone],
               ["Email", customer.email],
             ]}
