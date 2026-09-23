@@ -33,7 +33,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/tracking` | Public shipment tracking (see below) |
 | `/admin`, `/admin/login` | Staff-only operations panel, protected by Supabase Auth |
 | `/admin/new-booking` | Staff-only booking form — creates the customer, shipment and invoice in one submit |
-| `/admin/shipments/[reference]` | Shipment detail — specs, sender, receiver, invoice summary, tracking timeline |
+| `/admin/shipments/[reference]` | Shipment detail — specs, sender, receiver, the invoice in full, and the status history |
 | `/admin/shipments/[reference]/edit` | Edit an existing booking (same form component as new-booking) |
 | `/admin/invoices/[reference]` | The printable invoice document (A4 print stylesheet, print/save-as-PDF) |
 | `/admin/customers/[id]` | Customer record — details plus all their shipments and invoices |
@@ -93,8 +93,8 @@ its invoice by `create_booking()` — never on its own.
 | `receiver_country` | text | 2-letter code, defaults `'PK'` |
 | `booked_by` | text, nullable | Name of the staff member who took the booking, captured at creation. Text, not a FK to `auth.users`: the name printed on an invoice must not change or vanish because the account was later renamed or removed |
 | `status` | text | FK → `shipment_statuses.value` (`ON UPDATE CASCADE`), **not** a CHECK constraint and **not** a constant in `lib/data.js` |
-| `eta_label` | text, nullable | Human-readable ETA |
-| `summary` | text | Short status blurb shown on the tracking page; seeded by `create_booking()` |
+| `eta_label` | text, nullable | Human-readable ETA. **No longer shown to customers** — the tracking page dropped estimated delivery; still displayed on the admin shipment page |
+| `summary` | text | Short status blurb shown on the tracking page; set by `create_booking()` |
 | `flag` | text, nullable | Free-text internal flag shown in admin only |
 | `created_at`, `updated_at` | timestamptz | |
 
@@ -159,7 +159,36 @@ application. `logActivity()` in `app/admin/actions.js` also swallows its own
 errors on purpose: a failed log write must never roll back or block the work
 it is recording.
 
+### `shipment_status_history`
+Every status a shipment has been through, which is what the tracking page and
+the admin shipment page both display.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `shipment_id` | uuid FK → `shipments.id` (`ON DELETE CASCADE`) | |
+| `status` | text | The status moved *to* |
+| `changed_at` | timestamptz | Defaults to **`clock_timestamp()`, not `now()`** |
+
+**Written by a trigger** (`record_shipment_status`, on insert or update of
+`shipments.status`), not from the Server Actions. A bulk update is one
+statement touching many rows, and statuses can also be corrected directly in
+Supabase — a trigger catches all of it, application code would miss both.
+
+`clock_timestamp()` matters: `now()` is the *transaction start* time, so
+several changes committed together all landed on the same instant and the
+history could not be ordered reliably. `clock_timestamp()` reads the wall
+clock, so each row is distinct.
+
+Existing shipments were backfilled with a single entry for where they were at
+the time. Earlier transitions were never recorded and cannot be
+reconstructed, so the history is honest from that point rather than invented.
+
 ### `shipment_stages`
+**Superseded by `shipment_status_history` and no longer written or read.**
+`create_booking()` used to seed a "Booking confirmed" milestone here; it
+doesn't any more, because the insert trigger already records the opening
+status. The table is left in place rather than dropped.
 Timeline entries for a shipment (one shipment → many stages).
 
 | Column | Type | Notes |
@@ -241,7 +270,8 @@ RLS is **enabled on every table**. Policies:
 |---|---|---|---|
 | `customers` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
 | `shipments` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
-| `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
+| `shipment_stages` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only (table superseded, see above) |
+| `shipment_status_history` | `staff read status history` | `authenticated` | `SELECT` only — rows are written by a trigger, never by the app |
 | `shipment_statuses` | `staff read statuses` | `authenticated` | `SELECT` only — the list is edited in Supabase, not from the app |
 | `activity_log` | `staff read activity`, `staff append activity` | `authenticated` | `SELECT` and `INSERT` only — deliberately no update or delete, so the audit trail can't be rewritten from the app |
 | `invoices` | `staff full access` | `authenticated` | Full CRUD for logged-in staff only |
@@ -269,11 +299,15 @@ enumerate/guess other people's shipments by reference alone).
   `normalize_uk_phone()` (see below), so `07700 900001`, `+44 7700 900001` and
   `0044 7700 900001` are all treated as equal.
 - Returns a single JSON object with `reference, status, service, route,
-  weight_label, eta_label, summary, stages[]` — **never** invoice/pricing
+  weight_label, summary, step, steps, history[]` — **never** invoice/pricing
   data. `service`, `route` and `weight_label` are **derived inside the
   function** (from `mode`, `customers.town → receiver_city`, and
-  `parcels` + `weight_kg`) since they're no longer stored columns. The JSON
-  shape the tracking page consumes is unchanged.
+  `parcels` + `weight_kg`) since they're no longer stored columns.
+- `history[]` is the full status history, newest first. `step`/`steps` come
+  from `shipment_statuses`, so the progress bar reflects how far along the
+  real workflow the shipment is rather than how many history rows exist — a
+  shipment that jumped straight to Delivered still reads as complete.
+- **No estimated delivery date** is returned any more.
 - Returns `null` (not an error) on no match or on an empty/unparseable phone.
 - Called from `app/tracking/actions.js` → `trackShipment(reference, senderPhone)`.
 
@@ -281,9 +315,10 @@ enumerate/guess other people's shipments by reference alone).
 `SECURITY INVOKER`, granted to `authenticated` only (explicitly revoked from
 `public`/`anon`). **The only way a booking is created.** In one transaction it
 finds-or-creates the customer by normalized phone (refreshing their details if
-they've changed), inserts the shipment, seeds a first `shipment_stages` row so
-tracking isn't empty immediately after booking, and inserts the invoice with
-its `bill_to_*` snapshot. Returns `{ reference, shipment_id, customer_id }`.
+they've changed), inserts the shipment, and inserts the invoice with its
+`bill_to_*` snapshot. The shipment's opening status is recorded in
+`shipment_status_history` by the insert trigger, so tracking has something to
+show immediately. Returns `{ reference, shipment_id, customer_id }`.
 
 It exists because the Supabase JS client **cannot span tables atomically** — a
 failure partway through separate inserts would leave an orphan shipment with

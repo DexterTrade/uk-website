@@ -25,7 +25,7 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
         "customers(id, name, phone, email, address, postcode, town), " +
         "invoices(id, rate_per_kg, other_charges, total_charges, issued_date, bill_to_name, " +
         "bill_to_address, bill_to_postcode, bill_to_town, bill_to_phone, bill_to_email), " +
-        "shipment_stages(position, label, when_label, done)"
+        "shipment_status_history(status, changed_at)"
     )
     .ilike("reference", reference)
     .maybeSingle();
@@ -35,7 +35,10 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
   const embedded = (value) => (Array.isArray(value) ? value[0] : value);
   const customer = embedded(shipment.customers);
   const invoice = embedded(shipment.invoices);
-  const stages = [...(shipment.shipment_stages || [])].sort((a, b) => a.position - b.position);
+  // Newest first, matching what the customer sees on the tracking page.
+  const history = [...(shipment.shipment_status_history || [])].sort((a, b) =>
+    a.changed_at < b.changed_at ? 1 : -1
+  );
 
   const freight = Math.round(Number(invoice?.rate_per_kg ?? 0) * Number(shipment.weight_kg) * 100) / 100;
 
@@ -147,38 +150,41 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
         />
       </Panel>
 
-      <Panel title="Tracking timeline" padded={false}>
+      <Panel title="Status history" padded={false}>
         <div className="scroll">
           <table className="w-full min-w-[420px]">
             <thead>
               <tr>
                 <th className="bg-[#f8fafd] px-[22px] py-[11px] text-left font-head text-[13px] font-semibold text-soft">
-                  Stage
+                  Status
                 </th>
                 <th className="bg-[#f8fafd] px-[22px] py-[11px] text-left font-head text-[13px] font-semibold text-soft">
-                  When
-                </th>
-                <th className="bg-[#f8fafd] px-[22px] py-[11px] text-left font-head text-[13px] font-semibold text-soft">
-                  Done
+                  Changed
                 </th>
               </tr>
             </thead>
             <tbody>
-              {stages.map((s) => (
-                <tr key={s.position}>
-                  <td className="border-t border-[#f1f4f9] px-[22px] py-[12px] text-[14.5px] text-ink">{s.label}</td>
-                  <td className="border-t border-[#f1f4f9] px-[22px] py-[12px] text-[14.5px] text-muted">
-                    {s.when_label || "—"}
+              {history.map((h, i) => (
+                <tr key={`${h.changed_at}-${i}`}>
+                  <td className="border-t border-[#f1f4f9] px-[22px] py-[12px] text-[14.5px] text-ink">
+                    {h.status}
+                    {i === 0 && <span className="badge ml-2 align-middle">Now</span>}
                   </td>
-                  <td className="border-t border-[#f1f4f9] px-[22px] py-[12px] text-[14.5px]">
-                    {s.done ? <span className="badge">Done</span> : <span className="badge badge-grey">Pending</span>}
+                  <td className="border-t border-[#f1f4f9] px-[22px] py-[12px] text-[14.5px] text-muted">
+                    {new Date(h.changed_at).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {stages.length === 0 && <p className="empty">No timeline entries yet.</p>}
+        {history.length === 0 && <p className="empty">No status changes recorded yet.</p>}
       </Panel>
 
       <p className="fine">

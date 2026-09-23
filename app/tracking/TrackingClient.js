@@ -5,18 +5,27 @@ import { useSearchParams } from "next/navigation";
 import { BUSINESS } from "@/lib/seo";
 import { trackShipment } from "./actions";
 
-function Timeline({ stages }) {
+// The full status history, newest first. Every entry is something that has
+// already happened, so every row renders as done — the most recent one is the
+// shipment's current position.
+function Timeline({ history }) {
+  if (history.length === 0) {
+    return <p className="fine">No status updates recorded yet.</p>;
+  }
   return (
     <div>
-      {stages.map((s, i) => (
-        <div className={`timeline-row${s.done ? " done" : ""}`} key={i}>
+      {history.map((h, i) => (
+        <div className="timeline-row done" key={`${h.when_label}-${i}`}>
           <div className="rail">
             <span className="dot" />
             <span className="line" />
           </div>
           <div className="body">
-            <div className="lbl">{s.label}</div>
-            <div className="when">{s.when_label}</div>
+            <div className="lbl">
+              {h.status}
+              {i === 0 && <span className="badge ml-2 align-middle">Now</span>}
+            </div>
+            <div className="when">{h.when_label}</div>
           </div>
         </div>
       ))}
@@ -39,9 +48,13 @@ function ShipmentResult({ loading, searched, shipmentKey, data }) {
       </p>
     );
   }
-  const stages = data.stages || [];
-  const done = stages.filter((x) => x.done).length;
-  const pct = stages.length ? Math.round((done / stages.length) * 100) : 0;
+  const history = data.history || [];
+  // Progress is how far along the real workflow the shipment is, not how many
+  // history rows exist — a shipment whose status jumped straight to "Delivered"
+  // is still complete.
+  const step = Number(data.step) || 0;
+  const steps = Number(data.steps) || 0;
+  const pct = steps ? Math.round((step / steps) * 100) : 0;
 
   return (
     <div className="result-grid">
@@ -55,16 +68,18 @@ function ShipmentResult({ loading, searched, shipmentKey, data }) {
         <p className="mt-3 text-[15px] text-muted">{data.summary}</p>
         <div className="progress"><span style={{ width: `${pct}%` }} /></div>
         <div className="mt-2 text-[13px] text-faint">
-          {done} of {stages.length} milestones complete
+          Step {step} of {steps}
         </div>
         <dl className="meta">
           <dt>Service</dt><dd>{data.service}</dd>
           <dt>Route</dt><dd>{data.route}</dd>
           <dt>Pieces / weight</dt><dd>{data.weight_label}</dd>
-          <dt>Est. delivery</dt><dd>{data.eta_label || "—"}</dd>
         </dl>
       </div>
-      <Timeline stages={stages} />
+      <div>
+        <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-faint uppercase">Status history</h2>
+        <Timeline history={history} />
+      </div>
     </div>
   );
 }
