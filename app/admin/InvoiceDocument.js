@@ -249,10 +249,6 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
             <strong className="text-ink">{shipment.reference}</strong> and the sender&rsquo;s mobile number shown
             above.
           </p>
-          <p className="mt-[5px]">
-            {BUSINESS.legalName} &middot; Registered in England &amp; Wales no. {BUSINESS.companyNumber} &middot;
-            Registered office {BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}
-          </p>
         </footer>
 
         {/* Terms sit after the footer, at the very bottom, so on screen the
