@@ -233,12 +233,16 @@ export default function InvoiceDocument({ shipment, customer, invoice, operator,
 
         {/* Description and value sit under the charges, side by side and
             small: they describe the consignment rather than price it. */}
-        <section className="mt-[12px] flex gap-6 max-[560px]:flex-col max-[560px]:gap-3">
-          <div className="flex-1">
+        {/* Stays side by side at every width — the value column just narrows
+            rather than dropping under the description. */}
+        <section className="mt-[12px] flex gap-6 max-[560px]:gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-[8px] font-bold tracking-[0.09em] text-soft uppercase">Description of goods</p>
-            <p className="mt-[2px] text-[10px] leading-[1.45] text-ink">{shipment.goods_description}</p>
+            <p className="mt-[2px] text-[10px] leading-[1.45] break-words text-ink">
+              {shipment.goods_description}
+            </p>
           </div>
-          <div className="w-[150px] flex-none max-[560px]:w-auto">
+          <div className="w-[150px] flex-none max-[560px]:w-[86px]">
             <p className="text-[8px] font-bold tracking-[0.09em] text-soft uppercase">Value of goods</p>
             <p className="mt-[2px] text-[10px] leading-[1.45] text-ink">£{money(shipment.goods_value_gbp)}</p>
           </div>
