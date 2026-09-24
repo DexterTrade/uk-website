@@ -140,12 +140,9 @@ export default async function Home() {
             <div className="svc-media overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
               <img className="block h-full w-full object-cover" src="/assets/photos/sea-cargo.jpg" alt="Sea cargo — container ship" />
             </div>
-            <p className="svc-fee text-[12.5px] text-faint">
-              Handling fee <strong className="font-semibold text-muted">&pound;{Number(seaRate.pickup_charge).toFixed(0)}</strong>
-            </p>
             <div className="svc-rates">
               <div className="flex items-baseline gap-2">
-                <span className="font-head text-[21px] font-bold text-green">{seaRate.headline_rate}</span>
+                <span className="font-head text-[25px] font-bold text-green">{seaRate.headline_rate}</span>
                 <span className="text-[13px] text-faint">
                   {[seaRate.rate_note, seaRate.estimated_time].filter(Boolean).join(" · ")}
                 </span>
@@ -153,6 +150,9 @@ export default async function Home() {
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
               <Link className="btn btn-navy mt-5" href="/sea-cargo">See sea cargo &rarr;</Link>
             </div>
+            <p className="svc-fee text-[12.5px] text-faint">
+              Handling fee <span className="text-muted">&pound;{Number(seaRate.pickup_charge).toFixed(0)}</span>
+            </p>
           </div>
         </section>
 
@@ -165,12 +165,9 @@ export default async function Home() {
             <div className="svc-media overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
               <img className="block h-full w-full object-cover" src="/assets/photos/air-cargo.jpg" alt="Air cargo — cargo plane" />
             </div>
-            <p className="svc-fee text-[12.5px] text-faint">
-              Handling fee <strong className="font-semibold text-muted">&pound;{Number(airRate.pickup_charge).toFixed(0)}</strong>
-            </p>
             <div className="svc-rates">
               <div className="flex items-baseline gap-2">
-                <span className="font-head text-[21px] font-bold text-green">{airRate.headline_rate}</span>
+                <span className="font-head text-[25px] font-bold text-green">{airRate.headline_rate}</span>
                 <span className="text-[13px] text-faint">
                   {[airRate.rate_note, airRate.estimated_time].filter(Boolean).join(" · ")}
                 </span>
@@ -178,6 +175,9 @@ export default async function Home() {
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
               <Link className="btn btn-navy mt-5" href="/air-cargo">See air cargo &rarr;</Link>
             </div>
+            <p className="svc-fee text-[12.5px] text-faint">
+              Handling fee <span className="text-muted">&pound;{Number(airRate.pickup_charge).toFixed(0)}</span>
+            </p>
           </div>
         </section>
 

@@ -210,7 +210,7 @@
 
   /* Homepage sea/air split. Desktop keeps the original arrangement — photo
      on the left, heading above the rates on the right — while mobile reads
-     heading, photo, handling fee, rates. Grid areas rather than duplicated
+     heading, photo, rates, handling fee. Grid areas rather than duplicated
      markup, so each section still has exactly one <h2>. */
   .svc-split {
     display: grid;
@@ -242,8 +242,8 @@
       grid-template-areas:
         "head"
         "img"
-        "fee"
-        "rates";
+        "rates"
+        "fee";
       gap: 16px;
     }
     .svc-split .svc-head,
