@@ -419,6 +419,27 @@ digits) and `44…`/`+44…` (12 digits) into the `0…` national form so every 
 of typing a UK number compares equal. Used both by tracking verification and
 by the unique index on `customers`, which is why it must stay `IMMUTABLE`.
 
+### `set_invoice_share_token(p_reference text, p_token text) → text`
+`SECURITY DEFINER`, `authenticated` only, refuses callers with no active
+staff row. Exists so a **manager** can produce the customer link for a booking
+they just took without being given `UPDATE` on `invoices`, which would also
+let them rewrite prices — RLS is row-level and cannot express "may write this
+one column".
+
+It **returns any token already in place rather than replacing it**, so it can't
+be used to revoke a link a customer is already holding. Regenerating is a plain
+`UPDATE` and therefore stays super_admin.
+
+### `record_shipment_status() → trigger`
+Writes `shipment_status_history` on insert or status change. `EXECUTE` is
+revoked from every role — firing a trigger doesn't check it, and everything in
+`public` is otherwise published as an RPC endpoint by PostgREST.
+
+### `is_staff() / is_super_admin() → boolean`
+`SECURITY DEFINER`, `STABLE`, `authenticated` only. Back every role-aware RLS
+policy. `SECURITY DEFINER` is what lets them read `staff` without the policy
+on that table having to reason about itself.
+
 ### `set_updated_at() → trigger`
 Standard `updated_at = now()` trigger function, attached to tables with an
 `updated_at` column.
@@ -522,6 +543,9 @@ Two details worth keeping:
 - **Dates travel as whole days since the epoch** (`toDay`/`dayLabel`), because
   a range input needs an integer to step through. Parsing is pinned to UTC
   midnight so the conversion is stable either side of the BST/GMT switch.
+
+Columns include the sender's **postcode**, which the search box also matches
+(along with reference, customer, receiver, route and service).
 
 Each row also carries four actions: **View** (the shipment detail page),
 **Invoice** (the preview modal), **Send** (WhatsApp) and **Copy link**. Send
@@ -778,7 +802,10 @@ is why the group headings could go.
   and server time" below — the disabled input is presentation only.
 - **On success a modal opens** over the form showing the invoice number
   (`PC0001` — the shipment reference is the invoice number) with two actions:
-  copy it to the clipboard, and go to the shipment detail page. Copying falls
+  share it on WhatsApp, copy it to the clipboard, and go to the shipment
+  detail page. Share creates the customer link for the booking just made and
+  opens WhatsApp using the sender details still held in the form, so it needs
+  no refetch — and works for managers via `set_invoice_share_token()`. Copying falls
   back to the old `execCommand` selection trick, because `navigator.clipboard`
   needs a secure context and would silently do nothing on an office machine
   over plain http. Dismissing the modal (×, Escape, or the backdrop) clears
@@ -1062,6 +1089,13 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
 - **Bookings can't be deleted from the UI** (only edited). Deleting a shipment
   cascades to its invoice and stages, which is a real destructive action and
   hasn't been given a confirmation flow yet — do it in Supabase for now.
+- **The invoice carries no company-registration line.** It was added and then
+  removed by request. A UK limited company is required to show its registered
+  name, number and office on its business documents, and an invoice counts;
+  the site footer still carries it, the invoice does not. `BUSINESS.companyNumber`
+  is still there, so restoring it is a one-line change.
+- **"Booked by" is blank on bookings taken before that column existed**
+  (PC0001–PC0003) and on anything booked by an account with no name set.
 - **No invoice emailing.** The invoice document is print/save-as-PDF only;
   there is no email provider wired up, deliberately.
 - **Two currency figures in the printed terms need confirming**: clause 4
