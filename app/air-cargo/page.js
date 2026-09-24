@@ -48,7 +48,6 @@ export default async function AirCargoPage() {
           stats={[
             { n: estimatedTime, l: "Collection to door delivery" },
             { n: "Weekly", l: "Consolidated departures" },
-            { n: "3 cities", l: "Direct to KHI, LHE, ISB" },
           ]}
           ctas={[
             { label: "Request a quote", href: "/contact-us", variant: "btn-navy" },
@@ -61,7 +60,7 @@ export default async function AirCargoPage() {
             <span className="schedule-label">UK collection days</span>
             <div className="schedule-days">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                <span key={d} className={`schedule-day${d !== "Sun" ? " active" : ""}`}>
+                <span key={d} className="schedule-day active">
                   {d}
                 </span>
               ))}
@@ -100,31 +99,25 @@ export default async function AirCargoPage() {
         <section className="band-soft">
           <div className="section wrap">
             <h2 className="h-sec">Rates</h2>
-            <p className="lede">Indicative per-kilo rates for door-to-door air cargo.</p>
+            <p className="lede">Indicative per-kilo rate for door-to-door air cargo.</p>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr><th>Weight</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">1&ndash;29 kg</td><td className="rate">&pound;4.20 / kg</td><td>{estimatedTime}</td></tr>
-                  <tr><td className="key">30&ndash;99 kg</td><td className="rate">&pound;3.60 / kg</td><td>{estimatedTime}</td></tr>
-                  <tr><td className="key">100 kg +</td><td className="rate">{(airRate?.headline_rate || "£3.10/kg").replace(/^From\s*/i, "")}</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">10 kg +</td><td className="rate">{airRate?.headline_rate || "£3.10/kg"}</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Minimum weight: 1 kg
+                Minimum weight: 10 kg
               </span>
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
                 Handling fee: &pound;{Number(airRate?.pickup_charge ?? 35).toFixed(0)}
               </span>
             </div>
-            <p className="fine mt-[14px]">
-              Rates exclude destination duties and optional insurance. Volumetric weight applies to light, bulky
-              consignments at 1 kg per 6,000 cm&sup3;.
-            </p>
           </div>
         </section>
 

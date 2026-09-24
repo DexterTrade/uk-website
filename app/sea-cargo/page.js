@@ -39,7 +39,7 @@ export default async function SeaCargoPage() {
           title="Door to door cargo by sea — the economical route for volume and household goods."
           intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, door to door cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
           stats={[
-            { n: estimatedTime, l: "Port to door" },
+            { n: estimatedTime, l: "Door to door" },
             { n: "LCL or FCL", l: "Shared or full container" },
             { n: "Karachi", l: "Primary destination port" },
           ]}
@@ -96,9 +96,6 @@ export default async function SeaCargoPage() {
                 Handling fee: &pound;{Number(seaRate?.pickup_charge ?? 35).toFixed(0)}
               </span>
             </div>
-            <p className="fine mt-[14px]">
-              Rates exclude destination duties and optional insurance.
-            </p>
           </div>
         </section>
 
