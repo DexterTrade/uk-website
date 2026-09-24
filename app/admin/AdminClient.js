@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { money, statusBadgeClass } from "@/lib/data";
 import { SITE_URL } from "@/lib/seo";
+import { toWhatsAppNumber, whatsAppSendUrl } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/app/components/contact-icons";
 import {
   createInvoiceShareLink,
@@ -78,37 +79,6 @@ const DAY_MS = 86400000;
 const toDay = (iso) => (iso ? Math.round(Date.parse(`${iso}T00:00:00Z`) / DAY_MS) : NaN);
 const dayLabel = (day) =>
   new Date(day * DAY_MS).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
-
-// WhatsApp Web wants a bare international number: no plus, no spaces, no
-// leading zero. Sender numbers are stored in UK national form (07…), so the
-// trunk 0 becomes the 44 country code.
-function toWhatsAppNumber(phone) {
-  const digits = String(phone || "").replace(/\D/g, "");
-  if (/^07\d{9}$/.test(digits)) return `44${digits.slice(1)}`;
-  if (/^447\d{9}$/.test(digits)) return digits;
-  return "";
-}
-
-// Desktop and laptop are the same case — a computer — and both get WhatsApp
-// Web, which reuses the session the browser is already signed in to.
-// web.whatsapp.com does not work on a phone or tablet, though: it tells you to
-// use the app instead. So handheld devices get the wa.me link, which opens the
-// installed app directly.
-function isHandheld() {
-  if (typeof navigator === "undefined") return false;
-  if (navigator.userAgentData) return Boolean(navigator.userAgentData.mobile);
-  const ua = navigator.userAgent || "";
-  // iPadOS reports a desktop UA, so it is identified by being a touch "Mac".
-  const iPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
-  return /Android|iPhone|iPod|iPad|Mobile|Tablet|Silk|Kindle|Opera Mini|IEMobile/i.test(ua) || iPadOS;
-}
-
-function whatsAppSendUrl(number, message) {
-  const text = encodeURIComponent(message);
-  return isHandheld()
-    ? `https://wa.me/${number}?text=${text}`
-    : `https://web.whatsapp.com/send?phone=${number}&text=${text}`;
-}
 
 // Dashboard date presets. Ranges are inclusive ISO date strings, which
 // compare correctly as plain strings, so no Date objects are needed to filter.
@@ -290,7 +260,7 @@ export default function AdminClient({
         })
         .filter((s) => s.total >= priceValue[0] && s.total <= priceValue[1])
         .filter((s) => s.weightKg >= weightValue[0] && s.weightKg <= weightValue[1])
-        .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service}`, search)),
+        .filter((s) => matches(`${s.ref} ${s.customer} ${s.receiver} ${s.route} ${s.service} ${s.postcode}`, search)),
     [shipments, statusFilter, serviceFilter, dateValue, priceValue, weightValue, search]
   );
 
@@ -852,7 +822,7 @@ export default function AdminClient({
             </div>
             <div className="pane">
               <div className="scroll">
-                <table className="min-w-[1480px]">
+                <table className="min-w-[1560px]">
                   <thead>
                     <tr>
                       <th className="w-10">
@@ -865,7 +835,7 @@ export default function AdminClient({
                         />
                       </th>
                       <th>Reference</th><th>Customer</th><th>Service</th><th>Route</th>
-                      <th>Receiver</th><th>Weight</th><th>Collection</th><th>Status</th>
+                      <th>Receiver</th><th>Postcode</th><th>Weight</th><th>Collection</th><th>Status</th>
                       <th className="num-right">Charged</th><th></th>
                     </tr>
                   </thead>
@@ -898,6 +868,7 @@ export default function AdminClient({
                         <td>{s.service}</td>
                         <td>{s.route}</td>
                         <td>{s.receiver}</td>
+                        <td>{s.postcode}</td>
                         <td>{s.weight}</td>
                         <td>{s.collection}</td>
                         <td>

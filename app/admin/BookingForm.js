@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { money } from "@/lib/data";
+import { toWhatsAppNumber, whatsAppSendUrl } from "@/lib/whatsapp";
 import {
   MODES,
   OTHER_COUNTRIES,
@@ -12,7 +13,7 @@ import {
   isUkMobile,
   suggestedTotal,
 } from "@/lib/validation/booking";
-import { createBooking, lookupCustomer, updateBooking } from "./actions";
+import { createBooking, createInvoiceShareLink, lookupCustomer, updateBooking } from "./actions";
 
 const emptyValues = (today) => ({
   mode: "air",
@@ -66,6 +67,7 @@ export default function BookingForm({ today, initial = null, reference = null })
   const [formError, setFormError] = useState("");
   const [created, setCreated] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -243,6 +245,37 @@ export default function BookingForm({ today, initial = null, reference = null })
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [created, closeDialog]);
+
+  // Creates the customer link for the booking just made and opens WhatsApp
+  // with it. The form still holds the submitted values at this point, so the
+  // sender's name and number come from there rather than another fetch.
+  function shareInvoice() {
+    setShareError("");
+    const number = toWhatsAppNumber(values.sender_phone);
+    if (!number) {
+      setShareError("That sender number isn't a UK mobile, so WhatsApp can't be opened for it.");
+      return;
+    }
+
+    // Opened before the await: a tab opened afterwards counts as an
+    // unrequested popup and gets blocked.
+    const tab = window.open("", "_blank");
+
+    startTransition(async () => {
+      const result = await createInvoiceShareLink(created.reference, false);
+      if (result?.error) {
+        tab?.close();
+        setShareError(result.error);
+        return;
+      }
+      const message =
+        `Hello ${values.sender_name}, your PAK Cargo invoice for shipment ${created.reference} is ready.\n\n` +
+        `View or download it here: ${result.url}`;
+      const url = whatsAppSendUrl(number, message);
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank", "noopener");
+    });
+  }
 
   async function copyReference() {
     const text = created.reference;
@@ -700,13 +733,17 @@ export default function BookingForm({ today, initial = null, reference = null })
             </p>
 
             <div className="mt-7 flex flex-col gap-[10px]">
+              <button type="button" className="btn btn-green w-full" disabled={isPending} onClick={shareInvoice}>
+                {isPending ? "Preparing link…" : "Share invoice on WhatsApp"}
+              </button>
               <button type="button" className="btn btn-ghost w-full" onClick={copyReference}>
                 {copied ? "Copied to clipboard" : "Copy invoice number"}
               </button>
-              <Link className="btn btn-green w-full" href={`/admin/shipments/${created.reference}`}>
+              <Link className="btn btn-ghost w-full" href={`/admin/shipments/${created.reference}`}>
                 Go to shipment details
               </Link>
             </div>
+            {shareError && <p className="alert alert-error text-left">{shareError}</p>}
           </div>
         </div>
       )}

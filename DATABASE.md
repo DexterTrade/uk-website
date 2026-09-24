@@ -144,6 +144,12 @@ status changes, booking edits, share tokens, rates, reading the activity log —
 is `super_admin`. Their actions are still written to `activity_log`; they just
 can't read it.
 
+**Access audit**: simulate a token in the SQL editor to check what a role can
+actually do, rather than reading the policies —
+`set local role authenticated; set local request.jwt.claims = '{"sub":"<user id>","role":"authenticated"}';`
+inside a transaction you roll back. Note that a blocked UPDATE affects zero
+rows rather than raising, so count affected rows; a blocked INSERT does raise.
+
 **Adding staff**: create the Auth user (Supabase → Authentication → Users →
 Add user, with *Auto Confirm User* ticked, since the site has no sign-up
 flow), then insert their `staff` row with a name and role.
@@ -311,7 +317,7 @@ RLS is **enabled on every table**. Policies:
 
 | Table | Who | Effect |
 |---|---|---|
-| `staff` | any signed-in user | `SELECT` only. **No write policy at all** — roles cannot be changed from the app |
+| `staff` | any active staff | `SELECT` only, and only for staff — an authenticated account with no staff row can't even list the roster. **No write policy at all**, for anyone: a super_admin cannot change their own role from the app either |
 | `customers` | any active staff | `SELECT`, `INSERT`, `UPDATE` (a booking refreshes a returning customer). `DELETE` is super_admin |
 | `shipments` | any active staff | `SELECT`, `INSERT`. `UPDATE`/`DELETE` are super_admin |
 | `invoices` | any active staff | `SELECT`, `INSERT`. `UPDATE`/`DELETE` are super_admin — share tokens and price corrections both go through UPDATE |

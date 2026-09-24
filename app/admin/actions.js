@@ -164,8 +164,13 @@ export async function updateRate(
 // anyone who could count. Two random UUIDs give ~244 bits from the platform
 // CSPRNG.
 export async function createInvoiceShareLink(reference, regenerate = false) {
-  const { supabase, allowed } = await requireSuperAdmin();
-  if (!allowed) return FORBIDDEN;
+  const supabase = await requireStaff();
+  const staff = await getStaff(supabase);
+  if (!staff) return FORBIDDEN;
+  // Creating a link is open to managers, so they can send the customer the
+  // booking they just took. Regenerating destroys a link the customer may
+  // already be holding, so that stays super_admin.
+  if (regenerate && !isSuperAdmin(staff)) return FORBIDDEN;
 
   const { data: shipment } = await supabase
     .from("shipments")
@@ -178,12 +183,27 @@ export async function createInvoiceShareLink(reference, regenerate = false) {
 
   let token = invoice.share_token;
   if (!token || regenerate) {
-    token = `${randomUUID()}${randomUUID()}`.replace(/-/g, "");
-    const { error } = await supabase
-      .from("invoices")
-      .update({ share_token: token, share_created_at: new Date().toISOString() })
-      .eq("id", invoice.id);
-    if (error) return { error: error.message };
+    const fresh = `${randomUUID()}${randomUUID()}`.replace(/-/g, "");
+
+    if (regenerate) {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ share_token: fresh, share_created_at: new Date().toISOString() })
+        .eq("id", invoice.id);
+      if (error) return { error: error.message };
+      token = fresh;
+    } else {
+      // Via the RPC, which can only ever write share_token — a manager has no
+      // UPDATE on invoices at all. It returns any token already in place
+      // rather than replacing it.
+      const { data: applied, error } = await supabase.rpc("set_invoice_share_token", {
+        p_reference: reference,
+        p_token: fresh,
+      });
+      if (error) return { error: error.message };
+      token = applied;
+    }
+
     await logActivity(supabase, {
       action: regenerate ? "invoice.link.regenerated" : "invoice.link.created",
       subject: reference,

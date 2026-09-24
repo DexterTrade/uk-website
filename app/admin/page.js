@@ -52,7 +52,7 @@ export default async function AdminPage({ searchParams }) {
     supabase
       .from("shipments")
       .select(
-        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(id, name, phone, town), invoices(total_charges, share_token)"
+        "id, reference, status, mode, parcels, weight_kg, collection_date, receiver_name, receiver_city, flag, created_at, customers(id, name, phone, town, postcode), invoices(total_charges, share_token)"
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -105,6 +105,7 @@ export default async function AdminPage({ searchParams }) {
     customer: embedded(s.customers)?.name || "—",
     // Needed to build the wa.me link for sending the customer their invoice.
     customerPhone: embedded(s.customers)?.phone || "",
+    postcode: embedded(s.customers)?.postcode || "—",
     service: s.mode === "air" ? "Air cargo" : "Sea cargo",
     mode: s.mode,
     route: `${embedded(s.customers)?.town || "UK"} → ${s.receiver_city}`,
