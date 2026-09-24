@@ -18,6 +18,7 @@ import {
 import InvoiceDocument from "./InvoiceDocument";
 import RangeSlider from "./RangeSlider";
 import Toast from "./Toast";
+import { WEEKDAYS, nextDispatchDate, dispatchDaysLabel } from "@/lib/dispatch-days";
 
 // No Invoices tab: an invoice is 1:1 with its shipment and is shown in full on
 // the shipment detail page, so a separate list would be the same rows twice.
@@ -183,6 +184,7 @@ export default function AdminClient({
           pickup_charge: String(r.pickup_charge),
           next_dispatch_date: r.next_dispatch_date || "",
           next_dispatch_note: r.next_dispatch_note || "",
+          dispatch_days: r.dispatch_days || [],
         },
       ])
     )
@@ -991,7 +993,7 @@ export default function AdminClient({
                     Headline rate
                     <input
                       className="input"
-                      placeholder={mode === "sea" ? "From £1.20/kg" : "From £3.10/kg"}
+                      placeholder={mode === "sea" ? "£1.20/kg" : "£3.10/kg"}
                       value={rateForm[mode]?.headline_rate || ""}
                       onChange={(e) => updateRateField(mode, "headline_rate", e.target.value)}
                     />
@@ -1033,28 +1035,80 @@ export default function AdminClient({
                 </p>
                 <p className="fine mt-5 mb-1">
                   Next departure &mdash; shown as a poster banner on the {mode === "sea" ? "Sea" : "Air"} Cargo page.
-                  Leave the date blank to hide it.
+                  {mode === "sea" && " Leave the date blank to hide it."}
                 </p>
-                <div className="grid-fields">
-                  <label className="field">
-                    Next dispatch date
-                    <input
-                      className="input"
-                      type="date"
-                      value={rateForm[mode]?.next_dispatch_date || ""}
-                      onChange={(e) => updateRateField(mode, "next_dispatch_date", e.target.value)}
-                    />
-                  </label>
-                  <label className="field">
-                    Dispatch note
-                    <input
-                      className="input"
-                      placeholder={mode === "sea" ? "Karachi-bound LCL container" : "Weekly consolidated departure"}
-                      value={rateForm[mode]?.next_dispatch_note || ""}
-                      onChange={(e) => updateRateField(mode, "next_dispatch_note", e.target.value)}
-                    />
-                  </label>
-                </div>
+                {mode === "air" ? (
+                  <>
+                    <div className="field">
+                      <span>Dispatch days (flights depart)</span>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {WEEKDAYS.map(({ value, label }) => {
+                          const active = (rateForm.air?.dispatch_days || []).includes(value);
+                          return (
+                            <button
+                              type="button"
+                              key={value}
+                              aria-pressed={active}
+                              className={`min-h-[38px] min-w-[46px] rounded-full border-[1.5px] px-3 text-[13px] font-bold transition ${
+                                active ? "border-green bg-green text-white" : "border-[#d7deea] bg-white text-ink"
+                              }`}
+                              onClick={() => {
+                                const current = rateForm.air?.dispatch_days || [];
+                                const next = active ? current.filter((d) => d !== value) : [...current, value];
+                                updateRateField("air", "dispatch_days", next);
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="fine mt-1">
+                        The next matching date is computed automatically and shown on the Air Cargo page &mdash; no
+                        need to update a date by hand. Currently:{" "}
+                        <strong className="text-ink">
+                          {nextDispatchDate(rateForm.air?.dispatch_days)
+                            ? new Date(`${nextDispatchDate(rateForm.air?.dispatch_days)}T00:00:00`).toLocaleDateString(
+                                "en-GB",
+                                { weekday: "long", day: "numeric", month: "long" }
+                              )
+                            : "no days selected — poster is hidden"}
+                        </strong>
+                        .
+                      </p>
+                    </div>
+                    <label className="field mt-4">
+                      Dispatch note (optional)
+                      <input
+                        className="input"
+                        placeholder={dispatchDaysLabel(rateForm.air?.dispatch_days) || "Weekly consolidated departure"}
+                        value={rateForm.air?.next_dispatch_note || ""}
+                        onChange={(e) => updateRateField("air", "next_dispatch_note", e.target.value)}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <div className="grid-fields">
+                    <label className="field">
+                      Next dispatch date
+                      <input
+                        className="input"
+                        type="date"
+                        value={rateForm.sea?.next_dispatch_date || ""}
+                        onChange={(e) => updateRateField("sea", "next_dispatch_date", e.target.value)}
+                      />
+                    </label>
+                    <label className="field">
+                      Dispatch note
+                      <input
+                        className="input"
+                        placeholder="Karachi-bound LCL container"
+                        value={rateForm.sea?.next_dispatch_note || ""}
+                        onChange={(e) => updateRateField("sea", "next_dispatch_note", e.target.value)}
+                      />
+                    </label>
+                  </div>
+                )}
                 <div className="mt-[18px] flex items-center gap-[14px]">
                   <button className="btn btn-green btn-sm" disabled={isPending} onClick={() => handleSaveRate(mode)}>
                     Save

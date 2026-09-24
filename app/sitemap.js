@@ -16,7 +16,7 @@ export default function sitemap() {
     page("/sea-cargo", 0.9),
     page("/excess-baggage", 0.8),
     page("/pak-to-uk", 0.8),
-    page("/moving-back-home", 0.8),
+    page("/house-move", 0.8),
     page("/tracking", 0.6),
     page("/faq", 0.5),
     page("/contact-us", 0.7),

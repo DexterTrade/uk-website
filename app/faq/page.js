@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import FaqJsonLd from "../components/FaqJsonLd";
@@ -15,7 +16,7 @@ export default function FaqPage() {
   return (
     <>
       <FaqJsonLd />
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <section className="section wrap pt-14">
           <span className="eyebrow">FAQ</span>

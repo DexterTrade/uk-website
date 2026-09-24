@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
@@ -5,6 +6,7 @@ import BottomCta from "../components/BottomCta";
 import NextDispatch from "../components/NextDispatch";
 import { createClient } from "@/lib/supabase/server";
 import { pageMeta } from "@/lib/seo";
+import { nextDispatchDate, dispatchDaysLabel } from "@/lib/dispatch-days";
 
 export const metadata = pageMeta({
   title: "Air Cargo, UK to Pakistan & Kashmir",
@@ -17,19 +19,25 @@ export default async function AirCargoPage() {
   const supabase = await createClient();
   const { data: airRate } = await supabase
     .from("rates")
-    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge")
+    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge, dispatch_days")
     .eq("mode", "air")
     .maybeSingle();
   const estimatedTime = airRate?.estimated_time || "8–10 days";
 
+  // Recurring weekly flight days (set in /admin) take priority over the
+  // legacy one-off date field, so the departure poster stays current on its
+  // own instead of needing a manual date update every week.
+  const dispatchDate = nextDispatchDate(airRate?.dispatch_days) || airRate?.next_dispatch_date;
+  const dispatchNote = airRate?.next_dispatch_note || dispatchDaysLabel(airRate?.dispatch_days);
+
   return (
     <>
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <NextDispatch
           mode="air"
-          date={airRate?.next_dispatch_date}
-          note={airRate?.next_dispatch_note}
+          date={dispatchDate}
+          note={dispatchNote}
           estimatedTime={estimatedTime}
         />
 
@@ -101,7 +109,7 @@ export default async function AirCargoPage() {
                 <tbody>
                   <tr><td className="key">1&ndash;29 kg</td><td className="rate">&pound;4.20 / kg</td><td>{estimatedTime}</td></tr>
                   <tr><td className="key">30&ndash;99 kg</td><td className="rate">&pound;3.60 / kg</td><td>{estimatedTime}</td></tr>
-                  <tr><td className="key">100 kg +</td><td className="rate">{(airRate?.headline_rate || "From £3.10/kg").replace(/^From\s*/i, "")}</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">100 kg +</td><td className="rate">{(airRate?.headline_rate || "£3.10/kg").replace(/^From\s*/i, "")}</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>
@@ -110,7 +118,7 @@ export default async function AirCargoPage() {
                 Minimum weight: 1 kg
               </span>
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Collection charge: &pound;{Number(airRate?.pickup_charge ?? 35).toFixed(0)}
+                Handling fee: &pound;{Number(airRate?.pickup_charge ?? 35).toFixed(0)}
               </span>
             </div>
             <p className="fine mt-[14px]">

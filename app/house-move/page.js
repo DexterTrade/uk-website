@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
@@ -27,14 +28,14 @@ const STEPS = [
 export const metadata = pageMeta({
   title: "Moving Back to Pakistan",
   description:
-    "Relocating to Pakistan for good? We pack, ship and deliver your whole household — furniture, appliances and personal belongings — door to door, with direct cargo by sea and by air.",
-  path: "/moving-back-home",
+    "Relocating to Pakistan for good? We pack, ship and deliver your whole household — furniture, appliances and personal belongings — door to door cargo by sea and by air.",
+  path: "/house-move",
 });
 
 export default function MovingBackHomePage() {
   return (
     <>
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <PageHero
           eyebrow="Relocation · UK to Pakistan"

@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/air-cargo", label: "Air Cargo" },
   { href: "/excess-baggage", label: "Excess Baggage" },
   { href: "/pak-to-uk", label: "Pak to UK" },
-  { href: "/moving-back-home", label: "Relocation" },
+  { href: "/house-move", label: "House Move" },
   { href: "/tracking", label: "Track" },
   { href: "/faq", label: "FAQ" },
 ];
@@ -20,7 +20,7 @@ const SUBTITLES = {
   tracking: "Track a shipment",
 };
 
-export default function SiteHeader({ variant = "home" }) {
+export default function SiteHeader({ variant = "home", announcement = null }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
@@ -36,7 +36,11 @@ export default function SiteHeader({ variant = "home" }) {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 backdrop-blur-[10px]">
+    // The announcement bar lives inside the sticky header rather than above it,
+    // so the two pin to the top as one unit — no hardcoded offset that would
+    // leave a gap on the days the bar renders nothing.
+    <header className="sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 shadow-[0_8px_28px_-16px_rgba(22,35,60,0.35)] backdrop-blur-[10px]">
+      {announcement}
       <div className="wrap flex items-center gap-5 py-[10px]">
         <Link className="flex items-center gap-[10px]" href="/" onClick={close}>
           <span className="flex h-11 w-11 flex-none items-center justify-center">

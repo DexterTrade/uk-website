@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
@@ -16,7 +17,7 @@ export const metadata = pageMeta({
 export default function ContactUsPage() {
   return (
     <>
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <PageHero
           eyebrow="Contact us"
@@ -49,7 +50,7 @@ export default function ContactUsPage() {
                     ))}
                   </div>
                   <a href={BUSINESS.whatsapp}>
-                    <span className="row-icon wa"><WhatsAppIcon /></span>
+                    <span className="row-icon"><WhatsAppIcon /></span>
                     <span className="row-text">
                       <span>{BUSINESS.whatsappDisplay}</span>
                       <span className="city">WhatsApp</span>

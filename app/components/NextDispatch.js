@@ -45,7 +45,7 @@ export default function NextDispatch({ mode = "sea", date, note, estimatedTime }
             <span className="eyebrow">{copy.label}</span>
             <h3 className="mt-2 text-xl font-extrabold md:text-2xl">
               {formatted}
-              {mode === "sea" && <span className="ml-2 text-base font-semibold text-green">({daysAway})</span>}
+              <span className="ml-2 text-base font-semibold text-green">({daysAway})</span>
             </h3>
             {note && <p className="mt-1 text-sm text-muted">{note}</p>}
           </div>

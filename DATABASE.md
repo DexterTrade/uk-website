@@ -27,7 +27,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | Route | Purpose |
 |---|---|
 | `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, and three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan) |
-| `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/moving-back-home` | Dedicated service pages, each with its own layout (not templated identically). Sea/Air lead with the `NextDispatch` poster (see below), placed *above* `PageHero`. Excess Baggage, Pak to UK and Moving Back Home render their "How it works" as a connected flow via `app/components/ProcessDiagram.js` (numbered boxes with arrows between them) rather than a plain card grid. Excess Baggage and Pak to UK are Server Components that fetch `rates.estimated_time` (see "Admin panel" below) |
+| `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/house-move` | Dedicated service pages, each with its own layout (not templated identically). Sea/Air lead with the `NextDispatch` poster (see below), placed *above* `PageHero`. Excess Baggage, Pak to UK and Moving Back Home render their "How it works" as a connected flow via `app/components/ProcessDiagram.js` (numbered boxes with arrows between them) rather than a plain card grid. Excess Baggage and Pak to UK are Server Components that fetch `rates.estimated_time` (see "Admin panel" below) |
 | `/contact-us` | Contact details + enquiry form |
 | `/faq` | FAQ accordion (content in `lib/faq.js`) |
 | `/tracking` | Public shipment tracking (see below) |
@@ -40,7 +40,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/invoice/[token]` | **Public** — the customer's own invoice, reached by an unguessable share link, with a **Track shipment** button. `noindex`, and disallowed in robots.txt |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
-Cargo, Excess Baggage, Pak to UK, Relocation, Track, FAQ.
+Cargo, Excess Baggage, Pak to UK, House Move, Track, FAQ.
 
 ## Database schema (`public` schema, Supabase Postgres)
 
@@ -303,12 +303,13 @@ propagation list).
 |---|---|---|
 | `id` | uuid PK | |
 | `mode` | text | `'sea'` or `'air'` |
-| `headline_rate` | text | Current values: sea `"From £1.20/kg"`, air `"From £3.10/kg"` — **sea is deliberately priced per kg, not per m³**, per an explicit request; this is a departure from typical sea-freight convention (usually priced by volume), so don't "fix" it back to `/m³` without checking with the user first |
+| `headline_rate` | text | Stored as the **exact** rate, with no `"From "` prefix — the rates are exact, so the word was removed from the copy and from every code fallback; don't reintroduce it. **Sea is deliberately priced per kg, not per m³**, per an explicit request; this is a departure from typical sea-freight convention (usually priced by volume), so don't "fix" it back to `/m³` without checking with the user first |
 | `rate_note` | text, nullable | Short descriptor only, e.g. `"Shared container (LCL)"` / `"Tiered by weight"` — does **not** include a delivery-time phrase; that lives in `estimated_time` now so the two can be edited/read independently |
 | `estimated_time` | text, nullable | The delivery-time figure shown everywhere: sea `"8–10 weeks"`, air `"8–10 days"`. Added specifically to stop this drifting into 3+ different hardcoded values across pages (it had: `"30–40 days"`, `"5–7 days"` and `"8–10 weeks"`/`"8–10 days"` simultaneously live in different places before this column existed) |
-| `pickup_charge` | numeric | Flat UK pickup fee, shown as "UK pickup" / "Collection charge" depending on the page |
-| `next_dispatch_date` | date, nullable | Drives the `NextDispatch` poster on both the Sea Cargo and Air Cargo pages (both modes, not sea-only) |
-| `next_dispatch_note` | text, nullable | |
+| `pickup_charge` | numeric | Flat fee, labelled **"Handling fee"** everywhere it appears (homepage sea/air sections, Sea Cargo and Air Cargo pages). It was previously "UK pickup" on the homepage and "Collection charge" on the service pages — one fee under three names — so the wording was unified |
+| `next_dispatch_date` | date, nullable | The one-off next departure. Still what **sea** uses, and what the `AnnouncementBar` ticker reads. Air now derives its date from `dispatch_days` instead and falls back to this only if no days are set |
+| `next_dispatch_note` | text, nullable | Optional blurb under the date on the `NextDispatch` poster. For air, `dispatchDaysLabel()` supplies a default ("Flights depart every Monday & Friday") when this is blank |
+| `dispatch_days` | smallint[], nullable | **Recurring weekly departure days**, as JS `Date.getDay()` numbers (0 = Sunday … 6 = Saturday). Used by air, whose flights go out a fixed couple of days a week: staff tick the days in `/admin` → Rates and the Air Cargo page computes the next matching date itself, so nobody has to re-enter a date every week. `lib/dispatch-days.js` owns the arithmetic (`nextDispatchDate`, `dispatchDaysLabel`, `sanitizeDispatchDays`) and resolves "today" in `Europe/London` rather than UTC. Sea leaves this empty and keeps using `next_dispatch_date` |
 | `updated_at` | timestamptz | |
 
 ## Row Level Security
@@ -510,9 +511,17 @@ Server Component (`app/admin/page.js`) fetches shipments (joined to
 parallel, then hands them to `AdminClient.js` (client component) for the
 interactive table/filter/edit UI. Tabs: **Dashboard, Shipments, Customers,
 Rates**. Key actions: change shipment status, and edit sea/air rates (headline
-rate, note, **estimated time**, UK pickup charge, and the next-dispatch
-date/note — all per mode). Every reference and customer name in those tables
-links through to the matching detail page.
+rate, note, **estimated time**, handling fee, and the departure settings — all
+per mode). Every reference and customer name in those tables links through to
+the matching detail page.
+
+**The departure control differs by mode**, because the two work differently in
+real life: **sea** gets a single date picker (one container sailing, set by
+hand), while **air** gets a row of **weekday toggle buttons** writing
+`rates.dispatch_days`, since flights go out the same couple of days every
+week. The air panel previews the date those toggles resolve to, so staff can
+see what the site will show without leaving the page. Don't give air a manual
+date field back — the whole point is that it stops needing weekly edits.
 
 **Shipments: filter panel and bulk edit.** Five filters above the table, all
 combining (AND) with the search box:
@@ -1001,7 +1010,44 @@ against the live site, trust the code over this doc and update this section.
   "Estimated time"), and a "Book your space" CTA. Renders nothing at all if
   `date` is empty/past (`next_dispatch_date` unset, or in the past) — staff
   clear the date in `/admin` to hide it entirely rather than there being a
-  separate visibility toggle.
+  separate visibility toggle. The "(in N days)" countdown now shows for
+  **both** modes, since air's date is computed rather than hand-set.
+- **`app/components/AnnouncementBar.js`** — the sliding "Next container
+  Insha'Allah — <date>" ticker across the top of every public page. An async
+  Server Component that reads sea's `next_dispatch_date` itself, and returns
+  `null` once that date has passed, so a stale date never lingers.
+  - It is **passed into `SiteHeader` as an `announcement` prop**, not
+    rendered above it, so the two pin to the top as a single sticky unit. A
+    separately-stuck bar would need the header's `top` offset hardcoded to
+    the bar's height, which would leave a gap on the days it renders nothing.
+    A Server Component can be handed to a client component this way; the
+    alternative (fetching in the client header) would need an extra action.
+  - The marquee is CSS only — `.animate-announcement-marquee` in
+    `globals.css` translates a track of two identical groups by exactly
+    `-50%`, so the loop is seamless at any message length. It stops entirely
+    under `prefers-reduced-motion`.
+
+## Urdu copy
+
+The homepage hero paragraph is in **Urdu script**, right-to-left
+(`lang="ur" dir="rtl"`), with `پاکستان` in green to echo the English
+heading above it.
+
+- **The font is Gulzar** (`next/font/google`, wired as `--font-urdu-nastaliq`
+  → the `--font-urdu` theme token → the `font-urdu` utility). Archivo and IBM
+  Plex carry **no Urdu glyphs at all**, so without a declared face the browser
+  falls back to whatever Arabic font the visitor's OS happens to ship.
+- Gulzar is **Nastaliq** — the sloping calligraphic style Urdu readers expect
+  — but drawn for screen text. Noto Nastaliq Urdu was tried first and rejected
+  as too cramped. Don't swap it for a Naskh or sans Arabic face without
+  asking: the style was an explicit choice.
+- Nastaliq needs a **generous line-height** (currently 2.1) or the descenders
+  of one line collide with the next. It ships **weight 400 only**, so don't
+  apply `font-bold`/`font-semibold` to it — the browser would synthesise a
+  fake bold, which looks bad on this script. Colour carries emphasis instead.
+- The long tail on **ے** (bari ye, as in `کے`) sweeps below the baseline and
+  reads like a stray comma to some eyes. It is the glyph, not a character in
+  the string — this has already been queried once.
 
 ## Styling architecture
 

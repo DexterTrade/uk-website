@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
@@ -9,7 +10,7 @@ import { pageMeta } from "@/lib/seo";
 export const metadata = pageMeta({
   title: "Sea Cargo, UK to Pakistan & Kashmir",
   description:
-    "Direct cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 8-10 week transit.",
+    "Door to door cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 8-10 week transit.",
   path: "/sea-cargo",
 });
 
@@ -24,7 +25,7 @@ export default async function SeaCargoPage() {
 
   return (
     <>
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <NextDispatch
           mode="sea"
@@ -35,8 +36,8 @@ export default async function SeaCargoPage() {
 
         <PageHero
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
-          title="Direct cargo by sea — the economical route for volume and household goods."
-          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, direct cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
+          title="Door to door cargo by sea — the economical route for volume and household goods."
+          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, door to door cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
           stats={[
             { n: estimatedTime, l: "Port to door" },
             { n: "LCL or FCL", l: "Shared or full container" },
@@ -85,14 +86,14 @@ export default async function SeaCargoPage() {
                   <tr><th>Service</th><th>Weight / volume</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">Sea freight (LCL)</td><td>Per kg</td><td className="rate">{seaRate?.headline_rate || "From £1.20/kg"}</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">Sea freight (LCL)</td><td>Per kg</td><td className="rate">{seaRate?.headline_rate || "£1.20/kg"}</td><td>{estimatedTime}</td></tr>
                   <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Collection charge: &pound;{Number(seaRate?.pickup_charge ?? 35).toFixed(0)}
+                Handling fee: &pound;{Number(seaRate?.pickup_charge ?? 35).toFixed(0)}
               </span>
             </div>
             <p className="fine mt-[14px]">

@@ -8,6 +8,7 @@ import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from 
 import { getTodayISO } from "@/lib/server-time";
 import { SITE_URL } from "@/lib/seo";
 import { getStaff, isSuperAdmin } from "@/lib/supabase/staff";
+import { sanitizeDispatchDays } from "@/lib/dispatch-days";
 
 // Server Actions are public HTTP endpoints in their own right — the proxy
 // only guards page navigations, so every action re-checks the session
@@ -121,7 +122,15 @@ export async function updateShipmentStatuses(shipmentIds, status) {
 
 export async function updateRate(
   mode,
-  { headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note }
+  {
+    headline_rate,
+    rate_note,
+    estimated_time,
+    pickup_charge,
+    next_dispatch_date,
+    next_dispatch_note,
+    dispatch_days,
+  }
 ) {
   if (mode !== "air" && mode !== "sea") {
     return { error: "Unknown rate mode." };
@@ -137,6 +146,7 @@ export async function updateRate(
       pickup_charge: Number.parseFloat(pickup_charge) || 0,
       next_dispatch_date: next_dispatch_date || null,
       next_dispatch_note: String(next_dispatch_note || "").trim() || null,
+      dispatch_days: sanitizeDispatchDays(dispatch_days),
     })
     .eq("mode", mode);
   if (error) return { error: error.message };

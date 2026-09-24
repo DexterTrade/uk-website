@@ -21,6 +21,7 @@
   --color-amber-ink: #8a5a00;
   --font-head: var(--font-archivo), system-ui, sans-serif;
   --font-body: var(--font-plex), system-ui, sans-serif;
+  --font-urdu: var(--font-urdu-nastaliq), "Gulzar", "Noto Nastaliq Urdu", serif;
 }
 
 @layer base {
@@ -182,34 +183,78 @@
   /* hero contact card rows (phone/WhatsApp/email) -- reused by the
      homepage hero, contact-us page, and the left-side contact drawer */
   .hero-contact-list {
-    @apply mt-[18px] flex flex-col gap-[10px];
+    @apply mt-3 flex flex-col;
   }
   .contact-inline-rows,
   .contact-phones-inline {
-    @apply flex flex-col gap-[10px];
+    @apply flex flex-col;
   }
   .contact-inline-rows {
     @apply max-[640px]:hidden;
   }
+  /* Minimal rows: no bordered boxes or icon badges, just a small inline icon
+     and the number, so the card stays compact and the page below it keeps
+     the visual weight. */
   .hero-contact-list a {
-    @apply flex items-center gap-3 rounded-md border-[1.5px] border-line px-[14px] py-[11px] text-[15px] font-semibold text-ink hover:border-green hover:text-green max-[640px]:px-3 max-[640px]:py-[9px] max-[640px]:text-sm;
+    @apply flex items-center gap-2.5 py-[7px] text-[14.5px] font-semibold text-ink hover:text-green max-[640px]:py-[5px] max-[640px]:text-[13.5px];
   }
   .row-icon {
-    @apply flex h-8 w-8 flex-none items-center justify-center rounded-full bg-green-soft text-green max-[640px]:h-7 max-[640px]:w-7;
-  }
-  .row-icon.wa {
-    @apply bg-green text-white;
+    @apply flex flex-none items-center justify-center text-green [&>svg]:h-[15px] [&>svg]:w-[15px];
   }
   .row-text {
     @apply flex min-w-0 flex-1 items-center justify-between gap-3;
   }
   .row-text .city {
-    @apply text-[13px] font-medium tracking-[0.06em] text-faint uppercase max-[640px]:text-[11.5px];
+    @apply text-[11px] font-medium tracking-[0.06em] text-faint uppercase;
+  }
+
+  /* Homepage sea/air split. Desktop keeps the original arrangement — photo
+     on the left, heading above the rates on the right — while mobile reads
+     heading, photo, handling fee, rates. Grid areas rather than duplicated
+     markup, so each section still has exactly one <h2>. */
+  .svc-split {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    grid-template-areas:
+      "img head"
+      "img rates"
+      "fee fee";
+    align-items: center;
+    gap: 14px 44px;
+  }
+  .svc-split .svc-media {
+    grid-area: img;
+  }
+  .svc-split .svc-head {
+    grid-area: head;
+    align-self: end;
+  }
+  .svc-split .svc-rates {
+    grid-area: rates;
+    align-self: start;
+  }
+  .svc-split .svc-fee {
+    grid-area: fee;
+  }
+  @media (max-width: 860px) {
+    .svc-split {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "head"
+        "img"
+        "fee"
+        "rates";
+      gap: 16px;
+    }
+    .svc-split .svc-head,
+    .svc-split .svc-rates {
+      align-self: auto;
+    }
   }
 
   /* shared service-page patterns -- "how it works" step cards, the
      numbered service cards, soft bands, rate cards and tables all repeat
-     across sea-cargo / air-cargo / excess-baggage / pak-to-uk / moving-back-home */
+     across sea-cargo / air-cargo / excess-baggage / pak-to-uk / house-move */
   .band-soft {
     @apply border-t border-b border-[#e6eaf2] bg-bg-soft;
   }
@@ -699,6 +744,27 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
+  }
+
+  /* Continuous horizontal scroll for the top announcement ticker. The track
+     renders two identical, back-to-back groups of content (width: max-content
+     on the parent) and translates by exactly one group's width (-50%), so the
+     loop point is seamless regardless of how long the message is. */
+  @keyframes announcement-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .animate-announcement-marquee {
+    animation: announcement-marquee 20s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-announcement-marquee {
+      animation: none;
+    }
   }
 }
 

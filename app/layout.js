@@ -1,4 +1,4 @@
-import { Archivo, IBM_Plex_Sans } from "next/font/google";
+import { Archivo, Gulzar, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import OrganizationJsonLd from "./components/OrganizationJsonLd";
@@ -16,14 +16,24 @@ const plexSans = IBM_Plex_Sans({
   weight: ["400", "500", "600"],
 });
 
+// Urdu script: the Latin fonts above carry no Urdu glyphs, so without this the
+// browser falls back to whatever Arabic face the visitor's OS happens to have.
+// Gulzar is Nastaliq — the calligraphic style Urdu readers expect — but drawn
+// for screen text, so it stays legible where Noto Nastaliq reads as cramped.
+const nastaliq = Gulzar({
+  variable: "--font-urdu-nastaliq",
+  subsets: ["arabic"],
+  weight: "400",
+});
+
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
+    default: `${SITE_NAME} — Door to Door Cargo to Pakistan & Kashmir`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "A trusted cargo service connecting the UK to Pakistan and Kashmir. Direct cargo by sea and by air, door to door collection, customs clearance and full insurance. Track your shipment online.",
+    "A trusted cargo service connecting the UK to Pakistan and Kashmir. Door to door cargo by sea and by air, customs clearance and full insurance. Track your shipment online.",
   keywords: [
     "cargo to Pakistan",
     "cargo to Kashmir",
@@ -56,18 +66,18 @@ export const metadata = {
   formatDetection: { telephone: true, email: true, address: true },
   openGraph: {
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
+    title: `${SITE_NAME} — Door to Door Cargo to Pakistan & Kashmir`,
     description:
-      "Direct cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
+      "Door to door cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
     type: "website",
     url: "/",
     locale: "en_GB",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Direct Cargo to Pakistan & Kashmir`,
+    title: `${SITE_NAME} — Door to Door Cargo to Pakistan & Kashmir`,
     description:
-      "Direct cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
+      "Door to door cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
   },
   robots: {
     index: true,
@@ -88,7 +98,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-GB" className={`${archivo.variable} ${plexSans.variable} overflow-x-hidden`}>
+    <html
+      lang="en-GB"
+      className={`${archivo.variable} ${plexSans.variable} ${nastaliq.variable} overflow-x-hidden`}
+    >
       <body className="m-0 overflow-x-hidden bg-white font-body text-ink antialiased">
         {/* Google tag (gtag.js) for Google Ads */}
         <Script
@@ -104,6 +117,30 @@ export default function RootLayout({ children }) {
             gtag('config', 'AW-18462573024');
           `}
         </Script>
+        {/* Meta Pixel */}
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {`
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '2330472387806980');
+            fbq('track', 'PageView');
+          `}
+        </Script>
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=2330472387806980&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
         <OrganizationJsonLd />
         {children}
       </body>

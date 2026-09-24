@@ -63,7 +63,9 @@ export default async function AdminPage({ searchParams }) {
       .order("issued_date", { ascending: false }),
     supabase
       .from("rates")
-      .select("mode, headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note")
+      .select(
+        "mode, headline_rate, rate_note, estimated_time, pickup_charge, next_dispatch_date, next_dispatch_note, dispatch_days"
+      )
       .order("mode"),
     supabase.from("customers").select("id, name, phone, email, town, postcode").order("name"),
     supabase.from("shipment_statuses").select("value, position, tone").order("position"),
@@ -168,6 +170,7 @@ export default async function AdminPage({ searchParams }) {
     pickup_charge: Number(r.pickup_charge),
     next_dispatch_date: r.next_dispatch_date || "",
     next_dispatch_note: r.next_dispatch_note || "",
+    dispatch_days: r.dispatch_days || [],
   }));
 
   // Today's date, resolved on the server so the dashboard's date presets are

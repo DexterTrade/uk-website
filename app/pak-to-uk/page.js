@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
@@ -41,7 +42,7 @@ export default async function PakToUkPage() {
 
   return (
     <>
-      <SiteHeader variant="service" />
+      <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <PageHero
           eyebrow="Air & sea freight · Pakistan to UK"

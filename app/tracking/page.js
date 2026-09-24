@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import WhatsAppFloat from "../components/WhatsAppFloat";
@@ -15,7 +16,7 @@ export const metadata = pageMeta({
 export default function TrackingPage() {
   return (
     <div className="bg-bg-soft">
-      <SiteHeader variant="tracking" />
+      <SiteHeader variant="tracking" announcement={<AnnouncementBar />} />
       <Suspense fallback={null}>
         <TrackingClient />
       </Suspense>

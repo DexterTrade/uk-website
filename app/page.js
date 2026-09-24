@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AnnouncementBar from "./components/AnnouncementBar";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import WhatsAppFloat from "./components/WhatsAppFloat";
@@ -14,8 +15,8 @@ export const metadata = {
 };
 
 const RATE_DEFAULTS = {
-  sea: { headline_rate: "From £1.20/kg", rate_note: "Shared container (LCL)", estimated_time: "8–10 weeks", pickup_charge: 35 },
-  air: { headline_rate: "From £3.10/kg", rate_note: "Tiered by weight", estimated_time: "8–10 days", pickup_charge: 35 },
+  sea: { headline_rate: "£1.20/kg", rate_note: "Shared container (LCL)", estimated_time: "8–10 weeks", pickup_charge: 35 },
+  air: { headline_rate: "£3.10/kg", rate_note: "Tiered by weight", estimated_time: "8–10 days", pickup_charge: 35 },
 };
 
 export default async function Home() {
@@ -29,27 +30,29 @@ export default async function Home() {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader announcement={<AnnouncementBar />} />
 
       <main id="top">
         <section className="border-b border-[#e6eaf2] bg-[linear-gradient(180deg,#f4f8f6_0%,#ffffff_100%)]">
           <div className="wrap grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-center gap-11 pt-[60px] pb-14 max-[640px]:gap-8 max-[640px]:pt-10 max-[640px]:pb-10">
             <div>
-              <span className="eyebrow">Direct cargo &middot; By sea &amp; by air &middot; Nationwide UK collection</span>
+              <span className="eyebrow">Door to door cargo &middot; By sea &amp; by air &middot; Nationwide UK collection</span>
               <h1 className="my-5 mb-[18px] text-[clamp(34px,5vw,54px)] leading-[1.05] font-extrabold">
                 DOOR TO DOOR CARGO TO <span className="text-green">PAKISTAN</span> &amp; <span className="text-green">KASHMIR</span>.
               </h1>
-              <p className="max-w-[46ch] text-[18px] leading-[1.6] text-muted">
-                A trusted cargo service connecting the UK to Pakistan and Kashmir. Fast cargo by air for urgent
-                consignments, economical cargo by sea for volume, and a dedicated London cargo hub handling
-                direct, door to door collection on every booking.
+              <p
+                lang="ur"
+                dir="rtl"
+                className="max-w-[430px] font-urdu text-[19px] leading-[2.1] text-muted max-[640px]:max-w-full max-[640px]:text-[17px]"
+              >
+                یو کے سے <span className="text-green">پاکستان</span> میں گھر سے گھر تک ڈیلیوری۔ اپنے
+                گھر والوں اور پیاروں تک گھریلو و تجارتی سامان، فرنیچر، الیکٹرانکس اور ہر قسم کا سامان ہمارے ذریعے
+                بھجوا سکتے ہیں۔
               </p>
             </div>
             <div className="card card-shadow max-[640px]:hidden">
-              <h2 className="text-[19px] font-bold">Speak to us now</h2>
-              <p className="mt-1.5 text-[14.5px] text-soft">
-                Call your nearest branch, or reach us on WhatsApp for a quick response.
-              </p>
+              <h2 className="text-[17px] font-bold">Speak to us now</h2>
+              <p className="mt-1 text-[13.5px] text-soft">Call a branch, or message us on WhatsApp.</p>
               <div className="hero-contact-list">
                 <div className="contact-inline-rows">
                   <div className="contact-phones-inline">
@@ -64,7 +67,7 @@ export default async function Home() {
                     ))}
                   </div>
                   <a href={BUSINESS.whatsapp}>
-                    <span className="row-icon wa"><WhatsAppIcon /></span>
+                    <span className="row-icon"><WhatsAppIcon /></span>
                     <span className="row-text">
                       <span>{BUSINESS.whatsappDisplay}</span>
                       <span className="city">WhatsApp</span>
@@ -90,97 +93,90 @@ export default async function Home() {
             it's still mounted when the card itself is hidden on phones */}
         <ContactDrawer />
 
-        <section id="phone-numbers" className="hidden max-[640px]:block wrap border-t border-[#e6eaf2] py-[46px]">
+        {/* Mobile-only contact list. Kept deliberately small so the service
+            sections below it carry the weight of the page on a phone. */}
+        <section id="phone-numbers" className="hidden max-[640px]:block wrap border-t border-[#e6eaf2] py-6">
           <span className="eyebrow">Call us directly</span>
-          <h2 className="mt-3 text-[clamp(21px,2.6vw,27px)] font-extrabold">Speak to a branch, or WhatsApp us</h2>
-          <p className="lede mt-[10px] max-w-[48ch]">
-            Every branch takes calls directly, or reach us on WhatsApp for a quick response.
-          </p>
-          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+          <div className="mt-2.5 flex flex-col">
             {BUSINESS.phones.map((p) => (
               <a
                 key={p.city}
                 href={`tel:${p.href}`}
-                className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+                className="flex items-center gap-2.5 py-[7px] text-[14px] font-semibold text-ink"
               >
-                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green-soft text-green">
-                  <PhoneIcon />
-                </span>
-                <span>
-                  <span className="block text-[15.5px] font-bold text-ink">{p.display}</span>
-                  <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">{p.city}</span>
+                <PhoneIcon className="h-[15px] w-[15px] flex-none text-green" />
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                  <span>{p.display}</span>
+                  <span className="text-[11px] font-medium tracking-[0.06em] text-faint uppercase">{p.city}</span>
                 </span>
               </a>
             ))}
             <a
               href={BUSINESS.whatsapp}
-              className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+              className="flex items-center gap-2.5 py-[7px] text-[14px] font-semibold text-ink"
             >
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green text-white">
-                <WhatsAppIcon />
-              </span>
-              <span>
-                <span className="block text-[15.5px] font-bold text-ink">{BUSINESS.whatsappDisplay}</span>
-                <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">WhatsApp</span>
+              <WhatsAppIcon className="h-[15px] w-[15px] flex-none text-green" />
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                <span>{BUSINESS.whatsappDisplay}</span>
+                <span className="text-[11px] font-medium tracking-[0.06em] text-faint uppercase">WhatsApp</span>
               </span>
             </a>
             <a
               href={`mailto:${BUSINESS.email}`}
-              className="flex items-center gap-3 rounded-xl border border-line bg-white p-5 transition hover:border-green hover:bg-green-soft"
+              className="flex items-center gap-2.5 py-[7px] text-[14px] font-semibold text-ink"
             >
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-green-soft text-green">
-                <EmailIcon />
-              </span>
-              <span>
-                <span className="block text-[15.5px] font-bold text-ink">{BUSINESS.email}</span>
-                <span className="block text-xs font-medium tracking-[0.05em] text-faint uppercase">Email</span>
-              </span>
+              <EmailIcon className="h-[15px] w-[15px] flex-none text-green" />
+              <span className="min-w-0 flex-1 truncate">{BUSINESS.email}</span>
             </a>
           </div>
         </section>
 
         <section className="wrap border-t border-[#e6eaf2] py-[60px]">
-          <div className="grid grid-cols-[1.5fr_1fr] items-center gap-11 max-[860px]:grid-cols-1">
-            <div className="overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
+          <div className="svc-split">
+            <div className="svc-head">
+              <span className="eyebrow">Sea Cargo</span>
+              <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Economical cargo By Sea</h2>
+            </div>
+            <div className="svc-media overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
               <img className="block h-full w-full object-cover" src="/assets/photos/sea-cargo.jpg" alt="Sea cargo — container ship" />
             </div>
-            <div>
-              <span className="eyebrow">Sea Cargo</span>
-              <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Economical cargo by sea</h2>
-              <div className="mt-[22px] flex items-baseline gap-2">
-                <span className="font-head text-[30px] font-extrabold text-green">{seaRate.headline_rate}</span>
-                <span className="text-[13px] text-faint">{seaRate.rate_note} &middot; {seaRate.estimated_time}</span>
-              </div>
-              <div className="mt-[14px] flex max-w-[320px] flex-col gap-2 border-t border-line pt-[14px]">
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>Freight rate</span><strong className="font-semibold text-ink">{seaRate.headline_rate}</strong></div>
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>UK pickup</span><strong className="font-semibold text-ink">&pound;{Number(seaRate.pickup_charge).toFixed(0)}</strong></div>
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>Estimated time</span><strong className="font-semibold text-ink">{seaRate.estimated_time}</strong></div>
+            <p className="svc-fee text-[12.5px] text-faint">
+              Handling fee <strong className="font-semibold text-muted">&pound;{Number(seaRate.pickup_charge).toFixed(0)}</strong>
+            </p>
+            <div className="svc-rates">
+              <div className="flex items-baseline gap-2">
+                <span className="font-head text-[21px] font-bold text-green">{seaRate.headline_rate}</span>
+                <span className="text-[13px] text-faint">
+                  {[seaRate.rate_note, seaRate.estimated_time].filter(Boolean).join(" · ")}
+                </span>
               </div>
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
-              <Link className="btn btn-navy mt-6" href="/sea-cargo">See sea cargo &rarr;</Link>
+              <Link className="btn btn-navy mt-5" href="/sea-cargo">See sea cargo &rarr;</Link>
             </div>
           </div>
         </section>
 
         <section className="wrap border-t border-[#e6eaf2] py-[60px]">
-          <div className="grid grid-cols-[1fr_1.5fr] items-center gap-11 max-[860px]:grid-cols-1">
-            <div>
+          <div className="svc-split">
+            <div className="svc-head">
               <span className="eyebrow">Air Cargo</span>
-              <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Fast cargo by air</h2>
-              <div className="mt-[22px] flex items-baseline gap-2">
-                <span className="font-head text-[30px] font-extrabold text-green">{airRate.headline_rate}</span>
-                <span className="text-[13px] text-faint">{airRate.rate_note} &middot; {airRate.estimated_time}</span>
-              </div>
-              <div className="mt-[14px] flex max-w-[320px] flex-col gap-2 border-t border-line pt-[14px]">
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>Freight rate</span><strong className="font-semibold text-ink">{airRate.headline_rate}</strong></div>
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>UK pickup</span><strong className="font-semibold text-ink">&pound;{Number(airRate.pickup_charge).toFixed(0)}</strong></div>
-                <div className="flex justify-between gap-3 text-sm text-muted"><span>Estimated time</span><strong className="font-semibold text-ink">{airRate.estimated_time}</strong></div>
+              <h2 className="mt-[14px] text-[clamp(24px,3vw,32px)] font-extrabold">Fast cargo By Air</h2>
+            </div>
+            <div className="svc-media overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130]">
+              <img className="block h-full w-full object-cover" src="/assets/photos/air-cargo.jpg" alt="Air cargo — cargo plane" />
+            </div>
+            <p className="svc-fee text-[12.5px] text-faint">
+              Handling fee <strong className="font-semibold text-muted">&pound;{Number(airRate.pickup_charge).toFixed(0)}</strong>
+            </p>
+            <div className="svc-rates">
+              <div className="flex items-baseline gap-2">
+                <span className="font-head text-[21px] font-bold text-green">{airRate.headline_rate}</span>
+                <span className="text-[13px] text-faint">
+                  {[airRate.rate_note, airRate.estimated_time].filter(Boolean).join(" · ")}
+                </span>
               </div>
               <p className="fine mt-[10px]">Full cost breakdown provided with your quote.</p>
-              <Link className="btn btn-navy mt-6" href="/air-cargo">See air cargo &rarr;</Link>
-            </div>
-            <div className="overflow-hidden rounded-[18px] shadow-[0_24px_54px_-30px_rgba(22,35,60,0.4)] [aspect-ratio:220/130] max-[860px]:order-first">
-              <img className="block h-full w-full object-cover" src="/assets/photos/air-cargo.jpg" alt="Air cargo — cargo plane" />
+              <Link className="btn btn-navy mt-5" href="/air-cargo">See air cargo &rarr;</Link>
             </div>
           </div>
         </section>
@@ -227,7 +223,7 @@ export default async function Home() {
               Furniture, appliances and personal belongings — packed, shipped and delivered to your new
               address in Pakistan. Quoted individually based on what you&rsquo;re bringing.
             </p>
-            <Link className="btn btn-navy mt-5" href="/moving-back-home">See relocation service &rarr;</Link>
+            <Link className="btn btn-navy mt-5" href="/house-move">See house move service &rarr;</Link>
           </div>
           <div className="ml-auto max-w-[340px] overflow-hidden rounded-[14px] shadow-[0_20px_46px_-28px_rgba(22,35,60,0.4)] [aspect-ratio:1/1] max-[860px]:ml-0 max-[860px]:max-w-full">
             <img className="block h-full w-full object-cover" src="/assets/photos/moving-home.jpg" alt="Moving back to Pakistan — household relocation" />

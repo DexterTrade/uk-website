@@ -7,6 +7,11 @@ const nextConfig = {
         destination: "/tracking",
         permanent: true,
       },
+      {
+        source: "/moving-back-home",
+        destination: "/house-move",
+        permanent: true,
+      },
     ];
   },
 };

@@ -33,8 +33,8 @@ export default function SiteFooter() {
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/air-cargo">Air Cargo</Link>
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/excess-baggage">Excess Baggage</Link>
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/pak-to-uk">Pakistan to UK</Link>
-            <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/moving-back-home">
-              Moving Back to Pakistan
+            <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/house-move">
+              House Move
             </Link>
           </nav>
         </div>

@@ -11,7 +11,7 @@ export default function OrganizationJsonLd() {
     image: `${SITE_URL}/opengraph-image.png`,
     logo: `${SITE_URL}/icon.svg`,
     description:
-      "Direct cargo service by sea and by air between the United Kingdom, Pakistan and Kashmir, plus excess baggage shipping, with UK door collection, customs clearance and optional goods insurance.",
+      "Door to door cargo service by sea and by air between the United Kingdom, Pakistan and Kashmir, plus excess baggage shipping, with UK door collection, customs clearance and optional goods insurance.",
     telephone: BUSINESS.phones[0].href,
     email: BUSINESS.email,
     priceRange: "££",
