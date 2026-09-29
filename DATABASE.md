@@ -26,9 +26,9 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 
 | Route | Purpose |
 |---|---|
-| `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, and three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan) |
+| `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan), and a contact section at the foot (`id="contact"`, so `/#contact` links to it) carrying the same cards as `/contact-us` |
 | `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/house-move` | Dedicated service pages, each with its own layout (not templated identically). Sea/Air lead with the `NextDispatch` poster (see below), placed *above* `PageHero`. Excess Baggage, Pak to UK and Moving Back Home render their "How it works" as a connected flow via `app/components/ProcessDiagram.js` (numbered boxes with arrows between them) rather than a plain card grid. Excess Baggage and Pak to UK are Server Components that fetch `rates.estimated_time` (see "Admin panel" below) |
-| `/contact-us` | Contact details + enquiry form |
+| `/contact-us` | Contact details + enquiry form (see "Enquiry form and analytics" below) |
 | `/faq` | FAQ accordion (content in `lib/faq.js`) |
 | `/tracking` | Public shipment tracking (see below) |
 | `/admin`, `/admin/login` | Staff-only operations panel, protected by Supabase Auth |
@@ -1026,6 +1026,56 @@ against the live site, trust the code over this doc and update this section.
     `globals.css` translates a track of two identical groups by exactly
     `-50%`, so the loop is seamless at any message length. It stops entirely
     under `prefers-reduced-motion`.
+
+## Enquiry form and analytics
+
+**`app/components/EnquiryForm.js` submits to WhatsApp, not to a server.** It
+composes the fields into a message, opens `wa.me` with that text pre-filled,
+and the customer presses send themselves. There is no inbox, API route or
+database row behind it — deliberately, since there is still no email provider
+wired up and WhatsApp is where enquiries are already answered.
+
+- **It was previously a placeholder** that set a "sent" flag and delivered
+  nothing at all, while telling the visitor their enquiry was on its way.
+  Don't regress it to that.
+- The message is only *composed*, so the confirmation says in as many words
+  that the customer must press send in WhatsApp. A visitor who closes the app
+  at that point has not contacted anyone.
+- `wa.me`, not `web.whatsapp.com`: a customer has the app and no WhatsApp Web
+  session to drop into. The admin panel's own Send button picks per device
+  because staff do have one — see "Details on Send" above.
+- The window is opened **synchronously inside the submit handler**, before
+  anything is awaited, or the browser treats it as an unrequested popup and
+  blocks it. A blocked window falls back to navigating, and the confirmation
+  also carries the link so a lost enquiry can be reopened by hand.
+- It renders in two places (the homepage contact section and `/contact-us`)
+  from the one component, so the two cannot drift.
+
+**Three tags load site-wide from `app/layout.js`**: the Google Ads tag
+(`AW-18462573024`), the Meta Pixel (`2330472387806980`), and a
+`gtag_report_conversion()` function for the Ads "Contact" conversion.
+
+Two things about that function differ from Google's stock snippet, and both
+matter: it **navigates anyway when `gtag` is missing**, and it carries a
+**timeout**. The stock version cancels the click and waits for the tag's
+callback to navigate — so with an ad blocker, or a tag that never answers,
+the link would simply do nothing and the visitor could not phone the
+business. Don't strip those guards.
+
+**`app/components/ConversionTracking.js`** wires the conversion to every
+`tel:`, `mailto:` and WhatsApp link with **one delegated listener** rather
+than an `onClick` per link. Those links live in seven files, several of them
+Server Components that would have to become client components purely to carry
+a handler, and a link added later would otherwise go untracked silently.
+
+- **It skips `/admin`.** Staff messaging a customer their invoice is not a
+  sales enquiry, and counting it would inflate the very number the ad spend is
+  judged on.
+- It reports **without intercepting the click** — gtag sends on a beacon that
+  survives page unload, so a phone call never waits on a tracking pixel.
+- The enquiry form reports itself instead, since a submit button is not an
+  `<a>` and the listener never sees it. Its fallback link is marked
+  `data-no-conversion` so one enquiry cannot be counted twice.
 
 ## Urdu copy
 

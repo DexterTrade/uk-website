@@ -2,6 +2,7 @@ import { Archivo, Gulzar, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import OrganizationJsonLd from "./components/OrganizationJsonLd";
+import ConversionTracking from "./components/ConversionTracking";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -117,6 +118,40 @@ export default function RootLayout({ children }) {
             gtag('config', 'AW-18462573024');
           `}
         </Script>
+        {/* Google Ads "Contact" conversion. Called with a url it navigates once
+            the hit is away; called with none it just reports, which is how
+            ConversionTracking uses it. Two guards on Google's stock snippet:
+            it falls through to navigating when gtag is missing (an ad blocker
+            must not be able to stop someone phoning the business), and a
+            timeout covers the tag never answering. */}
+        <Script id="google-ads-conversion" strategy="afterInteractive">
+          {`
+            function gtag_report_conversion(url) {
+              var done = false;
+              var go = function () {
+                if (done) return;
+                done = true;
+                if (typeof(url) != 'undefined') {
+                  window.location = url;
+                }
+              };
+              if (typeof gtag !== 'function') {
+                go();
+                return false;
+              }
+              gtag('event', 'conversion', {
+                  'send_to': 'AW-18462573024/TGxiCLOX2IYdEOCD0uNE',
+                  'event_callback': go,
+                  'event_timeout': 1000
+              });
+              if (typeof(url) != 'undefined') {
+                setTimeout(go, 1200);
+              }
+              return false;
+            }
+          `}
+        </Script>
+
         {/* Meta Pixel */}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
@@ -142,6 +177,7 @@ export default function RootLayout({ children }) {
           />
         </noscript>
         <OrganizationJsonLd />
+        <ConversionTracking />
         {children}
       </body>
     </html>

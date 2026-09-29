@@ -5,6 +5,7 @@ import SiteFooter from "./components/SiteFooter";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import { PhoneIcon, EmailIcon, WhatsAppIcon } from "./components/contact-icons";
 import ContactDrawer from "./components/ContactDrawer";
+import EnquiryForm from "./components/EnquiryForm";
 import { BUSINESS } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -227,6 +228,60 @@ export default async function Home() {
           </div>
           <div className="ml-auto max-w-[340px] overflow-hidden rounded-[14px] shadow-[0_20px_46px_-28px_rgba(22,35,60,0.4)] [aspect-ratio:1/1] max-[860px]:ml-0 max-[860px]:max-w-full">
             <img className="block h-full w-full object-cover" src="/assets/photos/moving-home.jpg" alt="Moving back to Pakistan — household relocation" />
+          </div>
+        </section>
+
+        <section id="contact" className="band-soft">
+          <div className="section wrap">
+            <span className="eyebrow">Contact us</span>
+            <h2 className="mt-3 text-[clamp(24px,3vw,32px)] font-extrabold">Get a quote</h2>
+            <p className="lede">
+              Tell us what you are sending and where it is going &mdash; we reply the same working day with a
+              fixed price.
+            </p>
+            <div className="contact-grid mt-9">
+              {/* Hidden on phones: the numbers already appear in the mobile
+                  list above and in the contact drawer, so a third copy would
+                  be the same three numbers a third time. */}
+              <div className="contact-card max-[640px]:hidden">
+                <h2>Reach us directly</h2>
+                <a className="btn btn-green w-full" href={BUSINESS.whatsapp}>
+                  Quick Response on WhatsApp
+                </a>
+                <div className="hero-contact-list">
+                  <div className="contact-inline-rows">
+                    <div className="contact-phones-inline">
+                      {BUSINESS.phones.map((p) => (
+                        <a key={p.city} href={`tel:${p.href}`}>
+                          <span className="row-icon"><PhoneIcon /></span>
+                          <span className="row-text">
+                            <span>{p.display}</span>
+                            <span className="city">{p.city}</span>
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                    <a href={`mailto:${BUSINESS.email}`}>
+                      <span className="row-icon"><EmailIcon /></span>
+                      <span className="row-text">
+                        <span>{BUSINESS.email}</span>
+                        <span className="city">Email</span>
+                      </span>
+                    </a>
+                  </div>
+                </div>
+                <div className="contact-meta">
+                  <div><strong>{BUSINESS.legalName}</strong></div>
+                  <div>{BUSINESS.streetAddress}, {BUSINESS.addressLocality} {BUSINESS.postalCode}</div>
+                  <div>Mon&ndash;Sat, 9am&ndash;6pm</div>
+                </div>
+              </div>
+
+              <div className="contact-card">
+                <h2>Or send us a message</h2>
+                <EnquiryForm />
+              </div>
+            </div>
           </div>
         </section>
       </main>
