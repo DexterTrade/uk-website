@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { BUSINESS } from "@/lib/seo";
+import { track } from "@/lib/track";
 
 // wa.me rather than web.whatsapp.com: this is a customer, who almost certainly
 // has the app and almost certainly has no WhatsApp Web session to drop into.
 // (The admin panel picks per device, because staff do have one.)
 const WHATSAPP_NUMBER = BUSINESS.whatsapp.replace(/^https:\/\/wa\.me\//, "");
 
-export default function EnquiryForm() {
+// `location` names the page the form sits on, for the quote_submit event.
+export default function EnquiryForm({ location }) {
   // Holds the composed link so the message can be reopened by hand if the tab
   // was blocked or WhatsApp never came up.
   const [chatUrl, setChatUrl] = useState(null);
@@ -34,6 +36,9 @@ export default function EnquiryForm() {
     // A submit button is not an <a>, so the site-wide contact listener never
     // sees this one — it has to report itself.
     window.gtag_report_conversion?.();
+    // The enquiry is "submitted" once WhatsApp opens with it composed — there
+    // is no server round trip to wait on.
+    track("quote_submit", { form_location: location });
 
     // Opened synchronously inside the submit with nothing awaited first, or
     // the browser counts it as an unrequested popup and blocks it.
@@ -74,7 +79,7 @@ export default function EnquiryForm() {
         What are you sending?
         <textarea className="textarea" name="details" rows={3} />
       </label>
-      <button className="btn btn-green" type="submit">Send enquiry on WhatsApp</button>
+      <button className="btn btn-green" type="submit">Send</button>
       <p className="fine">
         Opens WhatsApp with your details filled in &mdash; press send there and we reply the same working day.
       </p>

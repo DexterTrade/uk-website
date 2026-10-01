@@ -3,9 +3,15 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
+import Link from "next/link";
 import ProcessDiagram from "../components/ProcessDiagram";
-import { createClient } from "@/lib/supabase/server";
+import JsonLd from "../components/JsonLd";
+import ReviewStrip from "../components/ReviewStrip";
+import { getRateFacts } from "@/lib/rates";
+import { breadcrumbs, service } from "@/lib/schema";
 import { pageMeta } from "@/lib/seo";
+
+const PATH = "/excess-baggage";
 
 const STEPS = [
   {
@@ -27,29 +33,35 @@ const STEPS = [
 ];
 
 export const metadata = pageMeta({
-  title: "Excess Baggage to Pakistan",
+  title: "Excess Baggage to Pakistan | Beat Airline Fees | PAK Cargo",
   description:
-    "Flying to Pakistan and taking more than your airline allowance? Send the extra boxes and bags separately as excess baggage to Pakistan by air cargo, usually for less than airline excess fees.",
-  path: "/excess-baggage",
+    "Send excess baggage to Pakistan for less than airline fees. UK-wide collection or drop-off, delivered to your door in Pakistan. Get a free quote today.",
+  path: PATH,
 });
 
 export default async function ExcessBaggagePage() {
-  const supabase = await createClient();
-  const { data: airRate } = await supabase
-    .from("rates")
-    .select("estimated_time")
-    .eq("mode", "air")
-    .maybeSingle();
-  const estimatedTime = airRate?.estimated_time || "8–10 days";
+  // Excess baggage flies as air cargo, so its delivery time is air's.
+  const { air } = await getRateFacts();
+  const estimatedTime = air.time;
 
   return (
     <>
+      <JsonLd
+        data={service({
+          path: PATH,
+          name: "Excess Baggage to Pakistan",
+          serviceType: "Excess baggage shipping",
+          description:
+            "Send excess baggage to Pakistan as cargo, usually cheaper than airline excess fees, with collection or drop off.",
+        })}
+      />
+      <JsonLd data={breadcrumbs([{ name: "Excess Baggage", path: PATH }])} />
       <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <PageHero
           eyebrow="Excess baggage · UK to Pakistan"
-          title="Flying with more than your allowance? Send it separately."
-          intro="If you're travelling to Pakistan and packing more than your airline lets you check in, our excess baggage to Pakistan service collects the extra boxes and bags and flies them as air cargo &mdash; usually for less than the airline would charge, and without turning up at check-in overweight."
+          title="Send Excess Baggage to Pakistan for Less"
+          intro="Flying with more than your allowance? Send it separately. If you're travelling to Pakistan and packing more than your airline lets you check in, our excess baggage to Pakistan service collects the extra boxes and bags and flies them as air cargo — usually for less than the airline would charge, and without turning up at check-in overweight."
           stats={[
             { n: estimatedTime, l: "Typical delivery" },
             { n: "Per kg", l: "Priced like air cargo" },
@@ -121,14 +133,16 @@ export default async function ExcessBaggagePage() {
         <section className="section wrap">
           <h2 className="h-sec">Pricing</h2>
           <p className="lede max-w-[60ch]">
-            Excess baggage is priced per kilo, in line with our standard air cargo rates &mdash; see the <a href="/air-cargo">air cargo page</a> for
-            the current bands. Tell us your travel date when you request a quote so we can confirm space on that week&rsquo;s departure.
+            Excess baggage is priced per kilo, in line with our standard air cargo rates &mdash; see our{" "}
+            <Link href="/air-cargo">air cargo rates</Link> for the current price. Tell us your travel date when you request a quote so we can confirm space on that week&rsquo;s departure.
           </p>
         </section>
 
+        <ReviewStrip />
+
         <BottomCta
           title="Travelling soon?"
-          body="Tell us your flight date and roughly how much extra you're sending &mdash; we'll quote a fixed price and confirm space."
+          body="Tell us your flight date and roughly how much extra you're sending — we'll quote a fixed price and confirm space."
           primary={{ label: "Get a quote", href: "/contact-us" }}
           secondary={{ label: "Already sent something? Track it", href: "/tracking" }}
         />

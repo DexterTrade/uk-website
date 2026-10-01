@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // AVIF first, WebP for browsers without it; next/image serves each visitor
+  // the smallest format and width their device needs.
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   async redirects() {
     return [
       {

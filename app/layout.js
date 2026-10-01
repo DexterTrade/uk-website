@@ -1,7 +1,6 @@
 import { Archivo, Gulzar, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
-import OrganizationJsonLd from "./components/OrganizationJsonLd";
 import ConversionTracking from "./components/ConversionTracking";
 import "./globals.css";
 
@@ -35,33 +34,6 @@ export const metadata = {
   },
   description:
     "A trusted cargo service connecting the UK to Pakistan and Kashmir. Door to door cargo by sea and by air, customs clearance and full insurance. Track your shipment online.",
-  keywords: [
-    "cargo to Pakistan",
-    "cargo to Kashmir",
-    "UK to Kashmir",
-    "direct cargo",
-    "door to door cargo",
-    "cargo hub",
-    "cargo by sea",
-    "cargo by air",
-    "connect UK to Pakistan",
-    "speedy cargo service",
-    "trusted cargo service",
-    "express cargo service",
-    "reliable cargo service",
-    "UK to Pakistan shipping",
-    "air cargo Pakistan",
-    "sea freight Karachi",
-    "excess baggage to Pakistan",
-    "Pakistan to UK cargo",
-    "cargo tracking",
-    "customs clearance",
-    "freight forwarder UK Pakistan",
-    "parcel to Pakistan from UK",
-  ],
-  alternates: {
-    canonical: "/",
-  },
   authors: [{ name: SITE_NAME }],
   applicationName: SITE_NAME,
   formatDetection: { telephone: true, email: true, address: true },
@@ -80,17 +52,11 @@ export const metadata = {
     description:
       "Door to door cargo by sea and by air between the UK and Pakistan, plus excess baggage and a Pakistan-to-UK route, with customs clearance, insurance and online tracking.",
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
+  // No robots tag here: pageMeta() sets one per page, and the 404 page gets
+  // only the noindex Next adds for it. A layout-level "index, follow" would
+  // put two contradictory robots tags on every 404. No canonical either, for
+  // the same reason: a layout default would be inherited by any page that
+  // forgot its own, pointing it at the homepage.
 };
 
 export const viewport = {
@@ -176,7 +142,6 @@ export default function RootLayout({ children }) {
             alt=""
           />
         </noscript>
-        <OrganizationJsonLd />
         <ConversionTracking />
         {children}
       </body>

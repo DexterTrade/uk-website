@@ -11,11 +11,18 @@ export default function PageHero({ eyebrow, title, intro, stats, ctas }) {
         {intro && <p className="max-w-[62ch] text-[18px] leading-[1.6] text-muted">{intro}</p>}
         {ctas && (
           <div className="cta-row">
-            {ctas.map((c) => (
-              <Link key={c.label} className={`btn ${c.variant || "btn-navy"}`} href={c.href}>
-                {c.label}
-              </Link>
-            ))}
+            {ctas.map((c) =>
+              // tel: links are plain anchors; only site pages go through Link.
+              c.href.startsWith("/") ? (
+                <Link key={c.label} className={`btn ${c.variant || "btn-navy"}`} href={c.href}>
+                  {c.label}
+                </Link>
+              ) : (
+                <a key={c.label} className={`btn ${c.variant || "btn-navy"}`} href={c.href}>
+                  {c.label}
+                </a>
+              ),
+            )}
           </div>
         )}
         {stats && (

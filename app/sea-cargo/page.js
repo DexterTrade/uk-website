@@ -1,45 +1,78 @@
+import Link from "next/link";
 import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import NextDispatch from "../components/NextDispatch";
-import { createClient } from "@/lib/supabase/server";
+import JsonLd from "../components/JsonLd";
+import ReviewStrip from "../components/ReviewStrip";
+import StepCards from "../components/StepCards";
+import { getRateFacts } from "@/lib/rates";
+import { breadcrumbs, service } from "@/lib/schema";
 import { pageMeta } from "@/lib/seo";
 
-export const metadata = pageMeta({
-  title: "Sea Cargo, UK to Pakistan & Kashmir",
-  description:
-    "Door to door cargo by sea from the UK to Karachi and on to Kashmir. Shared-container (LCL) and full-container (FCL) options, door to door collection, customs clearance and 8-10 week transit.",
-  path: "/sea-cargo",
-});
+const PATH = "/sea-cargo";
+
+// Built per request because the description quotes the live transit time.
+export async function generateMetadata() {
+  const { sea } = await getRateFacts();
+  return pageMeta({
+    title: "Sea Cargo UK to Pakistan | Door to Door Shipping | PAK Cargo",
+    description: `Low-cost sea cargo from the UK to Pakistan & Kashmir. Door-to-door collection, customs clearance and home delivery in ${sea.time}. Get a free quote today.`,
+    path: PATH,
+    image: { url: "/assets/photos/sea-cargo.jpg", alt: "Sea cargo container ship shipping from the UK to Pakistan" },
+  });
+}
 
 export default async function SeaCargoPage() {
-  const supabase = await createClient();
-  const { data: seaRate } = await supabase
-    .from("rates")
-    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge")
-    .eq("mode", "sea")
-    .maybeSingle();
-  const estimatedTime = seaRate?.estimated_time || "8–10 weeks";
+  const { rates, sea } = await getRateFacts();
+
+  const steps = [
+    {
+      title: "Tell us the volume",
+      body: "Send an item list or the rough cubic metres, and the destination city. We'll confirm shared-container (LCL) space or a full 20ft/40ft container at a fixed price.",
+    },
+    {
+      title: "Collection before the cut-off",
+      body: "We collect anywhere in the UK, or you drop off at our warehouse before the next container's cut-off date. Every item is measured, labelled and logged.",
+    },
+    {
+      title: "The container sails",
+      body: `We file the export paperwork, load and seal the container, and it sails for Karachi. Allow ${sea.time} door to door.`,
+    },
+    {
+      title: "Karachi clearance and delivery",
+      body: "Our agents clear your goods at Karachi port, then deliver to the door anywhere in Pakistan, with onward delivery into Kashmir.",
+    },
+  ];
 
   return (
     <>
+      <JsonLd
+        data={service({
+          path: PATH,
+          name: "Sea Cargo from the UK to Pakistan",
+          serviceType: "Sea freight",
+          description: `Door-to-door sea cargo from the UK to Pakistan and Kashmir with collection, customs clearance and home delivery in ${sea.time}.`,
+        })}
+      />
+      <JsonLd data={breadcrumbs([{ name: "Sea Cargo", path: PATH }])} />
       <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <NextDispatch
           mode="sea"
-          date={seaRate?.next_dispatch_date}
-          note={seaRate?.next_dispatch_note}
-          estimatedTime={estimatedTime}
+          date={rates.sea.next_dispatch_date}
+          note={rates.sea.next_dispatch_note}
+          estimatedTime={sea.time}
         />
 
         <PageHero
           eyebrow="Cargo by sea · UK to Pakistan & Kashmir"
-          title="Door to door cargo by sea — the economical route for volume and household goods."
-          intro="Shared-container (LCL) space by the cubic metre, or a full 20ft / 40ft container of your own. A reliable, door to door cargo service for furniture, machinery, business stock and household consignments — sea freight Karachi departures with onward delivery into Kashmir."
+          title="Sea Cargo from the UK to Pakistan & Kashmir"
+          intro="The economical route for volume and household goods. Shared-container (LCL) space priced per kg, or a full 20ft / 40ft container of your own — a reliable, door to door cargo service for furniture, machinery, business stock and household consignments, with sea freight Karachi departures and onward delivery into Kashmir."
           stats={[
-            { n: estimatedTime, l: "Door to door" },
+            { n: sea.time, l: "Door to door" },
             { n: "LCL or FCL", l: "Shared or full container" },
             { n: "Karachi", l: "Primary destination port" },
           ]}
@@ -56,7 +89,10 @@ export default async function SeaCargoPage() {
             <article className="svc">
               <div className="num">01</div>
               <h3>Shared container (LCL)</h3>
-              <p>Pay per cubic metre in a shared container &mdash; the most economical option for smaller volumes, with a 1 m&sup3; minimum.</p>
+              <p>
+                Pay per kg in a shared container &mdash; the most economical option for smaller volumes, with a{" "}
+                {sea.minKg} kg minimum.
+              </p>
             </article>
             <article className="svc">
               <div className="num alt">02</div>
@@ -66,7 +102,10 @@ export default async function SeaCargoPage() {
             <article className="svc">
               <div className="num">03</div>
               <h3>Customs handled</h3>
-              <p>Export paperwork in the UK and clearance at the Pakistani port, handled by our own agents, with duties estimated before departure.</p>
+              <p>
+                Export paperwork in the UK and clearance at the Pakistani port, handled by our own agents, with{" "}
+                <Link href="/faq">customs duties in Pakistan</Link> estimated before departure.
+              </p>
             </article>
             <article className="svc">
               <div className="num alt">04</div>
@@ -74,6 +113,9 @@ export default async function SeaCargoPage() {
               <p>All-risk cover at a percentage of declared value, arranged at the point of booking.</p>
             </article>
           </div>
+          <p className="lede mt-8">
+            Moving your whole household back to Pakistan? See our <Link href="/house-move">house move service</Link>.
+          </p>
         </section>
 
         <section className="band-soft">
@@ -86,14 +128,17 @@ export default async function SeaCargoPage() {
                   <tr><th>Service</th><th>Weight / volume</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">Sea freight (LCL)</td><td>Per kg</td><td className="rate">{seaRate?.headline_rate || "£1.20/kg"}</td><td>{estimatedTime}</td></tr>
-                  <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">Sea freight (LCL)</td><td>Per kg</td><td className="rate">{sea.rateLabel}</td><td>{sea.time}</td></tr>
+                  <tr><td className="key">Sea freight (FCL)</td><td>20ft / 40ft container</td><td className="rate">On request</td><td>{sea.time}</td></tr>
                 </tbody>
               </table>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Handling fee: &pound;{Number(seaRate?.pickup_charge ?? 35).toFixed(0)}
+                Minimum weight: {sea.minKg} kg
+              </span>
+              <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
+                Handling fee: {sea.fee}
               </span>
             </div>
           </div>
@@ -101,33 +146,17 @@ export default async function SeaCargoPage() {
 
         <section className="section wrap">
           <h2 className="h-sec">How it works</h2>
-          <div className="cards">
-            <div className="step">
-              <span className="k">STEP 1</span>
-              <h3>Get a quote</h3>
-              <p>Tell us the volume or container size and the destination city. We quote a fixed all-in price.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 2</span>
-              <h3>We collect</h3>
-              <p>Collection anywhere in the UK, or drop off at our warehouse. Goods are measured and logged against your reference.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 3</span>
-              <h3>Loaded &amp; sailed</h3>
-              <p>We file the export paperwork, load the container and book the vessel.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 4</span>
-              <h3>Cleared &amp; delivered</h3>
-              <p>Port clearance in Karachi, then door delivery to the consignee.</p>
-            </div>
-          </div>
+          <p className="lede">
+            From your UK door to the door in Pakistan, here&rsquo;s how sea cargo from the UK to Pakistan works.
+          </p>
+          <StepCards steps={steps} />
         </section>
+
+        <ReviewStrip />
 
         <BottomCta
           title="Ready to send by sea?"
-          body="Tell us what you're sending and where it's going &mdash; we reply the same working day with a fixed price."
+          body="Tell us what you're sending and where it's going — we reply the same working day with a fixed price."
           primary={{ label: "Get a quote", href: "/contact-us" }}
           secondary={{ label: "Already sent something? Track it", href: "/tracking" }}
         />

@@ -119,6 +119,7 @@ export default function ContactDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label="Phone numbers, WhatsApp and email"
+        data-location="contact-drawer"
       >
         <div className="flex flex-none items-center justify-between border-b border-line-light px-5 pt-[22px] pb-4 font-head text-base font-bold">
           <span>Get in touch</span>

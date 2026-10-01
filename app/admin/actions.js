@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { CITIES } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
 import { bookingSchema, fieldErrors, normalizeUkMobile, toBookingPayload } from "@/lib/validation/booking";
 import { getTodayISO } from "@/lib/server-time";
@@ -162,6 +163,10 @@ export async function updateRate(
   revalidatePath("/air-cargo");
   revalidatePath("/excess-baggage");
   revalidatePath("/pak-to-uk");
+  revalidatePath("/house-move");
+  revalidatePath("/faq");
+  revalidatePath("/tracking");
+  for (const c of CITIES) revalidatePath(`/${c.slug}`);
   return { ok: true };
 }
 

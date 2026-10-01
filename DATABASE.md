@@ -26,7 +26,7 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 
 | Route | Purpose |
 |---|---|
-| `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan), and a contact section at the foot (`id="contact"`, so `/#contact` links to it) carrying the same cards as `/contact-us` |
+| `/` | Homepage — hero + contact card, Sea Cargo, Air Cargo, three "mini" sections (Excess Baggage, Pakistan to UK, Moving Back to Pakistan), the SEO content sections A–E (why us, the sea-vs-air `RatesComparison` table, Pakistan & Kashmir coverage, what you can send, quick answers), and a contact section at the foot (`id="contact"`, so `/#contact` links to it) carrying the same cards as `/contact-us` |
 | `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`, `/house-move` | Dedicated service pages, each with its own layout (not templated identically). Sea/Air lead with the `NextDispatch` poster (see below), placed *above* `PageHero`. Excess Baggage, Pak to UK and Moving Back Home render their "How it works" as a connected flow via `app/components/ProcessDiagram.js` (numbered boxes with arrows between them) rather than a plain card grid. Excess Baggage and Pak to UK are Server Components that fetch `rates.estimated_time` (see "Admin panel" below) |
 | `/contact-us` | Contact details + enquiry form (see "Enquiry form and analytics" below) |
 | `/faq` | FAQ accordion (content in `lib/faq.js`) |
@@ -38,9 +38,13 @@ protected `/admin` panel for staff to manage shipments, invoices and rates.
 | `/admin/invoices/[reference]` | The printable invoice document (A4 print stylesheet, print/save-as-PDF) |
 | `/admin/customers/[id]` | Customer record — details plus all their shipments and invoices |
 | `/invoice/[token]` | **Public** — the customer's own invoice, reached by an unguessable share link, with a **Track shipment** button. `noindex`, and disallowed in robots.txt |
+| `/blog`, `/blog/[slug]` | Guides. **No published posts yet** — `/blog` is `noindex` and out of the sitemap/nav until the first one; post URLs are 404s while drafts. See "SEO" below |
+| `/cargo-to-pakistan-from-london`, `-birmingham`, `-nottingham` | City landing pages, one template (`app/components/CityLanding.js`). **Drafts** awaiting approved copy, so 404 in production. See "SEO" below |
+| (any unknown URL) | Branded `app/not-found.js` — HTTP 404, one `noindex`, links to every service page |
 
 Nav order (see `app/components/SiteHeader.js` `NAV_ITEMS`): Sea Cargo, Air
-Cargo, Excess Baggage, Pak to UK, House Move, Track, FAQ.
+Cargo, Excess Baggage, Pak to UK, House Move, Track, FAQ — plus Blog, which
+appears automatically once a post is published.
 
 ## Database schema (`public` schema, Supabase Postgres)
 
@@ -884,17 +888,29 @@ that is what lets an existing booking, whose collection date has since passed,
 still be re-saved when editing an unrelated field.
 
 `updateRate(mode, {...})` in `app/admin/actions.js` revalidates `/admin`,
-`/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage` and `/pak-to-uk` — every
-page that reads from `rates`. If you add another page that displays a rate
-field, add its path to that revalidation list too, or edits there will show
-a stale value until the next unrelated deploy/rebuild.
+`/`, `/sea-cargo`, `/air-cargo`, `/excess-baggage`, `/pak-to-uk`,
+`/house-move`, `/faq`, `/tracking` and every city page — every page that
+reads from `rates`. If you add another page that displays a rate field, add
+its path to that revalidation list too, or edits there will show a stale
+value until the next unrelated deploy/rebuild.
 
-Pages currently reading `rates` (so treat all of these as "the same figure,
-five places" — see the `rates` table note above):
-- `app/page.js` (homepage) — `headline_rate`, `rate_note`, `estimated_time`, `pickup_charge` for both modes
-- `app/sea-cargo/page.js`, `app/air-cargo/page.js` — full row for their own mode, feeds both the `PageHero` stat and the rates table
-- `app/excess-baggage/page.js` — air's `estimated_time` only (excess baggage rides on air cargo, so its stated delivery time follows air's)
-- `app/pak-to-uk/page.js` — both modes' `estimated_time` (shown as "Air, door to door" / "Sea, port to door" stats)
+**Every page reads rates through `lib/rates.js`**, not its own query:
+`getRates()` fetches both rows (filling blanks from fallbacks that mirror the
+live values), and `rateFacts(rate, mode)` turns the free-text admin fields
+into what copy needs — `perKg` ("£7.50", even when the field says "£7.5/kg"),
+`rateLabel`, `minKg` (parsed from `rate_note`, e.g. "Min. 10 kg"),
+`fee`, `time` and `timeWords` ("8 to 10 weeks"). `getRateFacts()` returns
+both. **So the minimum weight now comes from `rate_note`** — keep a
+"Min. N kg" phrase in it, or the copy falls back to 20 kg sea / 10 kg air.
+
+Pages currently quoting rates (so treat all of these as "the same figure,
+many places" — see the `rates` table note above):
+- `app/page.js` (homepage) — the sea/air sections and the `RatesComparison` table and copy
+- `app/sea-cargo/page.js`, `app/air-cargo/page.js` — rates table, hero stats, H1 (air), "How it works" steps, **and the meta description** (`generateMetadata`, because it quotes the transit time)
+- `app/excess-baggage/page.js` — air's time (excess baggage rides on air cargo)
+- `app/pak-to-uk/page.js`, `app/house-move/page.js`, `app/tracking/page.js` — both modes' times in copy
+- `app/faq/page.js` — Q1 (times) and Q9 (prices), via `buildFaqs()` in `lib/faq.js`, which feeds the page and its FAQPage schema from the same data
+- the city pages — the `RatesComparison` table
 
 ## Public tracking flow (`/tracking`)
 
@@ -937,7 +953,9 @@ propagates sitewide:
   the footer, Contact Us, the `Organization` structured data and the invoice
   from one place; don't hardcode it anywhere else
 - `BUSINESS.legalName`, `hours`
-- `pageMeta({ title, description, path })` — every page's `metadata` export
+- `BUSINESS.social`, `mapsUrl`, `mapsEmbedUrl` and `TRUSTPILOT` — empty/off
+  until real profiles exist; see "SEO" below. Never put a placeholder in them
+- `pageMeta({ title, description, path, noindex, type, image })` — every page's `metadata` export
   should build on this, not just set `{title, description}` directly. Without
   it, a page silently inherits the root layout's `openGraph`/`twitter` block
   (this was a real bug: sharing any page other than the homepage showed the
@@ -1022,10 +1040,15 @@ against the live site, trust the code over this doc and update this section.
     the bar's height, which would leave a gap on the days it renders nothing.
     A Server Component can be handed to a client component this way; the
     alternative (fetching in the client header) would need an extra action.
-  - The marquee is CSS only — `.animate-announcement-marquee` in
-    `globals.css` translates a track of two identical groups by exactly
-    `-50%`, so the loop is seamless at any message length. It stops entirely
-    under `prefers-reduced-motion`.
+  - The marquee is CSS — `.animate-announcement-marquee` in `globals.css`
+    translates a track of two identical groups by exactly `-50%`, so the
+    loop is seamless at any message length. It stops entirely under
+    `prefers-reduced-motion`.
+  - **The message is in the server HTML exactly once.** The repeats that
+    fill the track are added after hydration by `AnnouncementTicker.js`
+    (client) and are `aria-hidden`. It used to ship twelve copies in the
+    markup, which reads as keyword stuffing to a crawler and as twelve
+    announcements to a screen reader.
 
 ## Enquiry form and analytics
 
@@ -1049,7 +1072,10 @@ wired up and WhatsApp is where enquiries are already answered.
   blocks it. A blocked window falls back to navigating, and the confirmation
   also carries the link so a lost enquiry can be reopened by hand.
 - It renders in two places (the homepage contact section and `/contact-us`)
-  from the one component, so the two cannot drift.
+  from the one component, so the two cannot drift. Its `location` prop names
+  which, for the `quote_submit` event below.
+- **The button reads "Send"** (renamed from "Send enquiry on WhatsApp" by
+  request); the line under it still says it opens WhatsApp.
 
 **Three tags load site-wide from `app/layout.js`**: the Google Ads tag
 (`AW-18462573024`), the Meta Pixel (`2330472387806980`), and a
@@ -1076,6 +1102,115 @@ a handler, and a link added later would otherwise go untracked silently.
 - The enquiry form reports itself instead, since a submit button is not an
   `<a>` and the listener never sees it. Its fallback link is marked
   `data-no-conversion` so one enquiry cannot be counted twice.
+
+**dataLayer events for GTM/GA4** (`lib/track.js`), alongside the Ads
+conversion: `phone_click`, `email_click` and `whatsapp_click` from the same
+delegated listener, `quote_submit` from the enquiry form, `tracking_submit`
+from the tracking form. Each carries `link_location` (or `form_location`) —
+the nearest ancestor's `data-location` attribute, falling back to the page
+path — and phone clicks add `branch`, read from the number itself. The GTM
+container and its tags are configured outside this repo (Naveed's side);
+the site only pushes the events. Mark a new section with `data-location` if
+its clicks should be told apart.
+
+## SEO
+
+Implemented from the "16-Day SEO Developer Task Brief" (Naveed, Oct 2026).
+Titles, descriptions, H1s and body copy are the brief's text verbatim, except
+for the deviations listed at the end of this section.
+
+**Metadata.** `pageMeta()` sets the whole `<title>` with `title.absolute` —
+the brief words every title with "| PAK Cargo" already in it, so the layout
+template must not append the brand again. It also sets the page's one
+robots tag, its canonical and its Open Graph/Twitter block (with the shared
+card image unless `image` is passed — Sea, Air, House Move and blog posts
+pass their own photo). **The root layout deliberately sets no robots tag, no
+canonical and no keywords**: a layout robots tag would sit beside the
+`noindex` Next adds to 404s (two contradictory tags), a layout canonical
+would be inherited by any page that forgot its own, and the 22-keyword tag
+was removed because Google ignores it and it advertised the keyword list.
+Canonicals are fixed paths, so `?utm_*`/`?gclid` never change them.
+
+**Headings.** One H1 per page, written in normal case (the homepage's
+capitals are CSS `uppercase`). Footer column labels are `<p>`, not headings;
+the "Speak to us now" card title and the `NextDispatch` date are `<p>` too
+(the latter sits above the H1). FAQ questions are `<h2>` inside `<summary>`;
+the answers are in the HTML on load.
+
+**Structured data** (`lib/schema.js`, rendered by `JsonLd.js`). The homepage
+carries one `@graph` — `Organization` (`/#organization`), `LocalBusiness`
+(`/#localbusiness`, the Nottingham office) and `WebSite` (`/#website`).
+Every other page refers back to those `@id`s rather than repeating the
+address: `Service` on the five service pages and city pages (provider =
+`#localbusiness`), `ContactPage` on Contact Us, `WebPage` on Tracking,
+`FAQPage` on `/faq`, `BlogPosting` on published posts, and a
+`BreadcrumbList` on every page but Home (blog posts get Home → Blog →
+Post). `sameAs` is emitted only from `BUSINESS.social`, so an empty list
+means no `sameAs` at all rather than placeholders. **Don't give London or
+Birmingham a `LocalBusiness` of their own** unless the business has a real,
+staffed address there — the brief is explicit that a virtual address is the
+trust problem the audit flagged. And **no self-made `AggregateRating` or
+`Review` schema** next to the Trustpilot strip; Google ignores it for a
+business rating itself.
+
+**FAQ = page text = schema.** `buildFaqs()` in `lib/faq.js` returns answers
+as RichText parts (strings plus `{ text, href }` links); the page renders the
+links and the schema gets `plainText()` of the same parts, so they match word
+for word by construction.
+
+**Sitemap** (`app/sitemap.js`). `lastmod` is a real date per page, kept by
+hand in `PAGES` — bump it when a page's content changes. It used to be
+`new Date()` on every request, which tells a search engine nothing. Published
+city pages and blog posts join automatically; drafts never appear.
+
+**Blog** (`lib/blog.js` + `app/blog/posts/index.js`). No CMS: a post is an
+entry in `POSTS` (slug, title, description, H1, author, dates, image,
+related links) and a body component registered in `BODIES`. Set
+`published: true` and `datePublished` to publish; that alone adds it to the
+sitemap, makes `/blog` indexable, and shows "Blog" in the header and footer.
+Guide 1 (`how-long-does-cargo-take-uk-to-pakistan`) and Guide 2
+(`what-can-you-send-to-pakistan-by-cargo`) are set up as drafts awaiting
+copy. When Guide 2 publishes, the homepage (end of section D) and House Move
+pick up a link to it automatically via `isPublished()`.
+
+**City pages** (`lib/cities.js` + `CityLanding.js`). Same model: fill in
+`intro`, `areas` and `faqs`, set `published: true`. That adds the page to the
+sitemap, switches on its link in the footer's "Areas we cover" column, and
+links the branch name in the Contact Us phone table.
+
+**Drafts** render only when `SHOW_DRAFTS=true` (locally or on a preview
+deployment), marked `noindex`, with amber "[Draft: …]" markers where copy is
+missing; in production they are 404s. Don't set it on the production
+environment.
+
+**Images.** Public-page photos go through `next/image` (AVIF/WebP, `srcset`,
+lazy below the fold). The `NextDispatch` photo is the first thing on Sea and
+Air, so it is `loading="eager"` + `fetchPriority="high"`. Fonts were already
+self-hosted by `next/font`; compression, HTTP/2–3, CDN and static caching
+are Vercel's. Domain redirects (http/www/.com → `https://pakcargouk.co.uk`)
+are also Vercel's, configured in its domain settings, and answer with 308s,
+which Google treats like 301s.
+
+**Off until real content exists** — each renders nothing until filled in:
+`BUSINESS.social` (footer links + `sameAs`), `BUSINESS.mapsUrl` /
+`mapsEmbedUrl` (Contact Us address link and lazy map), and `TRUSTPILOT`
+(`ReviewStrip.js`, placed above the CTAs on Home, Sea, Air, Excess, House
+Move, Contact Us and the city template; loads its script on scroll into view
+with a fixed height, so it costs no LCP or CLS).
+
+**Deliberate deviations from the brief:**
+- robots.txt also disallows `/invoice` — customer invoice links are private.
+- Prices and transit times in the copy come from `rates`, not the brief's
+  typed figures (same values today), so they follow `/admin` → Rates.
+- "Shared-container space by the cubic metre" (House Move, FAQ) is reworded
+  to per-kg, matching how sea is actually priced. The Sea Cargo LCL card,
+  which said "per cubic metre, 1 m³ minimum", was corrected the same way.
+- The tracking-status list is the real 8 statuses from `shipment_statuses`
+  (`lib/tracking-statuses.js` — **update it if a status is renamed or
+  added**), not the brief's 7 placeholder names.
+- Tracking copy drops "updates can take up to one working day" (a booking is
+  trackable immediately) and doesn't claim Pakistan → UK shipments are in the
+  online tracker (it verifies a UK sender's mobile, so they aren't).
 
 ## Urdu copy
 
@@ -1161,6 +1296,8 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_SITE_URL` (optional — falls back to `https://pakcargouk.co.uk`
   in `lib/seo.js`)
+- `SHOW_DRAFTS` (optional — `true` renders draft city pages and blog posts,
+  noindexed, for review. Never set it in production)
 
 ## Working agreements for this repo
 
@@ -1199,13 +1336,12 @@ The site runs on **Tailwind CSS v4** (CSS-first config, no `tailwind.config.js`)
   ("Service Charges (Mandatory) € 20 in by Air") is in euros for a UK company
   invoicing in pounds. Both are reproduced exactly as supplied rather than
   guessed at — they are contractual text on a customer-facing document.
-- **Sea cargo's `£1.20/kg` headline rate is a placeholder**, set when the
-  pricing model was switched from per-m³ to per-kg at the user's explicit
-  request — not a real quoted figure. Same for `estimated_time` values
-  (`8–10 weeks` sea / `8–10 days` air) — given directly by the user as the
-  numbers to display, not derived from an existing rate card. All three are
-  editable in `/admin` → Rates whenever real figures are available; nothing
-  else needs to change since every page reads them from the same row now.
+- **Rates are now the business's own figures** — sea £1.25/kg (20 kg min, £5
+  handling), air £7.50/kg (10 kg min, £20 handling), 8–10 weeks / 8–10 days —
+  matching the SEO brief. All editable in `/admin` → Rates.
+- **SEO items blocked on outside input** (see "SEO" for where each plugs in):
+  social profile URLs, the Google Maps embed, Trustpilot ids, approved copy
+  for the 3 city pages and both guides, and real photos.
 - `PageHero`'s intro paragraph renders at 18px on all screen sizes. The
   original hand-written CSS had a mobile-only 16px override that a
   specificity clash silently defeated (a higher-specificity unconditional

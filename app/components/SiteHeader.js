@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BUSINESS } from "@/lib/seo";
+import { hasPublishedPosts } from "@/lib/blog";
 import { PhoneIcon } from "./contact-icons";
 
 const NAV_ITEMS = [
@@ -13,6 +14,9 @@ const NAV_ITEMS = [
   { href: "/house-move", label: "House Move" },
   { href: "/tracking", label: "Track" },
   { href: "/faq", label: "FAQ" },
+  // Hidden until the first post is published, so the menu never leads to an
+  // empty blog.
+  ...(hasPublishedPosts() ? [{ href: "/blog", label: "Blog" }] : []),
 ];
 
 const SUBTITLES = {
@@ -39,7 +43,7 @@ export default function SiteHeader({ variant = "home", announcement = null }) {
     // The announcement bar lives inside the sticky header rather than above it,
     // so the two pin to the top as one unit — no hardcoded offset that would
     // leave a gap on the days the bar renders nothing.
-    <header className="sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 shadow-[0_8px_28px_-16px_rgba(22,35,60,0.35)] backdrop-blur-[10px]">
+    <header data-location="header" className="sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 shadow-[0_8px_28px_-16px_rgba(22,35,60,0.35)] backdrop-blur-[10px]">
       {announcement}
       <div className="wrap flex items-center gap-5 py-[10px]">
         <Link className="flex items-center gap-[10px]" href="/" onClick={close}>

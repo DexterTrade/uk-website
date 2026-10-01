@@ -311,8 +311,14 @@
   .table-wrap td.rate {
     @apply font-semibold text-navy;
   }
-  .table-wrap tr:last-child td {
+  .table-wrap tr:last-child td,
+  .table-wrap tr:last-child th[scope="row"] {
     @apply border-b-0;
+  }
+  /* Row labels in a comparison table: headers for screen readers and search
+     engines, but styled like the key column of the other tables. */
+  .table-wrap th[scope="row"] {
+    @apply border-line-light bg-white font-body text-[15px] font-semibold text-ink;
   }
   @media (max-width: 480px) {
     .table-wrap table {
@@ -443,6 +449,10 @@
   }
   .faq summary {
     @apply flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-head text-[17px] font-semibold;
+  }
+  /* Each question is an H2 for search engines; it keeps the summary's look. */
+  .faq summary h2 {
+    @apply m-0 font-head text-[17px] font-semibold;
   }
   .faq summary::-webkit-details-marker {
     display: none;

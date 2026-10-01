@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BUSINESS } from "@/lib/seo";
+import { track } from "@/lib/track";
 import { trackShipment } from "./actions";
 
 // The full status history, newest first. Every entry is something that has
@@ -122,18 +123,15 @@ export default function TrackingClient() {
   }
 
   return (
-    <main className="wrap-narrow px-5 pt-11 pb-[72px]">
-      <h1 className="text-[clamp(28px,4vw,40px)] font-extrabold">Track a shipment</h1>
-      <p className="lede">
-        Enter your tracking number and the sender&rsquo;s phone number used for the booking &mdash; both are
-        printed on your invoice.
-      </p>
-
+    // The heading, intro and help copy are server-rendered by page.js; this
+    // component is only the interactive form and its result.
+    <>
       <section className="panel">
         <form
           className="row-inline"
           onSubmit={(e) => {
             e.preventDefault();
+            track("tracking_submit", { link_location: "tracking-form" });
             runTrack(trackInput.trim(), phoneInput.trim());
           }}
         >
@@ -157,11 +155,6 @@ export default function TrackingClient() {
         </form>
         <ShipmentResult loading={shipmentLoading} searched={searched} shipmentKey={trackKey} data={shipmentData} />
       </section>
-
-      <p className="fine mt-[22px]">
-        Can&rsquo;t find your shipment? <a href={BUSINESS.whatsapp}>Reach us on WhatsApp for a quick response</a> and
-        we will look it up.
-      </p>
-    </main>
+    </>
   );
 }

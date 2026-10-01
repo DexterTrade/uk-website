@@ -2,6 +2,28 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { BUSINESS } from "@/lib/seo";
+import { linkLocation, track } from "@/lib/track";
+
+// dataLayer event name per kind of contact link.
+function eventFor(link) {
+  const href = link.getAttribute("href") || "";
+  if (href.startsWith("tel:")) return "phone_click";
+  if (href.startsWith("mailto:")) return "email_click";
+  return "whatsapp_click";
+}
+
+// Where the click came from, plus the branch for a phone number — read from
+// the number itself, so no link has to be tagged by hand.
+function contextFor(link) {
+  const params = { link_location: linkLocation(link) };
+  const href = link.getAttribute("href") || "";
+  if (href.startsWith("tel:")) {
+    const branch = BUSINESS.phones.find((p) => href === `tel:${p.href}`);
+    if (branch) params.branch = branch.city.toLowerCase();
+  }
+  return params;
+}
 
 // Every way a visitor actually makes contact: the branch numbers, WhatsApp and
 // email, wherever on the site they appear.
@@ -40,6 +62,7 @@ export default function ConversionTracking() {
       // url: gtag sends on a beacon that survives the page unload, so the
       // navigation can be left alone rather than made to wait on the tag.
       window.gtag_report_conversion?.();
+      track(eventFor(link), contextFor(link));
     }
 
     document.addEventListener("click", onClick);

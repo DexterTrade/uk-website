@@ -4,7 +4,10 @@ import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import ProcessDiagram from "../components/ProcessDiagram";
-import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import JsonLd from "../components/JsonLd";
+import { getRateFacts } from "@/lib/rates";
+import { breadcrumbs, service } from "@/lib/schema";
 import { pageMeta } from "@/lib/seo";
 
 const STEPS = [
@@ -26,28 +29,38 @@ const STEPS = [
   },
 ];
 
+const PATH = "/pak-to-uk";
+
 export const metadata = pageMeta({
-  title: "Pakistan to UK Freight",
+  title: "Pakistan to UK Cargo | Air & Sea Freight | PAK Cargo",
   description:
-    "Pakistan to UK cargo by air and sea freight, with collection in Pakistan, UK customs clearance and door delivery across the UK from a trusted cargo service.",
-  path: "/pak-to-uk",
+    "Reliable Pakistan to UK cargo by air and sea. Collection across Pakistan, customs clearance and delivery to your UK door. Request your free quote today.",
+  path: PATH,
 });
 
 export default async function PakToUkPage() {
-  const supabase = await createClient();
-  const { data: ratesRaw } = await supabase.from("rates").select("mode, estimated_time");
-  const rateByMode = Object.fromEntries((ratesRaw || []).map((r) => [r.mode, r]));
-  const airTime = rateByMode.air?.estimated_time || "8–10 days";
-  const seaTime = rateByMode.sea?.estimated_time || "8–10 weeks";
+  const { air, sea } = await getRateFacts();
+  const airTime = air.time;
+  const seaTime = sea.time;
 
   return (
     <>
+      <JsonLd
+        data={service({
+          path: PATH,
+          name: "Pakistan to UK Cargo",
+          serviceType: "Air and sea freight",
+          description:
+            "Air and sea cargo from Pakistan to the UK with collection, customs clearance and UK door delivery.",
+        })}
+      />
+      <JsonLd data={breadcrumbs([{ name: "Pakistan to UK", path: PATH }])} />
       <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <PageHero
           eyebrow="Air & sea freight · Pakistan to UK"
-          title="The reverse route, just as handled end to end."
-          intro="Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door to door cargo delivery anywhere in the UK &mdash; a reliable cargo service connecting Pakistan back to the UK."
+          title="Pakistan to UK Cargo by Air & Sea"
+          intro="The reverse route, just as handled end to end. Sending goods from Pakistan to the UK works the same way as our outbound service, in reverse: collection in Pakistan, air or sea freight, UK import clearance and door to door cargo delivery anywhere in the UK — a reliable cargo service connecting Pakistan back to the UK."
           stats={[
             { n: airTime, l: "Air, door to door" },
             { n: seaTime, l: "Sea, port to door" },
@@ -71,7 +84,10 @@ export default async function PakToUkPage() {
 
         <section className="section wrap">
           <h2 className="h-sec">Air or sea, from Pakistan</h2>
-          <p className="lede">The same two services as our outbound route, running the other way.</p>
+          <p className="lede">
+            The same two services we run for{" "}
+            <Link href="/">sending cargo from the UK to Pakistan</Link>, running the other way.
+          </p>
           <div className="cards">
             <article className="svc">
               <div className="num">01</div>
@@ -111,7 +127,7 @@ export default async function PakToUkPage() {
 
         <BottomCta
           title="Sending something from Pakistan to the UK?"
-          body="Tell us what you're sending, the collection city, and where it's going in the UK &mdash; we reply the same working day with a fixed price."
+          body="Tell us what you're sending, the collection city, and where it's going in the UK — we reply the same working day with a fixed price."
           primary={{ label: "Get a quote", href: "/contact-us" }}
           secondary={{ label: "Already sent something? Track it", href: "/tracking" }}
         />

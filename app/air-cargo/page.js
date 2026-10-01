@@ -1,28 +1,57 @@
+import Link from "next/link";
 import AnnouncementBar from "../components/AnnouncementBar";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import PageHero from "../components/PageHero";
 import BottomCta from "../components/BottomCta";
 import NextDispatch from "../components/NextDispatch";
-import { createClient } from "@/lib/supabase/server";
+import JsonLd from "../components/JsonLd";
+import ReviewStrip from "../components/ReviewStrip";
+import StepCards from "../components/StepCards";
+import { getRateFacts } from "@/lib/rates";
+import { breadcrumbs, service } from "@/lib/schema";
 import { pageMeta } from "@/lib/seo";
 import { nextDispatchDate, dispatchDaysLabel } from "@/lib/dispatch-days";
 
-export const metadata = pageMeta({
-  title: "Air Cargo, UK to Pakistan & Kashmir",
-  description:
-    "Fast, express air cargo Pakistan service from the UK to Karachi, Lahore, Islamabad and on to Kashmir. Weekly consolidated departures, door to door cargo collection, customs clearance and fast delivery.",
-  path: "/air-cargo",
-});
+const PATH = "/air-cargo";
+
+// "8–10 days" → "8–10 Days", to sit in a title-cased heading.
+const titleCase = (text) => text.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+// Built per request because the description quotes the live transit time.
+export async function generateMetadata() {
+  const { air } = await getRateFacts();
+  return pageMeta({
+    title: "Air Cargo UK to Pakistan | Weekly Flights | PAK Cargo",
+    description: `Fast air cargo from the UK to Pakistan & Kashmir in ${air.time}. Weekly flights, UK-wide collection, customs clearance and door delivery. Get a free quote.`,
+    path: PATH,
+    image: { url: "/assets/photos/air-cargo.jpg", alt: "Air cargo plane loading shipment to Pakistan" },
+  });
+}
 
 export default async function AirCargoPage() {
-  const supabase = await createClient();
-  const { data: airRate } = await supabase
-    .from("rates")
-    .select("headline_rate, estimated_time, next_dispatch_date, next_dispatch_note, pickup_charge, dispatch_days")
-    .eq("mode", "air")
-    .maybeSingle();
-  const estimatedTime = airRate?.estimated_time || "8–10 days";
+  const { rates, air } = await getRateFacts();
+  const airRate = rates.air;
+  const estimatedTime = air.time;
+
+  const steps = [
+    {
+      title: "Send weight and destination",
+      body: `Tell us the weight (${air.minKg} kg minimum), box sizes and destination city. You get a fixed price at ${air.rateLabel} plus a ${air.fee} handling fee.`,
+    },
+    {
+      title: "Collection or drop-off",
+      body: "We collect anywhere in the UK, or you drop off at our warehouse. Your boxes are weighed and added to the next weekly consolidated flight.",
+    },
+    {
+      title: "Flown to Pakistan",
+      body: "We file the export paperwork, and your cargo flies to Karachi, Lahore or Islamabad on the next departure.",
+    },
+    {
+      title: `At the door in ${air.time}`,
+      body: "Import clearance in Pakistan, then door delivery to the receiver, including onward delivery into Kashmir.",
+    },
+  ];
 
   // Recurring weekly flight days (set in /admin) take priority over the
   // legacy one-off date field, so the departure poster stays current on its
@@ -32,6 +61,15 @@ export default async function AirCargoPage() {
 
   return (
     <>
+      <JsonLd
+        data={service({
+          path: PATH,
+          name: "Air Cargo from the UK to Pakistan",
+          serviceType: "Air freight",
+          description: `Fast air cargo from the UK to Pakistan and Kashmir in ${air.time}, with weekly departures, UK-wide collection and door delivery.`,
+        })}
+      />
+      <JsonLd data={breadcrumbs([{ name: "Air Cargo", path: PATH }])} />
       <SiteHeader variant="service" announcement={<AnnouncementBar />} />
       <main>
         <NextDispatch
@@ -43,7 +81,7 @@ export default async function AirCargoPage() {
 
         <PageHero
           eyebrow="Cargo by air · UK to Pakistan & Kashmir"
-          title="Fast, express cargo by air — door to door."
+          title={`Air Cargo from the UK to Pakistan in ${titleCase(air.time)}`}
           intro="A speedy cargo service connecting the UK to Pakistan by air: weekly consolidated air cargo departures to Karachi, Lahore and Islamabad, with onward delivery to most cities across Pakistan and into Kashmir. Best for parcels, documents, samples and anything time-critical."
           stats={[
             { n: estimatedTime, l: "Collection to door delivery" },
@@ -94,6 +132,10 @@ export default async function AirCargoPage() {
               <p>All-risk cover at a percentage of declared value, arranged at the point of booking.</p>
             </article>
           </div>
+          <p className="lede mt-8">
+            Flying to Pakistan yourself with more than your allowance? Send the extra as{" "}
+            <Link href="/excess-baggage">excess baggage</Link> instead of paying airline fees.
+          </p>
         </section>
 
         <section className="band-soft">
@@ -106,16 +148,16 @@ export default async function AirCargoPage() {
                   <tr><th>Weight</th><th>Rate</th><th>Transit</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td className="key">10 kg +</td><td className="rate">{airRate?.headline_rate || "£3.10/kg"}</td><td>{estimatedTime}</td></tr>
+                  <tr><td className="key">{air.minKg} kg +</td><td className="rate">{air.rateLabel}</td><td>{estimatedTime}</td></tr>
                 </tbody>
               </table>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Minimum weight: 10 kg
+                Minimum weight: {air.minKg} kg
               </span>
               <span className="inline-block rounded-full border border-line bg-bg-soft px-4 py-[7px] text-[13px] font-semibold text-ink">
-                Handling fee: &pound;{Number(airRate?.pickup_charge ?? 35).toFixed(0)}
+                Handling fee: {air.fee}
               </span>
             </div>
           </div>
@@ -123,33 +165,18 @@ export default async function AirCargoPage() {
 
         <section className="section wrap">
           <h2 className="h-sec">How it works</h2>
-          <div className="cards">
-            <div className="step">
-              <span className="k">STEP 1</span>
-              <h3>Get a quote</h3>
-              <p>Send us weight, dimensions and the destination city. We quote a fixed all-in price.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 2</span>
-              <h3>We collect</h3>
-              <p>Collection anywhere in the UK, or drop off at our warehouse. Goods are weighed and logged against your reference.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 3</span>
-              <h3>Export &amp; flight</h3>
-              <p>We file the export paperwork and book the next available consolidated departure.</p>
-            </div>
-            <div className="step">
-              <span className="k">STEP 4</span>
-              <h3>Cleared &amp; delivered</h3>
-              <p>Import clearance in Pakistan, then door delivery to the consignee.</p>
-            </div>
-          </div>
+          <p className="lede">
+            Book any day and your cargo joins the next weekly flight. Here&rsquo;s how air cargo from the UK to
+            Pakistan works.
+          </p>
+          <StepCards steps={steps} />
         </section>
+
+        <ReviewStrip />
 
         <BottomCta
           title="Ready to send by air?"
-          body="Tell us what you're sending and where it's going &mdash; we reply the same working day with a fixed price."
+          body="Tell us what you're sending and where it's going — we reply the same working day with a fixed price."
           primary={{ label: "Get a quote", href: "/contact-us" }}
           secondary={{ label: "Already sent something? Track it", href: "/tracking" }}
         />

@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { BUSINESS } from "@/lib/seo";
+import { hasPublishedPosts } from "@/lib/blog";
+import { publishedCities } from "@/lib/cities";
+
+// Column labels are styled text, not headings: they repeat on every page and
+// would otherwise sit in each page's heading outline under its real content.
+const LABEL = "mb-[18px] font-head text-[12.5px] font-bold tracking-[0.09em] text-white uppercase";
+const LINK = "text-[14.5px] text-[#b9c3d6] hover:text-white";
 
 export default function SiteFooter() {
+  const cities = publishedCities();
   return (
-    <footer className="bg-ink text-[#b9c3d6]">
+    <footer className="bg-ink text-[#b9c3d6]" data-location="footer">
       <div className="wrap grid grid-cols-[1.5fr_1fr_1fr_1.4fr] gap-10 pt-16 pb-11 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1 max-[560px]:gap-8 max-[560px]:pt-12 max-[560px]:pb-8">
         <div className="max-[900px]:col-span-2">
           <Link className="mb-[18px] flex items-center gap-[10px]" href="/">
             <span className="flex h-10 w-10 items-center justify-center rounded-md bg-white p-1">
-              <img className="h-full w-full object-contain" src="/assets/logo-mark.svg" alt="PAK Cargo" />
+              <img className="h-full w-full object-contain" src="/assets/logo-mark.svg" alt="PAK Cargo logo" />
             </span>
             <span>
               <span className="block font-head text-lg leading-[1.1] font-extrabold text-white">PAK CARGO</span>
@@ -25,9 +33,9 @@ export default function SiteFooter() {
         </div>
 
         <div>
-          <h3 className="mb-[18px] font-head text-[12.5px] font-bold tracking-[0.09em] text-white uppercase">
+          <p className={LABEL}>
             Services
-          </h3>
+          </p>
           <nav className="flex flex-col gap-[11px]">
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/sea-cargo">Sea Cargo</Link>
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/air-cargo">Air Cargo</Link>
@@ -40,20 +48,35 @@ export default function SiteFooter() {
         </div>
 
         <div>
-          <h3 className="mb-[18px] font-head text-[12.5px] font-bold tracking-[0.09em] text-white uppercase">
+          <p className={LABEL}>
             Company
-          </h3>
+          </p>
           <nav className="flex flex-col gap-[11px]">
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/tracking">Track a shipment</Link>
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/faq">FAQ</Link>
             <Link className="text-[14.5px] text-[#b9c3d6] hover:text-white" href="/contact-us">Contact us</Link>
+            {/* Appears with the first published post. */}
+            {hasPublishedPosts() && <Link className={LINK} href="/blog">Blog</Link>}
           </nav>
+          {/* Each city appears once its page is published. */}
+          {cities.length > 0 && (
+            <>
+              <p className={`${LABEL} mt-8`}>Areas we cover</p>
+              <nav className="flex flex-col gap-[11px]">
+                {cities.map((c) => (
+                  <Link key={c.slug} className={LINK} href={`/${c.slug}`}>
+                    Cargo from {c.city}
+                  </Link>
+                ))}
+              </nav>
+            </>
+          )}
         </div>
 
         <div>
-          <h3 className="mb-[18px] font-head text-[12.5px] font-bold tracking-[0.09em] text-white uppercase">
+          <p className={LABEL}>
             Contact
-          </h3>
+          </p>
           <address className="mb-[18px] text-[14.5px] leading-[1.7] text-[#b9c3d6] not-italic">
             {BUSINESS.streetAddress}
             <br />
@@ -78,6 +101,16 @@ export default function SiteFooter() {
               {BUSINESS.email}
             </a>
           </div>
+          {/* Only profiles that are live — these same URLs are the schema sameAs. */}
+          {BUSINESS.social.length > 0 && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-[14px]">
+              {BUSINESS.social.map((p) => (
+                <a key={p.url} className={LINK} href={p.url} target="_blank" rel="noopener">
+                  {p.name}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
