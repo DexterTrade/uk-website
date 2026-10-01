@@ -65,11 +65,15 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
+    // overflow-x-clip, not -hidden: "hidden" on html and body makes body a
+    // scroll container of its own, which silently turns the sticky header into
+    // one that scrolls away with the page. "clip" trims sideways overflow the
+    // same way without creating a scroll container.
     <html
       lang="en-GB"
-      className={`${archivo.variable} ${plexSans.variable} ${nastaliq.variable} overflow-x-hidden`}
+      className={`${archivo.variable} ${plexSans.variable} ${nastaliq.variable} overflow-x-clip`}
     >
-      <body className="m-0 overflow-x-hidden bg-white font-body text-ink antialiased">
+      <body className="m-0 overflow-x-clip bg-white font-body text-ink antialiased">
         {/* Google tag (gtag.js) for Google Ads */}
         <Script
           async

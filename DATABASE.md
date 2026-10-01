@@ -1002,6 +1002,10 @@ against the live site, trust the code over this doc and update this section.
   open, ignores sub-6px jitter, and doesn't animate under reduced motion.
   When shown it carries no transform at all, so nothing changes for the
   fixed-position menu backdrop inside it.
+  **It floats over the page only because `<html>`/`<body>` use
+  `overflow-x-clip`.** `overflow-x-hidden` there makes `<body>` a scroll
+  container, which silently disables `position: sticky` — the header then
+  scrolls away with the page. Don't switch it back.
 - **`app/components/SiteHeader.js`** — mobile/tablet nav (<1120px) is a
   **full-width panel that opens vertically below the header**, not a side
   drawer: `display: grid` with `grid-template-rows` animated `0fr → 1fr` on
