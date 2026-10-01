@@ -39,11 +39,43 @@ export default function SiteHeader({ variant = "home", announcement = null }) {
     };
   }, [open]);
 
+  // Slides away while scrolling down and comes back on any scroll up, so the
+  // header (and the announcement bar inside it) gives the content the screen
+  // without ever being more than a flick away. Always shown near the top.
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let frame = 0;
+    function onScroll() {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const delta = y - lastY;
+        // A few pixels of slack so trackpad jitter doesn't flicker it.
+        if (Math.abs(delta) < 6) return;
+        setHidden(delta > 0 && y > 120);
+        lastY = y;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return (
     // The announcement bar lives inside the sticky header rather than above it,
-    // so the two pin to the top as one unit — no hardcoded offset that would
-    // leave a gap on the days the bar renders nothing.
-    <header data-location="header" className="sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 shadow-[0_8px_28px_-16px_rgba(22,35,60,0.35)] backdrop-blur-[10px]">
+    // so the two pin to the top — and hide and return — as one unit, with no
+    // hardcoded offset that would leave a gap on the days the bar renders
+    // nothing.
+    <header
+      data-location="header"
+      className={`sticky top-0 z-50 border-b border-[#e6eaf2] bg-white/94 shadow-[0_8px_28px_-16px_rgba(22,35,60,0.35)] backdrop-blur-[10px] transition-transform duration-300 ease-out motion-reduce:transition-none ${
+        hidden && !open ? "-translate-y-full" : ""
+      }`}
+    >
       {announcement}
       <div className="wrap flex items-center gap-5 py-[10px]">
         <Link className="flex items-center gap-[10px]" href="/" onClick={close}>

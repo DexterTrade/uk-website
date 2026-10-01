@@ -995,6 +995,13 @@ against the live site, trust the code over this doc and update this section.
     a few sections below the hero — visible only on phones, since desktop
     already shows the same numbers in the hero card and showing both would
     duplicate.
+- **`app/components/SiteHeader.js`** — **hides on scroll down, returns on
+  scroll up**: the whole sticky header, announcement bar included, slides up
+  out of view (`-translate-y-full`, 300ms) once past 120px going down, and
+  slides back on any upward scroll. It stays put while the mobile menu is
+  open, ignores sub-6px jitter, and doesn't animate under reduced motion.
+  When shown it carries no transform at all, so nothing changes for the
+  fixed-position menu backdrop inside it.
 - **`app/components/SiteHeader.js`** — mobile/tablet nav (<1120px) is a
   **full-width panel that opens vertically below the header**, not a side
   drawer: `display: grid` with `grid-template-rows` animated `0fr → 1fr` on
