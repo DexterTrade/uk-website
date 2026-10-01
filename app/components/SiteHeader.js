@@ -32,10 +32,13 @@ export default function SiteHeader({ variant = "home", announcement = null }) {
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Lock scrolling on <html>, not <body>: overflow:hidden on body makes it a
+    // scroll container, which un-sticks the header — it would jump back to the
+    // top of the page while this is open.
+    const previous = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previous;
+      document.documentElement.style.overflow = previous;
     };
   }, [open]);
 
@@ -126,7 +129,9 @@ export default function SiteHeader({ variant = "home", announcement = null }) {
           }`}
           id="site-nav"
         >
-          <div className="contents max-[1120px]:block max-[1120px]:min-h-0 max-[1120px]:overflow-hidden">
+          {/* Scrolls on its own when taller than the screen: the page behind is
+              locked while the menu is open. */}
+          <div className="contents max-[1120px]:block max-[1120px]:max-h-[calc(100dvh-7rem)] max-[1120px]:min-h-0 max-[1120px]:overflow-y-auto max-[1120px]:overscroll-contain">
             <div className="contents max-[1120px]:mx-auto max-[1120px]:flex max-[1120px]:w-full max-[1120px]:max-w-md max-[1120px]:flex-col max-[1120px]:px-6 max-[1120px]:pt-5 max-[1120px]:pb-[calc(28px_+_env(safe-area-inset-bottom,0px))]">
               <div className="hidden max-[1120px]:mb-3 max-[1120px]:flex max-[1120px]:items-center max-[1120px]:border-b max-[1120px]:border-line-light max-[1120px]:pb-4">
                 <span className="font-head text-[11.5px] font-bold tracking-[0.22em] text-faint uppercase">Menu</span>

@@ -21,10 +21,13 @@ export default function ContactDrawer() {
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Lock scrolling on <html>, not <body>: overflow:hidden on body makes it a
+    // scroll container, which un-sticks the header — it would jump back to the
+    // top of the page while this is open.
+    const previous = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previous;
+      document.documentElement.style.overflow = previous;
     };
   }, [open]);
 

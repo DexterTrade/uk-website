@@ -1006,6 +1006,11 @@ against the live site, trust the code over this doc and update this section.
   `overflow-x-clip`.** `overflow-x-hidden` there makes `<body>` a scroll
   container, which silently disables `position: sticky` — the header then
   scrolls away with the page. Don't switch it back.
+  For the same reason the menu and the contact drawer lock page scrolling
+  with `overflow: hidden` on `<html>`, never on `<body>` — on body it
+  un-sticks the header, which then jumps to the top of the page while the
+  menu is open. The open menu scrolls internally if it is taller than the
+  screen.
 - **`app/components/SiteHeader.js`** — mobile/tablet nav (<1120px) is a
   **full-width panel that opens vertically below the header**, not a side
   drawer: `display: grid` with `grid-template-rows` animated `0fr → 1fr` on
